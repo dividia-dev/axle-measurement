@@ -1,0 +1,499 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Login */
+.login-box {
+    background: #2a2a2a;
+    padding: 40px;
+    border-radius: 8px;
+    width: 320px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.login-box h1 {
+    font-size: 20px;
+    margin-bottom: 24px;
+    text-align: center;
+    color: #fff;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    background: #0066cc;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.login-box button:hover {
+    background: #0077ee;
+}
+
+.error {
+    color: #ff4444;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+/* App Screen */
+#app-screen {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* Top Bar */
+#top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #222;
+    border-bottom: 1px solid #333;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+#app-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+#top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#user-info {
+    font-size: 13px;
+    color: #888;
+    margin-right: 8px;
+}
+
+#top-bar button {
+    padding: 4px 12px;
+    background: #333;
+    color: #ccc;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#top-bar button:hover {
+    background: #444;
+    color: #fff;
+}
+
+#btn-logout {
+    background: #442222;
+    border-color: #553333;
+}
+
+/* Video Container */
+#video-container {
+    position: relative;
+    flex: 1;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#camera-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* Measurement Display */
+#measurement-display {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 12px 24px;
+    border-radius: 6px;
+    border: 1px solid #0088ff;
+    z-index: 10;
+}
+
+#measurement-value {
+    font-size: 32px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    color: #00ccff;
+}
+
+/* Weight Check Panel */
+#weight-panel {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    z-index: 10;
+    min-width: 180px;
+}
+
+#weight-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+#weight-inputs label {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.axle-btn {
+    width: 24px;
+    height: 24px;
+    background: #444;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.axle-btn:hover {
+    background: #555;
+}
+
+#axle-count-display {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    min-width: 24px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+#special-label {
+    margin-left: 8px;
+    font-size: 11px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+}
+
+#special-label input {
+    cursor: pointer;
+}
+
+#weight-result {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+#weight-max-line {
+    color: #aaa;
+}
+
+#weight-max {
+    color: #fff;
+    font-weight: bold;
+}
+
+#weight-scale-line {
+    color: #aaa;
+    margin-top: 2px;
+}
+
+#weight-scale {
+    font-weight: bold;
+}
+
+#weight-status {
+    margin-top: 4px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+#weight-status.legal {
+    background: rgba(0, 100, 0, 0.6);
+    color: #44ff44;
+}
+
+#weight-status.overweight {
+    background: rgba(150, 0, 0, 0.6);
+    color: #ff4444;
+}
+
+/* Calibration Status */
+#cal-status {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+}
+
+#cal-indicator {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+#cal-indicator.calibrated {
+    background: rgba(0, 100, 0, 0.8);
+    color: #44ff44;
+}
+
+#cal-indicator.not-calibrated {
+    background: rgba(100, 0, 0, 0.8);
+    color: #ff4444;
+}
+
+/* Line Labels */
+.line-label {
+    position: absolute;
+    top: 80px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #0088ff;
+    font-size: 11px;
+    font-family: monospace;
+    border-radius: 3px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Bottom Bar */
+#bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #222;
+    border-top: 1px solid #333;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.control-hint {
+    font-size: 12px;
+    color: #666;
+}
+
+kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 11px;
+    font-family: monospace;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #aaa;
+}
+
+#controls-center {
+    display: flex;
+    gap: 8px;
+}
+
+#controls-center button {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+#btn-save-measurement {
+    background: #006633;
+    color: #fff;
+}
+
+#btn-save-measurement:hover:not(:disabled) {
+    background: #008844;
+}
+
+#btn-save-measurement:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+#btn-reset-lines {
+    background: #444;
+    color: #ccc;
+}
+
+#btn-reset-lines:hover {
+    background: #555;
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: #2a2a2a;
+    padding: 32px;
+    border-radius: 8px;
+    width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+
+.modal-wide {
+    width: 700px;
+}
+
+.modal-content h2 {
+    margin-bottom: 16px;
+    font-size: 18px;
+}
+
+.modal-content p {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 16px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: #aaa;
+}
+
+.form-group input, .form-group select {
+    padding: 8px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.form-group input[type="number"] {
+    width: 140px;
+}
+
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #0066cc;
+    color: #fff;
+}
+
+.modal-buttons button.secondary {
+    background: #444;
+    color: #ccc;
+}
+
+/* History Table */
+#history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+#history-table th {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #444;
+    color: #888;
+    font-weight: 600;
+}
+
+#history-table td {
+    padding: 8px;
+    border-bottom: 1px solid #333;
+}
+
+#history-table tr:hover td {
+    background: #333;
+}

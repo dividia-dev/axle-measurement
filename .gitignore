@@ -1,0 +1,8 @@
+node_modules/
+web-app/data/
+web-app/public/test-video.mp4
+web-app/test/fixtures/*.db
+web-app/test/fixtures/*.db-wal
+web-app/test/fixtures/*.db-shm
+web-app/.gstack/
+.DS_Store

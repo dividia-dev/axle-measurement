@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axle Measurement</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+        <div class="login-box">
+            <h1>Axle Measurement</h1>
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
+                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+                <button type="submit">Login</button>
+                <div id="login-error" class="error" hidden></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen" hidden>
+        <!-- Top Bar -->
+        <div id="top-bar">
+            <span id="app-title">Axle Measurement</span>
+            <div id="top-bar-right">
+                <span id="user-info"></span>
+                <button id="btn-history" title="Measurement History">History</button>
+                <button id="btn-calibrate" title="Calibration (Admin)" hidden>Calibrate</button>
+                <button id="btn-settings" title="Settings (Admin)" hidden>Settings</button>
+                <button id="btn-logout">Logout</button>
+            </div>
+        </div>
+
+        <!-- Video + Overlay Container -->
+        <div id="video-container">
+            <!-- In production: <video> element receives WebRTC stream from go2rtc -->
+            <!-- In dev/test: plays a local test video on loop -->
+            <video id="camera-feed" autoplay muted loop playsinline></video>
+            <canvas id="overlay"></canvas>
+
+            <!-- Measurement Display -->
+            <div id="measurement-display" hidden>
+                <span id="measurement-value">--</span>
+            </div>
+
+            <!-- Weight Check Panel -->
+            <div id="weight-panel" hidden>
+                <div id="weight-inputs">
+                    <label>Axles:</label>
+                    <button class="axle-btn" id="btn-axle-minus">-</button>
+                    <span id="axle-count-display">5</span>
+                    <button class="axle-btn" id="btn-axle-plus">+</button>
+                    <label id="special-label"><input type="checkbox" id="chk-special"> Special</label>
+                </div>
+                <div id="weight-result">
+                    <div id="weight-max-line">Max: <span id="weight-max">--</span></div>
+                    <div id="weight-scale-line" hidden>Scale: <span id="weight-scale">--</span></div>
+                    <div id="weight-status" hidden></div>
+                </div>
+            </div>
+
+            <!-- Calibration Status -->
+            <div id="cal-status">
+                <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
+            </div>
+
+            <!-- Line Labels -->
+            <div id="line1-label" class="line-label" hidden>Line 1</div>
+            <div id="line2-label" class="line-label" hidden>Line 2</div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div id="bottom-bar">
+            <div id="controls-left">
+                <span class="control-hint">Line 1: <kbd>A</kbd>/<kbd>D</kbd> coarse, <kbd>Q</kbd>/<kbd>E</kbd> fine</span>
+                <span class="control-hint">Line 2: <kbd>J</kbd>/<kbd>L</kbd> coarse, <kbd>U</kbd>/<kbd>O</kbd> fine</span>
+            </div>
+            <div id="controls-center">
+                <button id="btn-save-measurement" disabled>Save Measurement</button>
+                <button id="btn-reset-lines">Reset Lines</button>
+            </div>
+            <div id="controls-right">
+                <span class="control-hint"><kbd>Space</kbd> save | <kbd>R</kbd> reset</span>
+            </div>
+        </div>
+
+        <!-- Calibration Modal -->
+        <div id="calibration-modal" class="modal" hidden>
+            <div class="modal-content">
+                <h2>Calibration</h2>
+                <p>Position the two lines over your reference markers, then enter the known distance between them.</p>
+                <div class="form-group">
+                    <label>Line 1 position: <span id="cal-line1-pos">--</span> px</label>
+                </div>
+                <div class="form-group">
+                    <label>Line 2 position: <span id="cal-line2-pos">--</span> px</label>
+                </div>
+                <div class="form-group">
+                    <label>Pixel distance: <span id="cal-pixel-dist">--</span> px</label>
+                </div>
+                <div class="form-group">
+                    <label for="cal-distance">Known distance:</label>
+                    <input type="number" id="cal-distance" step="0.1" min="0.1" placeholder="Distance in inches">
+                    <select id="cal-unit">
+                        <option value="inches">inches</option>
+                        <option value="feet">feet</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button id="btn-cal-save">Save Calibration</button>
+                    <button id="btn-cal-cancel" class="secondary">Cancel</button>
+                </div>
+                <div id="cal-error" class="error" hidden></div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="history-modal" class="modal" hidden>
+            <div class="modal-content modal-wide">
+                <h2>Measurement History</h2>
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Distance</th>
+                            <th>Operator</th>
+                            <th>Max Weight</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+                <div class="modal-buttons">
+                    <button id="btn-history-close" class="secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

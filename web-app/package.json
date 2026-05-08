@@ -1,0 +1,24 @@
+{
+  "name": "axle-measurement",
+  "version": "0.1.0",
+  "description": "Browser-based truck axle distance measurement system",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js",
+    "test:watch": "node --test --watch test/*.test.js",
+    "setup": "node src/setup-db.js",
+    "download-test-video": "node scripts/download-test-video.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "cookie-parser": "^1.4.7"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}

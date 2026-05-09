@@ -57,18 +57,8 @@
 
             <!-- Right Side Control Panel -->
             <div id="side-panel">
-                <!-- Axle / Weight Section -->
+                <!-- Weight Display (top) -->
                 <div class="panel-section" id="weight-panel" hidden>
-                    <div class="panel-label">AXLES</div>
-                    <div class="panel-axle-row">
-                        <button class="axle-btn" id="btn-axle-minus">-</button>
-                        <span id="axle-count-display">5</span>
-                        <button class="axle-btn" id="btn-axle-plus">+</button>
-                    </div>
-                    <label class="panel-checkbox" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
-                        <input type="checkbox" id="chk-special"> Dump/Mix
-                    </label>
-                    <div class="panel-divider"></div>
                     <div class="panel-label">MAX WEIGHT</div>
                     <div id="weight-max" class="panel-big-value">--</div>
                     <div id="weight-scale-line" hidden>
@@ -76,6 +66,17 @@
                         <div id="weight-scale" class="panel-big-value">--</div>
                     </div>
                     <div id="weight-status" hidden></div>
+                    <div class="panel-divider"></div>
+                    <div class="panel-label">AXLES</div>
+                    <div class="panel-axle-row">
+                        <button class="axle-btn" id="btn-axle-minus">-</button>
+                        <span id="axle-count-display">5</span>
+                        <button class="axle-btn" id="btn-axle-plus">+</button>
+                    </div>
+                    <div class="panel-axle-spacer"></div>
+                    <label class="panel-checkbox" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
+                        <input type="checkbox" id="chk-special"> Dump/Mix
+                    </label>
                 </div>
 
                 <!-- Divider -->
@@ -90,10 +91,10 @@
                 <!-- Divider -->
                 <div class="panel-divider"></div>
 
-                <!-- Mode Indicator -->
+                <!-- Mode Toggle Button -->
                 <div class="panel-section">
                     <div class="panel-label">MODE</div>
-                    <span id="mode-indicator" class="mode-coarse">COARSE</span>
+                    <button id="mode-indicator" class="panel-btn mode-coarse">COARSE</button>
                 </div>
 
                 <!-- Spacer pushes keyboard hints to bottom -->

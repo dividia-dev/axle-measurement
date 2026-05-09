@@ -203,15 +203,89 @@ async function saveCalibration() {
     }
 }
 
-// === Mode Indicator ===
+// === Mode Toggle ===
+function toggleMode() {
+    state.fineMode = !state.fineMode;
+    updateModeIndicator();
+}
+
 function updateModeIndicator() {
     const indicator = $('mode-indicator');
     if (state.fineMode) {
         indicator.textContent = 'FINE';
-        indicator.className = 'mode-fine';
+        indicator.className = 'panel-btn mode-fine';
     } else {
         indicator.textContent = 'COARSE';
-        indicator.className = 'mode-coarse';
+        indicator.className = 'panel-btn mode-coarse';
+    }
+}
+
+// === Mouse Drag for Lines ===
+const DRAG_HIT_ZONE = 15; // pixels from line center to grab it
+
+let dragState = {
+    active: false,
+    line: null, // 1 or 2
+};
+
+function getLinePixelX(lineNorm) {
+    const rect = getVideoRect();
+    return rect.x + lineNorm * rect.width;
+}
+
+function pixelToNorm(pixelX) {
+    const rect = getVideoRect();
+    return Math.max(0, Math.min(1, (pixelX - rect.x) / rect.width));
+}
+
+function getHoveredLine(mouseX) {
+    const l1x = getLinePixelX(state.line1_x);
+    const l2x = getLinePixelX(state.line2_x);
+    const d1 = Math.abs(mouseX - l1x);
+    const d2 = Math.abs(mouseX - l2x);
+
+    if (d1 <= DRAG_HIT_ZONE && d1 <= d2) return 1;
+    if (d2 <= DRAG_HIT_ZONE) return 2;
+    return null;
+}
+
+function onOverlayMouseDown(e) {
+    const line = getHoveredLine(e.offsetX);
+    if (line) {
+        dragState.active = true;
+        dragState.line = line;
+        $('video-container').classList.add('dragging');
+        e.preventDefault();
+    }
+}
+
+function onOverlayMouseMove(e) {
+    if (dragState.active) {
+        const norm = pixelToNorm(e.offsetX);
+        if (dragState.line === 1) {
+            state.line1_x = norm;
+        } else {
+            state.line2_x = norm;
+        }
+        drawOverlay();
+        debouncedWeightCheck();
+    } else {
+        // Show grab cursor when hovering near a line
+        const line = getHoveredLine(e.offsetX);
+        const container = $('video-container');
+        if (line) {
+            container.classList.add('drag-hover');
+        } else {
+            container.classList.remove('drag-hover');
+        }
+    }
+}
+
+function onOverlayMouseUp() {
+    if (dragState.active) {
+        dragState.active = false;
+        dragState.line = null;
+        $('video-container').classList.remove('dragging');
     }
 }
 
@@ -364,6 +438,34 @@ function drawLine(ctx, x, y1, y2, color) {
     ctx.stroke();
 }
 
+function drawDragHandle(ctx, x, y, color) {
+    const size = 8;
+    // Black outline
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.moveTo(x, y - size - 1);
+    ctx.lineTo(x + size + 1, y);
+    ctx.lineTo(x, y + size + 1);
+    ctx.lineTo(x - size - 1, y);
+    ctx.closePath();
+    ctx.fill();
+    // Colored fill
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - size);
+    ctx.lineTo(x + size, y);
+    ctx.lineTo(x, y + size);
+    ctx.lineTo(x - size, y);
+    ctx.closePath();
+    ctx.fill();
+    // Left/right arrows inside
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u25C0\u25B6', x, y);
+}
+
 function drawOverlay() {
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -379,6 +481,11 @@ function drawOverlay() {
     // Draw lines with black outline for visibility
     drawLine(ctx, l1x, rect.y, rect.y + rect.height, lineColor);
     drawLine(ctx, l2x, rect.y, rect.y + rect.height, lineColor);
+
+    // Draw drag handles (small diamond shapes at center of each line)
+    const handleY = rect.y + rect.height / 2;
+    drawDragHandle(ctx, l1x, handleY, lineColor);
+    drawDragHandle(ctx, l2x, handleY, lineColor);
 
     // Line labels
     const label1 = $('line1-label');
@@ -447,8 +554,7 @@ function handleKeyDown(e) {
 
         // Fine/Coarse toggle
         case 'f':
-            state.fineMode = !state.fineMode;
-            updateModeIndicator();
+            toggleMode();
             break;
 
         // Actions
@@ -555,6 +661,15 @@ chkSpecial.addEventListener('change', () => {
     state.isSpecialVehicle = chkSpecial.checked;
     updateWeightCheck();
 });
+
+// Mode toggle button click
+$('mode-indicator').addEventListener('click', toggleMode);
+
+// Mouse drag for lines
+overlay.addEventListener('mousedown', onOverlayMouseDown);
+overlay.addEventListener('mousemove', onOverlayMouseMove);
+overlay.addEventListener('mouseup', onOverlayMouseUp);
+overlay.addEventListener('mouseleave', onOverlayMouseUp);
 
 document.addEventListener('keydown', handleKeyDown);
 window.addEventListener('resize', resizeOverlay);

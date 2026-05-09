@@ -1013,7 +1013,7 @@ function clearDemoData() {
         if (key.startsWith('axle_')) keysToRemove.push(key);
     }
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
-    state.calibration = null;
+    state.calibration = DEFAULT_CALIBRATION;
     updateCalStatus();
     updateStorageMeter();
 }

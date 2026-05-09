@@ -44,7 +44,6 @@ const calStatus = $('cal-indicator');
 const btnSave = $('btn-save-measurement');
 const btnReset = $('btn-reset-lines');
 const btnCalibrate = $('btn-calibrate');
-const btnSettings = $('btn-settings');
 const btnHistory = $('btn-history');
 const btnLogout = $('btn-logout');
 const calModal = $('calibration-modal');
@@ -106,7 +105,6 @@ function showApp() {
     // Show admin controls
     const isAdmin = state.user.role === 'admin';
     btnCalibrate.hidden = !isAdmin;
-    if (btnSettings) btnSettings.hidden = !isAdmin;
 
     loadCalibration();
     initVideo();

@@ -176,7 +176,7 @@ body {
 #weight-panel {
     position: absolute;
     top: 16px;
-    left: 16px;
+    right: 16px;
     background: rgba(0, 0, 0, 0.85);
     padding: 10px 14px;
     border-radius: 6px;
@@ -317,7 +317,7 @@ body {
 #cal-status {
     position: absolute;
     top: 16px;
-    right: 16px;
+    left: 16px;
     z-index: 10;
 }
 

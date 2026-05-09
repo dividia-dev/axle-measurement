@@ -1346,6 +1346,7 @@ $('mode-indicator').addEventListener('click', toggleMode);
 $('btn-settings').addEventListener('click', openSettings);
 $('btn-settings-save').addEventListener('click', saveSettings);
 $('btn-settings-cancel').addEventListener('click', closeSettings);
+$('btn-settings-close').addEventListener('click', closeSettings);
 $('btn-keymap-defaults').addEventListener('click', resetKeymapDefaults);
 $('btn-sensitivity-defaults').addEventListener('click', resetSensitivityDefaults);
 $('btn-test-reset').addEventListener('click', resetTestStats);

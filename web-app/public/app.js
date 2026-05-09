@@ -636,11 +636,58 @@ function captureScreenshot() {
     ctx.moveTo(l2x, 0); ctx.lineTo(l2x, composite.height);
     ctx.stroke();
 
+    // Overlay measurement data in upper-right
+    const now = new Date();
+    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    const normDist = Math.abs(state.line2_x - state.line1_x);
+    const inches = normDist * state.calibration.inches_per_norm;
+    const totalRounded = Math.round(inches);
+    const ft = Math.floor(totalRounded / 12);
+    const remainIn = totalRounded % 12;
+    const distStr = remainIn === 0 ? `${ft} ft` : `${ft} ft ${remainIn} in`;
+    const maxWt = state.weightResult ? state.weightResult.maxAllowable.toLocaleString() + ' lbs' : '--';
+    const axleStr = state.axleCount + ' axles' + (state.isSpecialVehicle ? ' (Dump/Mix)' : '');
+
+    const lines = [dateStr, distStr, axleStr, 'Max: ' + maxWt];
+    const fontSize = Math.max(14, Math.round(composite.height / 30));
+    const lineHeight = fontSize * 1.4;
+    const padding = 10;
+    const textWidth = fontSize * 14;
+
+    // Background box
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(
+        composite.width - textWidth - padding * 2,
+        padding,
+        textWidth + padding,
+        lines.length * lineHeight + padding
+    );
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${fontSize}px monospace`;
+    ctx.textAlign = 'right';
+    for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], composite.width - padding * 2, padding + fontSize + i * lineHeight);
+    }
+
     return composite.toDataURL('image/jpeg', 0.85);
 }
 
 async function saveMeasurementAction() {
     if (!state.calibration) return;
+
+    // Build confirmation message
+    const normDist = Math.abs(state.line2_x - state.line1_x);
+    const inches = normDist * state.calibration.inches_per_norm;
+    const totalRounded = Math.round(inches);
+    const ft = Math.floor(totalRounded / 12);
+    const remainIn = totalRounded % 12;
+    const distStr = remainIn === 0 ? `${ft} ft` : `${ft} ft ${remainIn} in`;
+    const maxWt = state.weightResult ? state.weightResult.maxAllowable.toLocaleString() + ' lbs' : '--';
+
+    const msg = `Save this measurement?\n\nDistance: ${distStr}\nAxles: ${state.axleCount}\nMax Weight: ${maxWt}`;
+    if (!confirm(msg)) return;
 
     const screenshot = captureScreenshot();
     const maxWeight = state.weightResult ? state.weightResult.maxAllowable : null;

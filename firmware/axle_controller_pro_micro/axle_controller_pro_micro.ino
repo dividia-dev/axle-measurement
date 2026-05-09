@@ -150,8 +150,9 @@ unsigned long btn2HoldStart = 0;
 bool btn1WasPressed = false;
 bool btn2WasPressed = false;
 
-// Serial config command buffer
-String serialBuffer = "";
+// Serial config command buffer (fixed size, no heap allocation)
+char serialBuffer[32];
+byte serialPos = 0;
 
 // === Setup ===
 void setup() {
@@ -183,7 +184,7 @@ void setup() {
     delay(100);
   }
 
-  Serial.println("AXLE_CONTROLLER_READY");
+  Serial.println(F("AXLE_CONTROLLER_READY"));
   printHelp();
 }
 
@@ -339,9 +340,9 @@ void checkCalibrationHold(int pinBtn, bool &wasPressed, unsigned long &holdStart
 }
 
 void runCalibration(int pinX, int pinY, int ledFine, int joyNum) {
-  Serial.print("CALIBRATING Joystick ");
+  Serial.print(F("CAL Joy"));
   Serial.println(joyNum);
-  Serial.println("  Release joystick and don't touch...");
+  Serial.println(F("  Don't touch..."));
 
   // Fast blink LED to indicate calibration mode
   for (int i = 0; i < 6; i++) {
@@ -413,19 +414,17 @@ void runCalibration(int pinX, int pinY, int ledFine, int joyNum) {
   delay(1000);
   digitalWrite(ledFine, LOW);
 
-  Serial.print("  Center: ");
-  Serial.println(centerX);
-  Serial.print("  Noise X: ");
+  Serial.print(F("  Center="));
+  Serial.print(centerX);
+  Serial.print(F(" NoiseX="));
   Serial.print(noiseX);
-  Serial.print("  Noise Y: ");
+  Serial.print(F(" NoiseY="));
   Serial.println(noiseY);
-  Serial.print("  Dead zone coarse: ");
-  Serial.println(dzCoarse);
-  Serial.print("  Dead zone fine: ");
+  Serial.print(F("  DZ c="));
+  Serial.print(dzCoarse);
+  Serial.print(F(" f="));
   Serial.println(dzFine);
-  Serial.print("  Samples: ");
-  Serial.println(samples);
-  Serial.println("CALIBRATION COMPLETE");
+  Serial.println(F("CAL DONE"));
 }
 
 // === EEPROM Settings ===
@@ -500,142 +499,156 @@ void handleSerial() {
   while (Serial.available()) {
     char c = Serial.read();
     if (c == '\n' || c == '\r') {
-      if (serialBuffer.length() > 0) {
+      if (serialPos > 0) {
+        serialBuffer[serialPos] = '\0';
         processCommand(serialBuffer);
-        serialBuffer = "";
+        serialPos = 0;
       }
-    } else {
-      serialBuffer += c;
+    } else if (serialPos < sizeof(serialBuffer) - 1) {
+      serialBuffer[serialPos++] = c;
     }
   }
 }
 
-void processCommand(String cmd) {
-  cmd.trim();
-  cmd.toUpperCase();
+// Convert char buffer to uppercase in place
+void toUpper(char *s) {
+  for (; *s; s++) {
+    if (*s >= 'a' && *s <= 'z') *s -= 32;
+  }
+}
 
-  if (cmd == "HELP") {
+void processCommand(char *raw) {
+  // Trim leading/trailing spaces
+  while (*raw == ' ') raw++;
+  char *end = raw + strlen(raw) - 1;
+  while (end > raw && *end == ' ') *end-- = '\0';
+
+  // Work on uppercase copy for matching
+  char cmd[32];
+  strncpy(cmd, raw, sizeof(cmd) - 1);
+  cmd[sizeof(cmd) - 1] = '\0';
+  toUpper(cmd);
+
+  if (strcmp(cmd, "HELP") == 0) {
     printHelp();
   }
-  else if (cmd == "STATUS") {
+  else if (strcmp(cmd, "STATUS") == 0) {
     printStatus();
   }
-  else if (cmd == "KEYS") {
+  else if (strcmp(cmd, "KEYS") == 0) {
     printKeys();
   }
-  else if (cmd == "MODE PROPORTIONAL" || cmd == "MODE 0") {
+  else if (strcmp(cmd, "MODE PROPORTIONAL") == 0 || strcmp(cmd, "MODE 0") == 0) {
     controlMode = 0;
     saveSettings();
-    Serial.println("Mode set to PROPORTIONAL");
+    Serial.println(F("Mode set to PROPORTIONAL"));
   }
-  else if (cmd == "MODE DISCRETE" || cmd == "MODE 1") {
+  else if (strcmp(cmd, "MODE DISCRETE") == 0 || strcmp(cmd, "MODE 1") == 0) {
     controlMode = 1;
     saveSettings();
-    Serial.println("Mode set to DISCRETE TOGGLE");
+    Serial.println(F("Mode set to DISCRETE TOGGLE"));
   }
-  else if (cmd.startsWith("SET ")) {
-    handleSetKey(cmd.substring(4));
+  else if (strncmp(cmd, "SET ", 4) == 0) {
+    handleSetKey(cmd + 4);
   }
-  else if (cmd == "DEADZONE" || cmd == "DZ") {
+  else if (strcmp(cmd, "DEADZONE") == 0 || strcmp(cmd, "DZ") == 0) {
     printDeadzones();
   }
-  else if (cmd.startsWith("DZ ") || cmd.startsWith("DEADZONE ")) {
-    String args = cmd.startsWith("DZ ") ? cmd.substring(3) : cmd.substring(9);
-    handleSetDeadzone(args);
+  else if (strncmp(cmd, "DZ ", 3) == 0) {
+    handleSetDeadzone(cmd + 3);
   }
-  else if (cmd == "CALIBRATE 1" || cmd == "CAL 1") {
+  else if (strncmp(cmd, "DEADZONE ", 9) == 0) {
+    handleSetDeadzone(cmd + 9);
+  }
+  else if (strcmp(cmd, "CALIBRATE 1") == 0 || strcmp(cmd, "CAL 1") == 0) {
     runCalibration(JOY1_X, JOY1_Y, LED_FINE1, 1);
   }
-  else if (cmd == "CALIBRATE 2" || cmd == "CAL 2") {
+  else if (strcmp(cmd, "CALIBRATE 2") == 0 || strcmp(cmd, "CAL 2") == 0) {
     runCalibration(JOY2_X, JOY2_Y, LED_FINE2, 2);
   }
-  else if (cmd == "RAW") {
+  else if (strcmp(cmd, "RAW") == 0) {
     printRawValues();
   }
-  else if (cmd == "DEFAULTS") {
+  else if (strcmp(cmd, "DEFAULTS") == 0) {
     saveDefaults();
     loadSettings();
-    Serial.println("All settings reset to defaults (including dead zones).");
+    Serial.println(F("All settings reset to defaults."));
     printKeys();
     printDeadzones();
   }
   else {
-    Serial.println("Unknown command. Type HELP for commands.");
+    Serial.println(F("Unknown command. Type HELP."));
   }
 }
 
-void handleSetKey(String args) {
+void handleSetKey(const char *args) {
   // Format: SET <SLOT> <KEY>
-  // Example: SET J1LC w  (sets joystick 1 left coarse to 'w')
-  args.trim();
-  int spaceIdx = args.indexOf(' ');
-  if (spaceIdx < 0) {
-    Serial.println("Usage: SET <SLOT> <KEY>");
-    Serial.println("Slots: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B");
+  // Find space between slot and key
+  const char *sp = strchr(args, ' ');
+  if (!sp) {
+    Serial.println(F("Usage: SET <SLOT> <KEY>"));
     return;
   }
 
-  String slot = args.substring(0, spaceIdx);
-  String keyStr = args.substring(spaceIdx + 1);
-  keyStr.trim();
-  keyStr.toLowerCase();
+  // Extract slot (up to 4 chars)
+  char slot[5];
+  int slotLen = sp - args;
+  if (slotLen > 4) slotLen = 4;
+  strncpy(slot, args, slotLen);
+  slot[slotLen] = '\0';
+  toUpper(slot);
 
-  if (keyStr.length() != 1) {
-    Serial.println("Key must be a single character.");
+  // Extract key (single char after space)
+  const char *keyPtr = sp + 1;
+  while (*keyPtr == ' ') keyPtr++;
+  if (*keyPtr == '\0' || *(keyPtr + 1) != '\0') {
+    Serial.println(F("Key must be a single character."));
     return;
   }
 
-  char newKey = keyStr.charAt(0);
+  char newKey = *keyPtr;
+  if (newKey >= 'A' && newKey <= 'Z') newKey += 32; // lowercase
+
   int idx = -1;
-
-  if (slot == "J1LC") idx = J1_LEFT_COARSE;
-  else if (slot == "J1RC") idx = J1_RIGHT_COARSE;
-  else if (slot == "J1LF") idx = J1_LEFT_FINE;
-  else if (slot == "J1RF") idx = J1_RIGHT_FINE;
-  else if (slot == "J1B")  idx = J1_BTN;
-  else if (slot == "J2LC") idx = J2_LEFT_COARSE;
-  else if (slot == "J2RC") idx = J2_RIGHT_COARSE;
-  else if (slot == "J2LF") idx = J2_LEFT_FINE;
-  else if (slot == "J2RF") idx = J2_RIGHT_FINE;
-  else if (slot == "J2B")  idx = J2_BTN;
+  if (strcmp(slot, "J1LC") == 0) idx = J1_LEFT_COARSE;
+  else if (strcmp(slot, "J1RC") == 0) idx = J1_RIGHT_COARSE;
+  else if (strcmp(slot, "J1LF") == 0) idx = J1_LEFT_FINE;
+  else if (strcmp(slot, "J1RF") == 0) idx = J1_RIGHT_FINE;
+  else if (strcmp(slot, "J1B") == 0)  idx = J1_BTN;
+  else if (strcmp(slot, "J2LC") == 0) idx = J2_LEFT_COARSE;
+  else if (strcmp(slot, "J2RC") == 0) idx = J2_RIGHT_COARSE;
+  else if (strcmp(slot, "J2LF") == 0) idx = J2_LEFT_FINE;
+  else if (strcmp(slot, "J2RF") == 0) idx = J2_RIGHT_FINE;
+  else if (strcmp(slot, "J2B") == 0)  idx = J2_BTN;
 
   if (idx < 0) {
-    Serial.println("Unknown slot. Use: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B");
+    Serial.println(F("Unknown slot. Use: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B"));
     return;
   }
 
   keys[idx] = newKey;
   saveSettings();
-  Serial.print("Set ");
+  Serial.print(F("Set "));
   Serial.print(slot);
-  Serial.print(" to '");
+  Serial.print(F(" to '"));
   Serial.print(newKey);
-  Serial.println("'");
+  Serial.println('\'');
 }
 
-void handleSetDeadzone(String args) {
+void handleSetDeadzone(const char *args) {
   // Format: DZ <JOY> <COARSE> <FINE>
-  // Example: DZ 1 60 40
-  args.trim();
-  int sp1 = args.indexOf(' ');
-  if (sp1 < 0) {
-    Serial.println("Usage: DZ <1|2> <coarse> <fine>");
-    Serial.println("  Example: DZ 1 60 40");
+  // Parse three space-separated integers
+  int joyNum = 0, coarse = 0, fine = 0;
+  if (sscanf(args, "%d %d %d", &joyNum, &coarse, &fine) != 3) {
+    Serial.println(F("Usage: DZ <1|2> <coarse> <fine>"));
     return;
   }
-  int joyNum = args.substring(0, sp1).toInt();
-  String rest = args.substring(sp1 + 1);
-  rest.trim();
-  int sp2 = rest.indexOf(' ');
-  if (sp2 < 0 || (joyNum != 1 && joyNum != 2)) {
-    Serial.println("Usage: DZ <1|2> <coarse> <fine>");
+  if (joyNum != 1 && joyNum != 2) {
+    Serial.println(F("Usage: DZ <1|2> <coarse> <fine>"));
     return;
   }
-  int coarse = rest.substring(0, sp2).toInt();
-  int fine = rest.substring(sp2 + 1).toInt();
-
   if (coarse < 10 || coarse > 250 || fine < 10 || fine > 250) {
-    Serial.println("Values must be 10-250.");
+    Serial.println(F("Values must be 10-250."));
     return;
   }
 
@@ -647,43 +660,41 @@ void handleSetDeadzone(String args) {
     deadzone2Fine = fine;
   }
   saveDeadzones();
-  Serial.print("Joystick ");
+  Serial.print(F("Joy"));
   Serial.print(joyNum);
-  Serial.print(" dead zones set: coarse=");
+  Serial.print(F(" DZ: coarse="));
   Serial.print(coarse);
-  Serial.print(" fine=");
+  Serial.print(F(" fine="));
   Serial.println(fine);
 }
 
 void printDeadzones() {
   Serial.println();
-  Serial.println("Dead Zone Settings:");
-  Serial.println("------------------------------");
-  Serial.print("  Joy1 coarse: ");
+  Serial.println(F("Dead Zones:"));
+  Serial.print(F("  Joy1 c="));
   Serial.print(deadzone1Coarse);
-  Serial.print("  fine: ");
+  Serial.print(F(" f="));
   Serial.print(deadzone1Fine);
-  Serial.print("  center: ");
+  Serial.print(F(" center="));
   Serial.println(center1);
-  Serial.print("  Joy2 coarse: ");
+  Serial.print(F("  Joy2 c="));
   Serial.print(deadzone2Coarse);
-  Serial.print("  fine: ");
+  Serial.print(F(" f="));
   Serial.print(deadzone2Fine);
-  Serial.print("  center: ");
+  Serial.print(F(" center="));
   Serial.println(center2);
-  Serial.println();
 }
 
 void printRawValues() {
-  Serial.println("Raw analog values (10 readings):");
+  Serial.println(F("Raw (10 readings):"));
   for (int i = 0; i < 10; i++) {
-    Serial.print("  J1 X=");
+    Serial.print(F("  J1 X="));
     Serial.print(analogRead(JOY1_X));
-    Serial.print(" Y=");
+    Serial.print(F(" Y="));
     Serial.print(analogRead(JOY1_Y));
-    Serial.print("  J2 X=");
+    Serial.print(F("  J2 X="));
     Serial.print(analogRead(JOY2_X));
-    Serial.print(" Y=");
+    Serial.print(F(" Y="));
     Serial.println(analogRead(JOY2_Y));
     delay(100);
   }
@@ -691,58 +702,40 @@ void printRawValues() {
 
 void printHelp() {
   Serial.println();
-  Serial.println("=== CV Axle Controller ===");
-  Serial.println("Commands (via Serial Monitor):");
-  Serial.println("  HELP       - Show this help");
-  Serial.println("  STATUS     - Show current mode, lock, and dead zones");
-  Serial.println("  KEYS       - Show current key mappings");
-  Serial.println("  MODE PROPORTIONAL - Deflection = speed (default)");
-  Serial.println("  MODE DISCRETE     - Button toggles coarse/fine");
-  Serial.println("  SET <SLOT> <KEY>  - Remap a key");
-  Serial.println("    Slots: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B");
-  Serial.println("    Example: SET J1LC w");
-  Serial.println("  DZ             - Show dead zone values");
-  Serial.println("  DZ <1|2> <C> <F> - Set dead zones manually");
-  Serial.println("    Example: DZ 1 60 40");
-  Serial.println("  CAL <1|2>      - Auto-calibrate joystick dead zone");
-  Serial.println("  RAW            - Show raw analog readings");
-  Serial.println("  DEFAULTS       - Reset all settings to factory");
-  Serial.println();
-  Serial.println("Auto-calibrate: hold joystick button 3 sec");
-  Serial.println();
+  Serial.println(F("=== CV Axle Controller ==="));
+  Serial.println(F("HELP    STATUS    KEYS"));
+  Serial.println(F("MODE PROPORTIONAL|DISCRETE"));
+  Serial.println(F("SET <SLOT> <KEY>"));
+  Serial.println(F("  J1LC J1RC J1LF J1RF J1B"));
+  Serial.println(F("  J2LC J2RC J2LF J2RF J2B"));
+  Serial.println(F("DZ           - Show dead zones"));
+  Serial.println(F("DZ <1|2> C F - Set dead zones"));
+  Serial.println(F("CAL <1|2>    - Auto-calibrate"));
+  Serial.println(F("RAW          - Analog readings"));
+  Serial.println(F("DEFAULTS     - Factory reset"));
+  Serial.println(F("Hold button 3s = auto-cal"));
 }
 
 void printStatus() {
-  Serial.println();
-  Serial.print("Mode: ");
-  Serial.println(controlMode == 0 ? "PROPORTIONAL" : "DISCRETE TOGGLE");
-  Serial.print("Lock: ");
-  Serial.println(locked ? "LOCKED" : "ACTIVE");
+  Serial.print(F("Mode: "));
+  Serial.println(controlMode == 0 ? F("PROPORTIONAL") : F("DISCRETE"));
+  Serial.print(F("Lock: "));
+  Serial.println(locked ? F("LOCKED") : F("ACTIVE"));
   printDeadzones();
 }
 
 void printKeys() {
-  Serial.println();
-  Serial.println("Current Key Mappings:");
-  Serial.println("------------------------------");
-  const char* labels[] = {
-    "Joy1 Left Coarse  (J1LC)",
-    "Joy1 Right Coarse (J1RC)",
-    "Joy1 Left Fine    (J1LF)",
-    "Joy1 Right Fine   (J1RF)",
-    "Joy1 Button       (J1B) ",
-    "Joy2 Left Coarse  (J2LC)",
-    "Joy2 Right Coarse (J2RC)",
-    "Joy2 Left Fine    (J2LF)",
-    "Joy2 Right Fine   (J2RF)",
-    "Joy2 Button       (J2B) "
-  };
-  for (int i = 0; i < NUM_KEYS; i++) {
-    Serial.print("  ");
-    Serial.print(labels[i]);
-    Serial.print(" → '");
-    Serial.print(keys[i]);
-    Serial.println("'");
-  }
-  Serial.println();
+  Serial.println(F("\nKey Mappings:"));
+  // Print each key inline to avoid storing label array in RAM
+  Serial.print(F("  J1LC='"));Serial.print(keys[0]);
+  Serial.print(F("' J1RC='"));Serial.print(keys[1]);
+  Serial.print(F("' J1LF='"));Serial.print(keys[2]);
+  Serial.print(F("' J1RF='"));Serial.println(keys[3]);Serial.print('\'');
+  Serial.print(F("  J1B='"));Serial.print(keys[4]);
+  Serial.print(F("' J2LC='"));Serial.print(keys[5]);
+  Serial.print(F("' J2RC='"));Serial.print(keys[6]);
+  Serial.print(F("' J2LF='"));Serial.println(keys[7]);Serial.print('\'');
+  Serial.print(F("  J2RF='"));Serial.print(keys[8]);
+  Serial.print(F("' J2B='"));Serial.print(keys[9]);
+  Serial.println('\'');
 }

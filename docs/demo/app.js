@@ -671,9 +671,7 @@ function drawOverlay() {
     const l2x = rect.x + state.line2_x * rect.width;
 
     // Draw reference markers (overlay-only, won't appear in screenshots)
-    if (!state._userMediaLoaded) {
-        drawReferenceMarkers(ctx, rect);
-    }
+    drawReferenceMarkers(ctx, rect);
 
     drawLine(ctx, l1x, rect.y, rect.y + rect.height, lineColor);
     drawLine(ctx, l2x, rect.y, rect.y + rect.height, lineColor);

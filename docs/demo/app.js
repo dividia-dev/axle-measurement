@@ -115,8 +115,26 @@ const state = {
     fineMode: false,
 };
 
-const COARSE_STEP = 0.005;
-const FINE_STEP = 0.001;
+// Controller settings (loaded from sessionStorage)
+let controllerSettings = {
+    keymap: {
+        line1_left: 'a', line1_right: 'd',
+        line2_left: 'j', line2_right: 'l',
+        toggle_mode: 'f', save: ' ', reset: 'r'
+    },
+    sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
+};
+
+let keyActionMap = new Map();
+
+function buildKeyActionMap() {
+    keyActionMap.clear();
+    for (const [action, key] of Object.entries(controllerSettings.keymap)) {
+        keyActionMap.set(key.toLowerCase(), action);
+    }
+}
+
+let captureTarget = null;
 
 // === DOM Elements ===
 const $ = (id) => document.getElementById(id);
@@ -732,33 +750,60 @@ function drawOverlay() {
 // === Keyboard Input ===
 function handleKeyDown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (!historyModal.hidden) return;
 
-    let handled = true;
-    const step = state.fineMode ? FINE_STEP : COARSE_STEP;
+    const settingsModal = $('settings-modal');
 
-    switch (e.key.toLowerCase()) {
-        case 'a': state.line1_x = Math.max(0, state.line1_x - step); break;
-        case 'd': state.line1_x = Math.min(1, state.line1_x + step); break;
-        case 'j': state.line2_x = Math.max(0, state.line2_x - step); break;
-        case 'l': state.line2_x = Math.min(1, state.line2_x + step); break;
-        case 'f': toggleMode(); break;
-        case ' ':
-            e.preventDefault();
-            saveMeasurementAction();
-            break;
-        case 'r': resetLines(); break;
-        case 'escape':
-            closeCalibration();
-            historyModal.hidden = true;
-            $('weight-modal').hidden = true;
-            break;
-        default: handled = false;
+    // Key capture mode for settings
+    if (captureTarget) {
+        e.preventDefault();
+        if (e.key === 'Escape') { cancelKeyCapture(); return; }
+        completeKeyCapture(e.key);
+        return;
     }
 
-    if (handled) {
-        drawOverlay();
-        debouncedWeightCheck();
+    // Controller test
+    if (settingsModal && !settingsModal.hidden) {
+        handleControllerTest(e.key, true);
+        return;
+    }
+
+    if (!historyModal.hidden) return;
+
+    const key = e.key.toLowerCase();
+    const action = keyActionMap.get(key);
+
+    if (key === 'escape') {
+        closeCalibration();
+        historyModal.hidden = true;
+        $('weight-modal').hidden = true;
+        return;
+    }
+
+    if (!action) return;
+
+    const step = state.fineMode
+        ? controllerSettings.sensitivity.fine_step
+        : controllerSettings.sensitivity.coarse_step;
+
+    switch (action) {
+        case 'line1_left':  state.line1_x = Math.max(0, state.line1_x - step); break;
+        case 'line1_right': state.line1_x = Math.min(1, state.line1_x + step); break;
+        case 'line2_left':  state.line2_x = Math.max(0, state.line2_x - step); break;
+        case 'line2_right': state.line2_x = Math.min(1, state.line2_x + step); break;
+        case 'toggle_mode': toggleMode(); break;
+        case 'save':        e.preventDefault(); saveMeasurementAction(); break;
+        case 'reset':       resetLines(); break;
+        default: return;
+    }
+
+    drawOverlay();
+    debouncedWeightCheck();
+}
+
+function handleKeyUp(e) {
+    const settingsModal = $('settings-modal');
+    if (settingsModal && !settingsModal.hidden) {
+        handleControllerTest(e.key, false);
     }
 }
 
@@ -1011,6 +1056,220 @@ function clearDemoData() {
     updateStorageMeter();
 }
 
+// === Controller Settings (sessionStorage-backed) ===
+const SETTINGS_DEFAULTS = {
+    keymap: {
+        line1_left: 'a', line1_right: 'd',
+        line2_left: 'j', line2_right: 'l',
+        toggle_mode: 'f', save: ' ', reset: 'r'
+    },
+    sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
+};
+
+let pendingSettings = null;
+
+function loadControllerSettings() {
+    try {
+        const saved = sessionStorage.getItem('axle_controller_settings');
+        if (saved) controllerSettings = JSON.parse(saved);
+    } catch { /* use defaults */ }
+    buildKeyActionMap();
+    updateKeyHints();
+}
+
+function openSettings() {
+    pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
+    const modal = $('settings-modal');
+    modal.hidden = false;
+
+    for (const [action, key] of Object.entries(pendingSettings.keymap)) {
+        const btn = modal.querySelector(`.key-capture-btn[data-action="${action}"]`);
+        if (btn) {
+            btn.textContent = formatKeyDisplay(key);
+            btn.classList.remove('listening', 'conflict');
+        }
+    }
+
+    $('slider-coarse').value = pendingSettings.sensitivity.coarse_step;
+    $('val-coarse').textContent = pendingSettings.sensitivity.coarse_step;
+    $('slider-fine').value = pendingSettings.sensitivity.fine_step;
+    $('val-fine').textContent = pendingSettings.sensitivity.fine_step;
+
+    switchSettingsTab('keymaps');
+    $('keymap-error').hidden = true;
+    updateTestLabels();
+}
+
+function closeSettings() {
+    $('settings-modal').hidden = true;
+    captureTarget = null;
+    pendingSettings = null;
+}
+
+function saveSettings() {
+    if (!pendingSettings) return;
+    pendingSettings.sensitivity.coarse_step = parseFloat($('slider-coarse').value);
+    pendingSettings.sensitivity.fine_step = parseFloat($('slider-fine').value);
+
+    controllerSettings = JSON.parse(JSON.stringify(pendingSettings));
+    sessionStorage.setItem('axle_controller_settings', JSON.stringify(controllerSettings));
+    buildKeyActionMap();
+    updateKeyHints();
+    updateStorageMeter();
+    closeSettings();
+}
+
+function switchSettingsTab(tabName) {
+    document.querySelectorAll('.settings-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.settings-tab-content').forEach(el => { el.hidden = true; });
+    $('settings-tab-' + tabName).hidden = false;
+}
+
+function formatKeyDisplay(key) {
+    if (key === ' ') return 'Space';
+    if (key === 'escape') return 'Esc';
+    if (key === 'arrowleft') return '\u2190';
+    if (key === 'arrowright') return '\u2192';
+    if (key === 'arrowup') return '\u2191';
+    if (key === 'arrowdown') return '\u2193';
+    if (key.startsWith('f') && key.length > 1) return key.toUpperCase();
+    return key.toUpperCase();
+}
+
+function startKeyCapture(action) {
+    captureTarget = action;
+    const btn = $('settings-modal').querySelector(`.key-capture-btn[data-action="${action}"]`);
+    if (btn) {
+        btn.textContent = 'Press a key...';
+        btn.classList.add('listening');
+        btn.classList.remove('conflict');
+    }
+    $('keymap-error').hidden = true;
+}
+
+function completeKeyCapture(key) {
+    if (!captureTarget || !pendingSettings) return;
+    const normalizedKey = key.toLowerCase();
+
+    for (const [action, boundKey] of Object.entries(pendingSettings.keymap)) {
+        if (action !== captureTarget && boundKey.toLowerCase() === normalizedKey) {
+            const btn = $('settings-modal').querySelector(`.key-capture-btn[data-action="${captureTarget}"]`);
+            if (btn) {
+                btn.textContent = formatKeyDisplay(normalizedKey);
+                btn.classList.remove('listening');
+                btn.classList.add('conflict');
+            }
+            $('keymap-error').textContent = `"${formatKeyDisplay(normalizedKey)}" is already used for "${getActionLabel(action)}"`;
+            $('keymap-error').hidden = false;
+            captureTarget = null;
+            return;
+        }
+    }
+
+    pendingSettings.keymap[captureTarget] = normalizedKey;
+    const btn = $('settings-modal').querySelector(`.key-capture-btn[data-action="${captureTarget}"]`);
+    if (btn) {
+        btn.textContent = formatKeyDisplay(normalizedKey);
+        btn.classList.remove('listening', 'conflict');
+    }
+    captureTarget = null;
+    $('keymap-error').hidden = true;
+    updateTestLabels();
+}
+
+function cancelKeyCapture() {
+    if (!captureTarget || !pendingSettings) return;
+    const btn = $('settings-modal').querySelector(`.key-capture-btn[data-action="${captureTarget}"]`);
+    if (btn) {
+        btn.textContent = formatKeyDisplay(pendingSettings.keymap[captureTarget]);
+        btn.classList.remove('listening');
+    }
+    captureTarget = null;
+}
+
+function getActionLabel(action) {
+    const labels = {
+        line1_left: 'Line 1 Left', line1_right: 'Line 1 Right',
+        line2_left: 'Line 2 Left', line2_right: 'Line 2 Right',
+        toggle_mode: 'Fine/Coarse Toggle', save: 'Save Measurement', reset: 'Reset Lines'
+    };
+    return labels[action] || action;
+}
+
+function resetKeymapDefaults() {
+    if (!pendingSettings) return;
+    pendingSettings.keymap = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS.keymap));
+    const modal = $('settings-modal');
+    for (const [action, key] of Object.entries(pendingSettings.keymap)) {
+        const btn = modal.querySelector(`.key-capture-btn[data-action="${action}"]`);
+        if (btn) {
+            btn.textContent = formatKeyDisplay(key);
+            btn.classList.remove('listening', 'conflict');
+        }
+    }
+    $('keymap-error').hidden = true;
+    updateTestLabels();
+}
+
+function resetSensitivityDefaults() {
+    if (!pendingSettings) return;
+    pendingSettings.sensitivity = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS.sensitivity));
+    $('slider-coarse').value = pendingSettings.sensitivity.coarse_step;
+    $('val-coarse').textContent = pendingSettings.sensitivity.coarse_step;
+    $('slider-fine').value = pendingSettings.sensitivity.fine_step;
+    $('val-fine').textContent = pendingSettings.sensitivity.fine_step;
+}
+
+function handleControllerTest(key, isDown) {
+    const testTab = $('settings-tab-test');
+    if (!testTab || testTab.hidden) return;
+    const settings = pendingSettings || controllerSettings;
+    const normalizedKey = key.toLowerCase();
+    const testMap = {
+        [settings.keymap.line1_left]:  'test-joy1-left',
+        [settings.keymap.line1_right]: 'test-joy1-right',
+        [settings.keymap.line2_left]:  'test-joy2-left',
+        [settings.keymap.line2_right]: 'test-joy2-right',
+        [settings.keymap.toggle_mode]: 'test-action-toggle',
+        [settings.keymap.save]:        'test-action-save',
+        [settings.keymap.reset]:       'test-action-reset',
+    };
+    const elementId = testMap[normalizedKey];
+    if (!elementId) return;
+    const el = $(elementId);
+    if (el) el.classList.toggle('active', isDown);
+}
+
+function updateTestLabels() {
+    const settings = pendingSettings || controllerSettings;
+    const setLabel = (id, key) => { const el = $(id); if (el) el.textContent = formatKeyDisplay(key); };
+    setLabel('test-joy1-left-label', settings.keymap.line1_left);
+    setLabel('test-joy1-right-label', settings.keymap.line1_right);
+    setLabel('test-joy2-left-label', settings.keymap.line2_left);
+    setLabel('test-joy2-right-label', settings.keymap.line2_right);
+    const setActionKey = (id, key) => {
+        const el = $(id);
+        if (el) { const keySpan = el.querySelector('.test-action-key'); if (keySpan) keySpan.textContent = formatKeyDisplay(key); }
+    };
+    setActionKey('test-action-toggle', settings.keymap.toggle_mode);
+    setActionKey('test-action-save', settings.keymap.save);
+    setActionKey('test-action-reset', settings.keymap.reset);
+}
+
+function updateKeyHints() {
+    const hintsEl = document.querySelector('.panel-hints');
+    if (!hintsEl) return;
+    const km = controllerSettings.keymap;
+    hintsEl.innerHTML =
+        `<div><kbd>${formatKeyDisplay(km.line1_left)}</kbd><kbd>${formatKeyDisplay(km.line1_right)}</kbd> Line 1</div>` +
+        `<div><kbd>${formatKeyDisplay(km.line2_left)}</kbd><kbd>${formatKeyDisplay(km.line2_right)}</kbd> Line 2</div>` +
+        `<div><kbd>${formatKeyDisplay(km.toggle_mode)}</kbd> Fine/Coarse</div>` +
+        `<div><kbd>${formatKeyDisplay(km.save)}</kbd> Save</div>` +
+        `<div><kbd>${formatKeyDisplay(km.reset)}</kbd> Reset</div>`;
+}
+
 // === Event Listeners ===
 btnReset.addEventListener('click', resetLines);
 btnSave.addEventListener('click', saveMeasurementAction);
@@ -1051,18 +1310,40 @@ chkSpecial.addEventListener('change', () => {
 
 $('mode-indicator').addEventListener('click', toggleMode);
 
+// Settings
+$('btn-settings').addEventListener('click', openSettings);
+$('btn-settings-save').addEventListener('click', saveSettings);
+$('btn-settings-cancel').addEventListener('click', closeSettings);
+$('btn-keymap-defaults').addEventListener('click', resetKeymapDefaults);
+$('btn-sensitivity-defaults').addEventListener('click', resetSensitivityDefaults);
+document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchSettingsTab(tab.dataset.tab));
+});
+document.querySelectorAll('.key-capture-btn').forEach(btn => {
+    btn.addEventListener('click', () => startKeyCapture(btn.dataset.action));
+});
+$('slider-coarse').addEventListener('input', (e) => {
+    $('val-coarse').textContent = parseFloat(e.target.value).toFixed(3);
+});
+$('slider-fine').addEventListener('input', (e) => {
+    $('val-fine').textContent = parseFloat(e.target.value).toFixed(4);
+});
+
 overlay.addEventListener('mousedown', onOverlayMouseDown);
 overlay.addEventListener('mousemove', onOverlayMouseMove);
 overlay.addEventListener('mouseup', onOverlayMouseUp);
 overlay.addEventListener('mouseleave', onOverlayMouseUp);
 
 document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
 window.addEventListener('resize', resizeOverlay);
 
 video.addEventListener('loadedmetadata', resizeOverlay);
 video.addEventListener('playing', resizeOverlay);
 
 // === Init ===
+buildKeyActionMap();
+loadControllerSettings();
 loadCalibration();
 initVideo();
 startClock();

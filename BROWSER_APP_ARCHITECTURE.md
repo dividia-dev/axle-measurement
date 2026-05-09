@@ -436,6 +436,37 @@ CREATE TABLE settings (
 );
 ```
 
+### Controller Settings
+
+The `settings` table stores controller configuration as key-value pairs with a
+`controller.` prefix. The web app UI (admin-only Settings modal) lets operators
+rebind keyboard keys and adjust joystick sensitivity without modifying firmware.
+
+**Settings keys:**
+```
+controller.keymap.line1_left     (default: 'a')
+controller.keymap.line1_right    (default: 'd')
+controller.keymap.line2_left     (default: 'j')
+controller.keymap.line2_right    (default: 'l')
+controller.keymap.toggle_mode    (default: 'f')
+controller.keymap.save           (default: ' ')
+controller.keymap.reset          (default: 'r')
+controller.sensitivity.coarse_step  (default: 0.005)
+controller.sensitivity.fine_step    (default: 0.001)
+```
+
+**API:**
+- `GET /api/settings/controller` — returns merged defaults + saved settings (any authenticated user)
+- `PUT /api/settings/controller` — validates and saves (admin only)
+
+**Architecture:**
+- The Arduino controller sends fixed keycodes via USB HID (configured via serial/EEPROM)
+- The web app maps incoming keycodes to actions using a reverse lookup map
+- These are independent systems: if you change Arduino key mappings, update the web app settings to match
+- The Controller Test tab in settings shows a joystick diagram that lights up when inputs are detected, useful for verifying dead zone and connectivity
+
+**Demo app:** Uses `sessionStorage` key `axle_controller_settings` instead of the API, with identical UI and behavior.
+
 ### Screenshot Capture
 
 When a measurement is saved, the app can capture a screenshot of the current

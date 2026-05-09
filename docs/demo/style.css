@@ -686,6 +686,249 @@ body {
     color: #ccc;
 }
 
+/* ========================================
+   SETTINGS MODAL
+   ======================================== */
+.settings-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #444;
+}
+
+.settings-tab {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #888;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.settings-tab:hover {
+    color: #ccc;
+}
+
+.settings-tab.active {
+    color: #fff;
+    border-bottom-color: #0088ff;
+}
+
+.keymap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.keymap-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.keymap-label {
+    font-size: 13px;
+    color: #ccc;
+    min-width: 140px;
+}
+
+.key-capture-btn {
+    min-width: 80px;
+    padding: 6px 12px;
+    background: #333;
+    border: 2px solid #555;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.key-capture-btn:hover {
+    background: #3a3a3a;
+    border-color: #0088ff;
+}
+
+.key-capture-btn.listening {
+    background: #1a3355;
+    border-color: #0088ff;
+    color: #88bbff;
+    animation: pulse-border 1s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { border-color: #0088ff; }
+    50% { border-color: #00ccff; }
+}
+
+.key-capture-btn.conflict {
+    border-color: #ff4444;
+    background: #331a1a;
+}
+
+.sensitivity-group {
+    margin-bottom: 16px;
+}
+
+.sensitivity-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ccc;
+    margin-bottom: 6px;
+}
+
+.sensitivity-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sensitivity-row input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #444;
+    border-radius: 2px;
+    outline: none;
+}
+
+.sensitivity-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #0088ff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.sensitivity-value {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #fff;
+    min-width: 60px;
+    text-align: right;
+}
+
+.sensitivity-hint {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.test-hint {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+.controller-test-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.test-joystick-group {
+    text-align: center;
+    width: 100%;
+    max-width: 300px;
+}
+
+.test-joystick-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.test-joystick-svg {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+}
+
+.controller-arrow {
+    fill: #333;
+    stroke: #555;
+    stroke-width: 1;
+    transition: fill 0.1s, stroke 0.1s;
+}
+
+.controller-arrow.active {
+    fill: #0088ff;
+    stroke: #00bbff;
+    filter: drop-shadow(0 0 6px rgba(0, 136, 255, 0.6));
+}
+
+.test-key-label {
+    fill: #666;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.test-actions-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.test-action-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 6px;
+    transition: border-color 0.1s, background 0.1s;
+}
+
+.test-action-indicator.active {
+    background: #0a2a4a;
+    border-color: #0088ff;
+    box-shadow: 0 0 8px rgba(0, 136, 255, 0.3);
+}
+
+.test-action-key {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #888;
+}
+
+.test-action-indicator.active .test-action-key {
+    color: #00bbff;
+}
+
+.test-action-name {
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.test-action-indicator.active .test-action-name {
+    color: #88bbff;
+}
+
 /* History Table */
 #history-table {
     width: 100%;

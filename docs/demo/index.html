@@ -91,6 +91,7 @@
                 <button id="btn-load-media" title="Load your own video or image">Load Video/Image</button>
                 <button id="btn-reset-image" title="Restore default test pattern" hidden>Reset Image</button>
                 <input type="file" id="file-input" accept="video/*,image/*" hidden>
+                <button id="btn-settings" title="Controller Settings">Settings</button>
                 <button id="btn-clear-data" title="Clear measurement history" style="background:#442222;border-color:#553333">Clear History</button>
             </div>
         </div>
@@ -237,6 +238,122 @@
                 </table>
                 <div class="modal-buttons">
                     <button id="btn-history-close" class="secondary">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" hidden>
+            <div class="modal-content modal-wide">
+                <h2>Controller Settings</h2>
+
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="keymaps">Key Mappings</button>
+                    <button class="settings-tab" data-tab="sensitivity">Sensitivity</button>
+                    <button class="settings-tab" data-tab="test">Controller Test</button>
+                </div>
+
+                <!-- Key Mappings Tab -->
+                <div id="settings-tab-keymaps" class="settings-tab-content">
+                    <div class="keymap-grid">
+                        <div class="keymap-row">
+                            <span class="keymap-label">Line 1 Left</span>
+                            <button class="key-capture-btn" data-action="line1_left">A</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Line 1 Right</span>
+                            <button class="key-capture-btn" data-action="line1_right">D</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Line 2 Left</span>
+                            <button class="key-capture-btn" data-action="line2_left">J</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Line 2 Right</span>
+                            <button class="key-capture-btn" data-action="line2_right">L</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Fine/Coarse Toggle</span>
+                            <button class="key-capture-btn" data-action="toggle_mode">F</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Save Measurement</span>
+                            <button class="key-capture-btn" data-action="save">Space</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Reset Lines</span>
+                            <button class="key-capture-btn" data-action="reset">R</button>
+                        </div>
+                    </div>
+                    <div id="keymap-error" class="error" hidden></div>
+                    <button id="btn-keymap-defaults" class="secondary" style="margin-top:8px">Reset to Defaults</button>
+                </div>
+
+                <!-- Sensitivity Tab -->
+                <div id="settings-tab-sensitivity" class="settings-tab-content" hidden>
+                    <div class="sensitivity-group">
+                        <label>Coarse Step</label>
+                        <div class="sensitivity-row">
+                            <input type="range" id="slider-coarse" min="0.001" max="0.02" step="0.001" value="0.005">
+                            <span id="val-coarse" class="sensitivity-value">0.005</span>
+                        </div>
+                        <div class="sensitivity-hint">Movement per keystroke in coarse mode (~5px at 1080p default)</div>
+                    </div>
+                    <div class="sensitivity-group">
+                        <label>Fine Step</label>
+                        <div class="sensitivity-row">
+                            <input type="range" id="slider-fine" min="0.0002" max="0.005" step="0.0002" value="0.001">
+                            <span id="val-fine" class="sensitivity-value">0.001</span>
+                        </div>
+                        <div class="sensitivity-hint">Movement per keystroke in fine mode (~1px at 1080p default)</div>
+                    </div>
+                    <button id="btn-sensitivity-defaults" class="secondary" style="margin-top:8px">Reset to Defaults</button>
+                </div>
+
+                <!-- Controller Test Tab -->
+                <div id="settings-tab-test" class="settings-tab-content" hidden>
+                    <p class="test-hint">Press keys or move joystick to test your controller. Arrows light up when input is detected.</p>
+                    <div class="controller-test-diagram">
+                        <div class="test-joystick-group">
+                            <div class="test-joystick-label">Joystick 1 — Line 1</div>
+                            <svg class="test-joystick-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                                <polygon id="test-joy1-left" class="controller-arrow" points="10,40 40,20 40,60"/>
+                                <circle cx="100" cy="40" r="12" fill="#555" stroke="#888" stroke-width="2"/>
+                                <polygon id="test-joy1-right" class="controller-arrow" points="190,40 160,20 160,60"/>
+                                <text id="test-joy1-left-label" x="25" y="75" text-anchor="middle" class="test-key-label">A</text>
+                                <text id="test-joy1-right-label" x="175" y="75" text-anchor="middle" class="test-key-label">D</text>
+                            </svg>
+                        </div>
+                        <div class="test-joystick-group">
+                            <div class="test-joystick-label">Joystick 2 — Line 2</div>
+                            <svg class="test-joystick-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                                <polygon id="test-joy2-left" class="controller-arrow" points="10,40 40,20 40,60"/>
+                                <circle cx="100" cy="40" r="12" fill="#555" stroke="#888" stroke-width="2"/>
+                                <polygon id="test-joy2-right" class="controller-arrow" points="190,40 160,20 160,60"/>
+                                <text id="test-joy2-left-label" x="25" y="75" text-anchor="middle" class="test-key-label">J</text>
+                                <text id="test-joy2-right-label" x="175" y="75" text-anchor="middle" class="test-key-label">L</text>
+                            </svg>
+                        </div>
+                        <div class="test-actions-row">
+                            <div id="test-action-toggle" class="test-action-indicator">
+                                <span class="test-action-key">F</span>
+                                <span class="test-action-name">Toggle</span>
+                            </div>
+                            <div id="test-action-save" class="test-action-indicator">
+                                <span class="test-action-key">Space</span>
+                                <span class="test-action-name">Save</span>
+                            </div>
+                            <div id="test-action-reset" class="test-action-indicator">
+                                <span class="test-action-key">R</span>
+                                <span class="test-action-name">Reset</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="btn-settings-save">Save</button>
+                    <button id="btn-settings-cancel" class="secondary">Cancel</button>
                 </div>
             </div>
         </div>

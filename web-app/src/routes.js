@@ -3,6 +3,7 @@ const { createUser, authenticateUser, requireAuth, requireAdmin, getUsers, delet
 const { saveCalibration, getActiveCalibration, getCalibrationHistory, measureDistance } = require('./calibration');
 const { saveMeasurement, getMeasurements, getMeasurement, deleteMeasurement, SCREENSHOT_DIR } = require('./measurements');
 const { analyzeWeight, formatWeight } = require('./bridge-formula');
+const { getControllerSettings, saveControllerSettings } = require('./settings');
 const path = require('path');
 
 const router = express.Router();
@@ -155,6 +156,18 @@ router.get('/screenshots/:filename', requireAuth, (req, res) => {
     res.sendFile(filePath, (err) => {
         if (err) res.status(404).json({ error: 'Screenshot not found' });
     });
+});
+
+// --- Controller Settings ---
+
+router.get('/settings/controller', requireAuth, (req, res) => {
+    res.json({ settings: getControllerSettings() });
+});
+
+router.put('/settings/controller', requireAdmin, (req, res) => {
+    const result = saveControllerSettings(req.body);
+    if (!result.ok) return res.status(400).json({ errors: result.errors });
+    res.json({ settings: result.settings });
 });
 
 // --- Bridge Formula Weight Calculator ---

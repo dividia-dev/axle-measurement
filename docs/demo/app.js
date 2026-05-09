@@ -1006,15 +1006,8 @@ function showWeightInfo() {
 }
 
 function clearDemoData() {
-    if (!confirm('Clear all demo data? This will remove calibration and all saved measurements.')) return;
-    const keysToRemove = [];
-    for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key.startsWith('axle_')) keysToRemove.push(key);
-    }
-    keysToRemove.forEach(k => sessionStorage.removeItem(k));
-    state.calibration = DEFAULT_CALIBRATION;
-    updateCalStatus();
+    if (!confirm('Clear measurement history?')) return;
+    sessionStorage.removeItem('axle_measurements');
     updateStorageMeter();
 }
 

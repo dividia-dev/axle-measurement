@@ -545,9 +545,20 @@ function initVideo() {
     generateTestPattern();
 }
 
+function resetToTestPattern() {
+    state._userMediaLoaded = false;
+    video.src = '';
+    video.srcObject = null;
+    video.poster = '';
+    generateTestPattern();
+    $('btn-reset-image').hidden = true;
+    setTimeout(resizeOverlay, 100);
+}
+
 function loadUserMedia(file) {
     const url = URL.createObjectURL(file);
     state._userMediaLoaded = true;
+    $('btn-reset-image').hidden = false;
 
     if (file.type.startsWith('video/')) {
         // Load as video
@@ -1033,6 +1044,7 @@ $('btn-special-info').addEventListener('click', () => {
     );
 });
 $('btn-load-media').addEventListener('click', () => $('file-input').click());
+$('btn-reset-image').addEventListener('click', resetToTestPattern);
 $('file-input').addEventListener('change', (e) => {
     if (e.target.files[0]) loadUserMedia(e.target.files[0]);
 });

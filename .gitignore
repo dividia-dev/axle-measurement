@@ -6,3 +6,4 @@ web-app/test/fixtures/*.db-wal
 web-app/test/fixtures/*.db-shm
 web-app/.gstack/
 .DS_Store
+.gstack/

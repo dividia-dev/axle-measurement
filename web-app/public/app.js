@@ -157,22 +157,21 @@ function updateCalModal() {
         const rect = getVideoRect();
         const l1px = Math.round(state.line1_x * rect.width);
         const l2px = Math.round(state.line2_x * rect.width);
-        $('cal-line1-pos').textContent = l1px;
-        $('cal-line2-pos').textContent = l2px;
         $('cal-pixel-dist').textContent = Math.abs(l2px - l1px);
     }
 }
 
 async function saveCalibration() {
-    const distInput = parseFloat($('cal-distance').value);
-    const unit = $('cal-unit').value;
-    if (!distInput || distInput <= 0) {
-        $('cal-error').textContent = 'Enter a valid distance';
+    const feetVal = parseInt($('cal-feet').value) || 0;
+    const inchesVal = parseInt($('cal-inches').value) || 0;
+    const totalInches = feetVal * 12 + inchesVal;
+
+    if (totalInches <= 0) {
+        $('cal-error').textContent = 'Enter a valid distance (feet and/or inches)';
         $('cal-error').hidden = false;
         return;
     }
 
-    const distInches = unit === 'feet' ? distInput * 12 : distInput;
     const rect = getVideoRect();
     const ref1_px = Math.round(state.line1_x * rect.width);
     const ref2_px = Math.round(state.line2_x * rect.width);
@@ -180,7 +179,7 @@ async function saveCalibration() {
     try {
         const data = await api('POST', '/calibration', {
             ref1_px, ref2_px,
-            known_distance_inches: distInches
+            known_distance_inches: totalInches
         });
         state.calibration = data.calibration;
         updateCalStatus();
@@ -322,30 +321,40 @@ function resizeOverlay() {
     drawOverlay();
 }
 
+function drawLine(ctx, x, y1, y2, color) {
+    // Black border for contrast on both light and dark backgrounds
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+
+    // Colored line on top
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+}
+
 function drawOverlay() {
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
 
     const rect = getVideoRect();
+    const inCalMode = state.isCalibrating;
+    const lineColor = inCalMode ? 'tomato' : '#0088FF';
 
     // Convert normalized positions to pixel positions within the video rect
     const l1x = rect.x + state.line1_x * rect.width;
     const l2x = rect.x + state.line2_x * rect.width;
 
-    // Draw Line 1 (blue, solid)
-    ctx.strokeStyle = '#0088FF';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(l1x, rect.y);
-    ctx.lineTo(l1x, rect.y + rect.height);
-    ctx.stroke();
-
-    // Draw Line 2 (blue, solid)
-    ctx.beginPath();
-    ctx.moveTo(l2x, rect.y);
-    ctx.lineTo(l2x, rect.y + rect.height);
-    ctx.stroke();
+    // Draw lines with black outline for visibility
+    drawLine(ctx, l1x, rect.y, rect.y + rect.height, lineColor);
+    drawLine(ctx, l2x, rect.y, rect.y + rect.height, lineColor);
 
     // Line labels
     const label1 = $('line1-label');
@@ -354,6 +363,11 @@ function drawOverlay() {
     label1.hidden = false;
     label2.style.left = (l2x + 4) + 'px';
     label2.hidden = false;
+    label1.classList.toggle('cal-mode', inCalMode);
+    label2.classList.toggle('cal-mode', inCalMode);
+
+    // Calibration mode border on video container
+    $('video-container').classList.toggle('cal-mode', inCalMode);
 
     // Calculate and display measurement
     if (state.calibration) {
@@ -373,7 +387,7 @@ function drawOverlay() {
 
         // Draw connecting line between measurement lines (dashed)
         const midY = rect.y + 60;
-        ctx.strokeStyle = 'rgba(0, 136, 255, 0.4)';
+        ctx.strokeStyle = inCalMode ? 'rgba(255, 99, 71, 0.4)' : 'rgba(0, 136, 255, 0.4)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();

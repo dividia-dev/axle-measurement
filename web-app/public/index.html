@@ -53,7 +53,7 @@
                     <button class="axle-btn" id="btn-axle-minus">-</button>
                     <span id="axle-count-display">5</span>
                     <button class="axle-btn" id="btn-axle-plus">+</button>
-                    <label id="special-label"><input type="checkbox" id="chk-special"> Special</label>
+                    <label id="special-label" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)"><input type="checkbox" id="chk-special"> Dump/Mix</label>
                 </div>
                 <div id="weight-result">
                     <div id="weight-max-line">Max: <span id="weight-max">--</span></div>
@@ -87,30 +87,27 @@
             </div>
         </div>
 
-        <!-- Calibration Modal -->
-        <div id="calibration-modal" class="modal" hidden>
-            <div class="modal-content">
-                <h2>Calibration</h2>
-                <p>Position the two lines over your reference markers, then enter the known distance between them.</p>
-                <div class="form-group">
-                    <label>Line 1 position: <span id="cal-line1-pos">--</span> px</label>
+        <!-- Calibration Panel (compact, bottom-right corner) -->
+        <div id="calibration-modal" class="cal-panel" hidden>
+            <div class="cal-panel-content">
+                <div class="cal-header">
+                    <strong>CALIBRATION MODE</strong>
+                    <span class="cal-hint">Move lines to reference markers</span>
                 </div>
-                <div class="form-group">
-                    <label>Line 2 position: <span id="cal-line2-pos">--</span> px</label>
+                <div class="cal-stats">
+                    <span>Px dist: <strong id="cal-pixel-dist">--</strong></span>
                 </div>
-                <div class="form-group">
-                    <label>Pixel distance: <span id="cal-pixel-dist">--</span> px</label>
+                <div class="cal-distance-input">
+                    <label>Known distance:</label>
+                    <div class="cal-feet-inches">
+                        <input type="number" id="cal-feet" min="0" max="200" step="1" placeholder="ft" class="cal-input-sm">
+                        <span>ft</span>
+                        <input type="number" id="cal-inches" min="0" max="11" step="1" placeholder="in" class="cal-input-sm">
+                        <span>in</span>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="cal-distance">Known distance:</label>
-                    <input type="number" id="cal-distance" step="0.1" min="0.1" placeholder="Distance in inches">
-                    <select id="cal-unit">
-                        <option value="inches">inches</option>
-                        <option value="feet">feet</option>
-                    </select>
-                </div>
-                <div class="modal-buttons">
-                    <button id="btn-cal-save">Save Calibration</button>
+                <div class="cal-actions">
+                    <button id="btn-cal-save">Save</button>
                     <button id="btn-cal-cancel" class="secondary">Cancel</button>
                 </div>
                 <div id="cal-error" class="error" hidden></div>

@@ -938,6 +938,9 @@ async function saveSettings() {
         pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
         buildKeyActionMap();
         updateKeyHints();
+        const confirm = $('settings-save-confirm');
+        confirm.style.opacity = '1';
+        setTimeout(() => { confirm.style.opacity = '0'; }, 2000);
     } catch (err) {
         $('keymap-error').textContent = err.message;
         $('keymap-error').hidden = false;

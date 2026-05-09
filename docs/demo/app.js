@@ -1117,6 +1117,9 @@ function saveSettings() {
     buildKeyActionMap();
     updateKeyHints();
     updateStorageMeter();
+    const confirm = $('settings-save-confirm');
+    confirm.style.opacity = '1';
+    setTimeout(() => { confirm.style.opacity = '0'; }, 2000);
 }
 
 function switchSettingsTab(tabName) {

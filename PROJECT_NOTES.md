@@ -111,7 +111,8 @@ difference is small (~840 lbs per foot at typical configurations).
 - Login/logout with role-based access (operator: measure, admin: calibrate + manage)
 - Live video with two movable vertical measurement lines
 - Lines have black outline for visibility on light and dark backgrounds
-- Coarse/Fine movement toggle (F key) with on-screen indicator
+- **Mouse drag** — click and drag lines with diamond handles at center
+- **Coarse/Fine toggle** — F key or click the mode button; affects both keyboard and mouse drag speed (fine = 1:4 ratio)
 - Keyboard input: A/D = line 1, J/L = line 2, F = toggle, Space = save, R = reset
 - Calibration: position lines on reference markers, enter feet + inches
 - Calibration mode: tomato border + tomato lines for visual distinction
@@ -121,8 +122,12 @@ difference is small (~840 lbs per foot at typical configurations).
   - Dump/Mix checkbox for FL special vehicle 70,000 lb cap
   - Max allowable weight display
   - Legal/overweight status when scale weight is available
+- **Save with confirmation** — dialog shows measurement summary before saving
+- **Screenshot capture** — each save captures the video frame cropped to content (no black bars, no UI), with blue measurement lines and a data overlay (date/time, distance, axle count, max weight) in the upper-right corner. Saved as JPEG.
+- **Measurement history** — shows distance, axle count, max weight, operator, and screenshot link
 - Measurement history with SQLite persistence
 - Window-size-independent measurements (normalized coordinates)
+- All interactive controls consolidated in right-side panel
 
 ### 4. Research Documents
 - `SPOT_DECODER_ANALYSIS.md` — Full analysis of existing Spot Decoder codebase
@@ -202,4 +207,12 @@ N = number of axles — operator enters this
 - `2665401` — Initial commit: firmware, web app, research docs (50 tests)
 - `ba52cd5` — UI improvements: calibration mode, line visibility, feet+inches
 - `bafd1df` — Add coarse/fine toggle with on-screen indicator
-- `6061adf` — Fix: normalized coordinates for window-size-independent measurements (51 tests)
+- `6061adf` — Fix: normalized coordinates for window-size-independent measurements
+- `cfa6082` — Docs update with accuracy analysis
+- `ce2e619` — Fix: formatDistance rounding bug (19 ft 12 in → 20 ft)
+- `918b21b` — Swap panel positions, remove Settings button
+- `b471297` — Consolidate all controls into right side panel
+- `196affe` — Reorder panel, clickable mode toggle, mouse drag for lines
+- `df09dfd` — Fine mode affects mouse drag speed (1:4 ratio)
+- `3564781` — Save axle count, max weight, and screenshot with measurements
+- `c5694f0` — Confirmation dialog and data overlay on screenshots (51 tests)

@@ -138,6 +138,57 @@ const weightScale = $('weight-scale');
 const weightStatus = $('weight-status');
 const chkSpecial = $('chk-special');
 
+// === Reference Markers (normalized positions for calibration) ===
+// Two fixed markers on the test pattern, positioned near the first and last axle.
+// These are drawn on the OVERLAY so they don't appear in saved screenshots.
+const REF_MARKER_1 = 0.22;  // normalized X position (first axle area)
+const REF_MARKER_2 = 0.70;  // normalized X position (last axle area)
+
+function drawReferenceMarkers(ctx, rect) {
+    const m1x = rect.x + REF_MARKER_1 * rect.width;
+    const m2x = rect.x + REF_MARKER_2 * rect.width;
+    const markerTop = rect.y + rect.height - 40;
+    const markerBot = rect.y + rect.height - 8;
+
+    // Draw small triangular markers at bottom of frame
+    for (const mx of [m1x, m2x]) {
+        // Upward-pointing triangle
+        ctx.fillStyle = '#ff6600';
+        ctx.beginPath();
+        ctx.moveTo(mx, markerTop);
+        ctx.lineTo(mx - 6, markerBot);
+        ctx.lineTo(mx + 6, markerBot);
+        ctx.closePath();
+        ctx.fill();
+
+        // Short tick line above triangle
+        ctx.strokeStyle = '#ff6600';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(mx, markerTop - 12);
+        ctx.lineTo(mx, markerTop);
+        ctx.stroke();
+    }
+
+    // Connecting line between markers
+    ctx.strokeStyle = 'rgba(255, 102, 0, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(m1x, markerBot - 16);
+    ctx.lineTo(m2x, markerBot - 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label
+    const midX = (m1x + m2x) / 2;
+    ctx.fillStyle = '#ff6600';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('REF', midX, markerTop - 16);
+}
+
 // === Test Pattern Video ===
 function generateTestPattern() {
     const canvas = $('test-pattern');
@@ -145,64 +196,31 @@ function generateTestPattern() {
     canvas.height = 720;
     const ctx = canvas.getContext('2d');
 
-    // Road/ground
+    // Clean background
     ctx.fillStyle = '#3a3a3a';
     ctx.fillRect(0, 0, 1280, 720);
-
-    // Asphalt texture
-    ctx.fillStyle = '#2e2e2e';
-    for (let y = 0; y < 720; y += 40) {
-        ctx.fillRect(0, y, 1280, 2);
-    }
 
     // Ground plane
     ctx.fillStyle = '#4a4a3a';
     ctx.fillRect(0, 500, 1280, 220);
 
-    // Road markings
-    ctx.strokeStyle = '#666644';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([30, 20]);
-    ctx.beginPath();
-    ctx.moveTo(0, 520);
-    ctx.lineTo(1280, 520);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw a simplified truck side view
+    // Draw truck (clean, no labels)
     drawTruck(ctx);
 
-    // Reference scale markers at bottom
-    ctx.fillStyle = '#888';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    for (let ft = 0; ft <= 60; ft += 5) {
-        const x = 100 + (ft / 60) * 1080;
-        ctx.fillStyle = '#555';
-        ctx.fillRect(x - 1, 690, 2, 20);
-        ctx.fillStyle = '#777';
-        ctx.fillText(ft + "'", x, 685);
-    }
-
-    // Title
+    // Title (minimal)
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(10, 10, 320, 60);
+    ctx.fillRect(10, 10, 240, 32);
     ctx.fillStyle = '#0088ff';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('DEMO MODE - Test Pattern', 20, 32);
-    ctx.fillStyle = '#888';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('Calibrate using the scale markers below', 20, 52);
+    ctx.fillText('DEMO MODE', 20, 32);
 
     // Convert to video-like source
     try {
         const stream = canvas.captureStream(0);
         video.srcObject = stream;
-        // Force a frame
         stream.getVideoTracks()[0].requestFrame();
     } catch {
-        // Fallback: use canvas as poster image via data URL
         video.poster = canvas.toDataURL('image/png');
         video.style.objectFit = 'contain';
     }
@@ -221,16 +239,6 @@ function drawTruck(ctx) {
     ctx.lineWidth = 2;
     ctx.strokeRect(trailerX, truckY, cabX - trailerX - 20, truckH - 40);
 
-    // Trailer ribs
-    ctx.strokeStyle = '#4a5a6a';
-    ctx.lineWidth = 1;
-    for (let x = trailerX + 40; x < cabX - 40; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x, truckY);
-        ctx.lineTo(x, truckY + truckH - 40);
-        ctx.stroke();
-    }
-
     // Cab
     ctx.fillStyle = '#cc4444';
     ctx.fillRect(cabX, truckY + 20, 120, truckH - 60);
@@ -241,14 +249,14 @@ function drawTruck(ctx) {
     ctx.fillStyle = '#aa3333';
     ctx.fillRect(cabX + 100, truckY + 40, 40, truckH - 80);
 
-    // Axles and wheels
+    // Wheels (no labels, no arrows)
     const wheelY = truckY + truckH - 15;
     const wheelR = 25;
-    const axlePositions = [280, 380, 720, 820, 900]; // 5 axles
+    const axlePositions = [280, 380, 720, 820, 900];
 
-    ctx.fillStyle = '#222';
     for (const ax of axlePositions) {
-        // Wheel
+        // Tire
+        ctx.fillStyle = '#222';
         ctx.beginPath();
         ctx.arc(ax, wheelY, wheelR, 0, Math.PI * 2);
         ctx.fill();
@@ -257,23 +265,7 @@ function drawTruck(ctx) {
         ctx.beginPath();
         ctx.arc(ax, wheelY, 8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#222';
-
-        // Axle label
-        ctx.fillStyle = '#ffaa00';
-        ctx.font = 'bold 14px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('\u25BC', ax, truckY + truckH + 25);
-        ctx.fillStyle = '#222';
     }
-
-    // Axle label text
-    ctx.fillStyle = '#ffaa00';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Steer', 280, truckY + truckH + 40);
-    ctx.fillText('Drive', 350, truckY + truckH + 55);
-    ctx.fillText('Trailer', 810, truckY + truckH + 40);
 }
 
 // === Clock ===
@@ -542,6 +534,7 @@ function initVideo() {
 
 function loadUserMedia(file) {
     const url = URL.createObjectURL(file);
+    state._userMediaLoaded = true;
 
     if (file.type.startsWith('video/')) {
         // Load as video
@@ -663,6 +656,11 @@ function drawOverlay() {
 
     const l1x = rect.x + state.line1_x * rect.width;
     const l2x = rect.x + state.line2_x * rect.width;
+
+    // Draw reference markers (overlay-only, won't appear in screenshots)
+    if (!state._userMediaLoaded) {
+        drawReferenceMarkers(ctx, rect);
+    }
 
     drawLine(ctx, l1x, rect.y, rect.y + rect.height, lineColor);
     drawLine(ctx, l2x, rect.y, rect.y + rect.height, lineColor);

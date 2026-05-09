@@ -290,8 +290,8 @@ function startClock() {
 const DEFAULT_CALIBRATION = {
     ref1_norm: REF_MARKER_1,
     ref2_norm: REF_MARKER_2,
-    known_distance_inches: 120,  // 10 feet across markers, makes truck ~72ft proportionally
-    inches_per_norm: 120 / (REF_MARKER_2 - REF_MARKER_1),
+    known_distance_inches: 72,  // 6 feet across markers
+    inches_per_norm: 72 / (REF_MARKER_2 - REF_MARKER_1),
 };
 
 function loadCalibration() {

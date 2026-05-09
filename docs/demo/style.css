@@ -892,10 +892,17 @@ body {
     border: 1px solid #333;
 }
 
+.test-joysticks-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    width: 100%;
+}
+
 .test-joystick-group {
     text-align: center;
-    width: 100%;
-    max-width: 300px;
+    flex: 1;
+    max-width: 280px;
 }
 
 .test-joystick-label {

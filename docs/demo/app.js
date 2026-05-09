@@ -141,8 +141,8 @@ const chkSpecial = $('chk-special');
 // === Reference Markers (normalized positions for calibration) ===
 // Two fixed markers on the test pattern, positioned near the first and last axle.
 // These are drawn on the OVERLAY so they don't appear in saved screenshots.
-const REF_MARKER_1 = 0.22;  // normalized X position (first axle area)
-const REF_MARKER_2 = 0.70;  // normalized X position (last axle area)
+const REF_MARKER_1 = 0.34;  // normalized X position (centered, narrower span)
+const REF_MARKER_2 = 0.58;  // normalized X position (centered, narrower span)
 
 function drawReferenceMarkers(ctx, rect) {
     const m1x = rect.x + REF_MARKER_1 * rect.width;
@@ -910,6 +910,20 @@ $('btn-history-close').addEventListener('click', () => { historyModal.hidden = t
 $('btn-cal-save').addEventListener('click', saveCalibration);
 $('btn-cal-cancel').addEventListener('click', closeCalibration);
 $('btn-clear-data').addEventListener('click', clearDemoData);
+$('btn-special-info').addEventListener('click', () => {
+    alert(
+        'Dump/Mix — Special Vehicle Cap\n\n' +
+        'Florida law (FL Statute 316.535) limits certain vehicle types to 70,000 lbs GVW ' +
+        'instead of the standard 80,000 lbs max.\n\n' +
+        'This applies to:\n' +
+        '  - Dump trucks\n' +
+        '  - Concrete mixers\n' +
+        '  - Waste haulers\n' +
+        '  - Fuel transport vehicles\n\n' +
+        'Enable this toggle when measuring one of these vehicle types so the weight ' +
+        'calculator uses the correct 70,000 lb cap.'
+    );
+});
 $('btn-load-media').addEventListener('click', () => $('file-input').click());
 $('file-input').addEventListener('change', (e) => {
     if (e.target.files[0]) loadUserMedia(e.target.files[0]);

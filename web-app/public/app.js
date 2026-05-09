@@ -816,6 +816,21 @@ chkSpecial.addEventListener('change', () => {
     updateWeightCheck();
 });
 
+$('btn-special-info').addEventListener('click', () => {
+    alert(
+        'Dump/Mix — Special Vehicle Cap\n\n' +
+        'Florida law (FL Statute 316.535) limits certain vehicle types to 70,000 lbs GVW ' +
+        'instead of the standard 80,000 lbs max.\n\n' +
+        'This applies to:\n' +
+        '  - Dump trucks\n' +
+        '  - Concrete mixers\n' +
+        '  - Waste haulers\n' +
+        '  - Fuel transport vehicles\n\n' +
+        'Enable this toggle when measuring one of these vehicle types so the weight ' +
+        'calculator uses the correct 70,000 lb cap.'
+    );
+});
+
 // Mode toggle button click
 $('mode-indicator').addEventListener('click', toggleMode);
 

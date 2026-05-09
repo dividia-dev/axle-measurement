@@ -343,6 +343,46 @@ function onOverlayMouseUp() {
     }
 }
 
+function showWeightInfo() {
+    if (!state.calibration || !state.calibration.inches_per_norm) {
+        alert('Calibrate first to see weight calculations.');
+        return;
+    }
+    const normDist = Math.abs(state.line2_x - state.line1_x);
+    const distInches = normDist * state.calibration.inches_per_norm;
+    const L = distInches / 12;
+    const N = state.axleCount;
+
+    let formulaWeight, maxAllowable, capReason;
+    if (N === 1) {
+        formulaWeight = 20000; maxAllowable = 20000; capReason = 'Single axle limit';
+    } else {
+        const raw = 500 * ((L * N) / (N - 1) + 12 * N + 36);
+        formulaWeight = Math.round(raw / 500) * 500;
+        maxAllowable = formulaWeight; capReason = 'Bridge Formula B';
+        if (N === 2 && formulaWeight > 34000) { maxAllowable = 34000; capReason = 'Tandem axle cap (34,000 lbs)'; }
+        if (maxAllowable > 80000) { maxAllowable = 80000; capReason = 'Federal GVW cap (80,000 lbs)'; }
+        if (state.isSpecialVehicle && maxAllowable > 70000) { maxAllowable = 70000; capReason = 'FL special vehicle cap (70,000 lbs)'; }
+    }
+    alert(
+        'Federal Bridge Formula B (23 USC 127)\n══════════════════════════════════\n\n' +
+        'W = 500 x ((L x N) / (N - 1) + 12N + 36)\n\n' +
+        'Where:\n' +
+        `  L = ${L.toFixed(1)} ft (measured axle spacing)\n` +
+        `  N = ${N} (axle count)\n\n` +
+        'Calculation:\n' +
+        `  W = 500 x ((${L.toFixed(1)} x ${N}) / (${N} - 1) + 12 x ${N} + 36)\n` +
+        `  W = ${formulaWeight.toLocaleString()} lbs (formula result)\n\n` +
+        `Max Allowable: ${maxAllowable.toLocaleString()} lbs\n` +
+        `Applied Cap: ${capReason}\n\n` +
+        'Caps (in order of precedence):\n' +
+        '  - Single axle: 20,000 lbs\n' +
+        '  - Tandem axle: 34,000 lbs\n' +
+        '  - Federal GVW: 80,000 lbs\n' +
+        '  - FL Dump/Mix:  70,000 lbs'
+    );
+}
+
 // === Weight Check (Bridge Formula) ===
 function updateAxleCount(delta) {
     state.axleCount = Math.max(2, Math.min(9, state.axleCount + delta));
@@ -830,6 +870,8 @@ $('btn-special-info').addEventListener('click', () => {
         'calculator uses the correct 70,000 lb cap.'
     );
 });
+
+$('btn-weight-info').addEventListener('click', showWeightInfo);
 
 // Mode toggle button click
 $('mode-indicator').addEventListener('click', toggleMode);

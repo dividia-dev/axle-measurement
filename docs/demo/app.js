@@ -893,7 +893,7 @@ function showHistory() {
 
         let imgHtml = '-';
         if (m.screenshot) {
-            imgHtml = `<a href="${m.screenshot}" target="_blank" class="img-link img-link-view">View</a><a href="${m.screenshot}" download="measurement-${m.id}.jpg" class="img-link img-link-download">Download</a>`;
+            imgHtml = `<button class="img-link img-link-view" onclick="viewScreenshot('${m.id}')">View</button><a href="${m.screenshot}" download="measurement-${m.id}.jpg" class="img-link img-link-download">Download</a>`;
         }
 
         tr.innerHTML = `
@@ -906,6 +906,81 @@ function showHistory() {
         `;
         tbody.appendChild(tr);
     }
+}
+
+function viewScreenshot(id) {
+    const measurements = storageGet('measurements') || [];
+    const m = measurements.find(x => String(x.id) === String(id));
+    if (!m || !m.screenshot) return;
+
+    // Open image in a new window using a blob URL (data: URLs blocked in target=_blank)
+    const byteString = atob(m.screenshot.split(',')[1]);
+    const mimeType = m.screenshot.split(',')[0].match(/:(.*?);/)[1];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blob = new Blob([ab], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+}
+
+function showWeightInfo() {
+    if (!state.calibration || !state.calibration.inches_per_norm) {
+        alert('Calibrate first to see weight calculations.');
+        return;
+    }
+
+    const normDist = Math.abs(state.line2_x - state.line1_x);
+    const distInches = normDist * state.calibration.inches_per_norm;
+    const distFeet = distInches / 12;
+    const N = state.axleCount;
+    const L = distFeet;
+
+    let formulaWeight, maxAllowable, capReason;
+
+    if (N === 1) {
+        formulaWeight = WEIGHT_LIMITS.SINGLE_AXLE;
+        maxAllowable = formulaWeight;
+        capReason = 'Single axle limit';
+    } else {
+        const raw = 500 * ((L * N) / (N - 1) + 12 * N + 36);
+        formulaWeight = Math.round(raw / 500) * 500;
+        maxAllowable = formulaWeight;
+        capReason = 'Bridge Formula B';
+
+        if (N === 2 && formulaWeight > WEIGHT_LIMITS.TANDEM_AXLE) {
+            maxAllowable = WEIGHT_LIMITS.TANDEM_AXLE;
+            capReason = 'Tandem axle cap (34,000 lbs)';
+        }
+        if (maxAllowable > WEIGHT_LIMITS.MAX_GVW) {
+            maxAllowable = WEIGHT_LIMITS.MAX_GVW;
+            capReason = 'Federal GVW cap (80,000 lbs)';
+        }
+        if (state.isSpecialVehicle && maxAllowable > WEIGHT_LIMITS.SPECIAL_VEHICLE_GVW) {
+            maxAllowable = WEIGHT_LIMITS.SPECIAL_VEHICLE_GVW;
+            capReason = 'FL special vehicle cap (70,000 lbs)';
+        }
+    }
+
+    const msg =
+        'Federal Bridge Formula B (23 USC 127)\n' +
+        '══════════════════════════════════\n\n' +
+        'W = 500 x ((L x N) / (N - 1) + 12N + 36)\n\n' +
+        'Where:\n' +
+        `  L = ${L.toFixed(1)} ft (measured axle spacing)\n` +
+        `  N = ${N} (axle count)\n\n` +
+        'Calculation:\n' +
+        `  W = 500 x ((${L.toFixed(1)} x ${N}) / (${N} - 1) + 12 x ${N} + 36)\n` +
+        `  W = ${formulaWeight.toLocaleString()} lbs (formula result)\n\n` +
+        `Max Allowable: ${maxAllowable.toLocaleString()} lbs\n` +
+        `Applied Cap: ${capReason}\n\n` +
+        'Caps (in order of precedence):\n' +
+        '  - Single axle: 20,000 lbs\n' +
+        '  - Tandem axle: 34,000 lbs\n' +
+        '  - Federal GVW: 80,000 lbs\n' +
+        '  - FL Dump/Mix:  70,000 lbs';
+
+    alert(msg);
 }
 
 function clearDemoData() {
@@ -930,6 +1005,7 @@ $('btn-history-close').addEventListener('click', () => { historyModal.hidden = t
 $('btn-cal-save').addEventListener('click', saveCalibration);
 $('btn-cal-cancel').addEventListener('click', closeCalibration);
 $('btn-clear-data').addEventListener('click', clearDemoData);
+$('btn-weight-info').addEventListener('click', showWeightInfo);
 $('btn-special-info').addEventListener('click', () => {
     alert(
         'Dump/Mix — Special Vehicle Cap\n\n' +

@@ -834,6 +834,56 @@ body {
     margin-bottom: 12px;
 }
 
+.test-stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 12px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.test-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.test-stat-label {
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.test-stat-value {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0088ff;
+    min-width: 40px;
+    text-align: center;
+}
+
+.test-reset-btn {
+    margin-left: auto;
+    padding: 4px 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.test-reset-btn:hover {
+    background: #444;
+    color: #ccc;
+}
+
 .controller-test-diagram {
     display: flex;
     flex-direction: column;

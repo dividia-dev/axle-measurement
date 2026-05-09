@@ -1222,24 +1222,56 @@ function resetSensitivityDefaults() {
     $('val-fine').textContent = pendingSettings.sensitivity.fine_step;
 }
 
+let testStats = { count: 0, times: [], lastAction: '' };
+
+function resetTestStats() {
+    testStats = { count: 0, times: [], lastAction: '' };
+    updateTestStats();
+}
+
 function handleControllerTest(key, isDown) {
     const testTab = $('settings-tab-test');
     if (!testTab || testTab.hidden) return;
     const settings = pendingSettings || controllerSettings;
     const normalizedKey = key.toLowerCase();
     const testMap = {
-        [settings.keymap.line1_left]:  'test-joy1-left',
-        [settings.keymap.line1_right]: 'test-joy1-right',
-        [settings.keymap.line2_left]:  'test-joy2-left',
-        [settings.keymap.line2_right]: 'test-joy2-right',
-        [settings.keymap.toggle_mode]: 'test-action-toggle',
-        [settings.keymap.save]:        'test-action-save',
-        [settings.keymap.reset]:       'test-action-reset',
+        [settings.keymap.line1_left]:  { el: 'test-joy1-left', name: 'Joy1 Left' },
+        [settings.keymap.line1_right]: { el: 'test-joy1-right', name: 'Joy1 Right' },
+        [settings.keymap.line2_left]:  { el: 'test-joy2-left', name: 'Joy2 Left' },
+        [settings.keymap.line2_right]: { el: 'test-joy2-right', name: 'Joy2 Right' },
+        [settings.keymap.toggle_mode]: { el: 'test-action-toggle', name: 'Toggle' },
+        [settings.keymap.save]:        { el: 'test-action-save', name: 'Save' },
+        [settings.keymap.reset]:       { el: 'test-action-reset', name: 'Reset' },
     };
-    const elementId = testMap[normalizedKey];
-    if (!elementId) return;
-    const el = $(elementId);
-    if (el) el.classList.toggle('active', isDown);
+    const entry = testMap[normalizedKey];
+    if (!entry) return;
+    const el = $(entry.el);
+    if (el) {
+        if (isDown) {
+            el.classList.add('active');
+            const now = Date.now();
+            testStats.count++;
+            testStats.times.push(now);
+            testStats.lastAction = entry.name;
+            testStats.times = testStats.times.filter(t => t > now - 2000);
+            updateTestStats();
+        } else {
+            el.classList.remove('active');
+        }
+    }
+}
+
+function updateTestStats() {
+    const countEl = $('test-stat-count');
+    const rateEl = $('test-stat-rate');
+    const lastEl = $('test-stat-last');
+    if (!countEl) return;
+    countEl.textContent = testStats.count;
+    const now = Date.now();
+    const recent = testStats.times.filter(t => t > now - 2000);
+    const rate = recent.length > 1 ? Math.round(recent.length / 2) : 0;
+    rateEl.textContent = rate;
+    lastEl.textContent = testStats.lastAction || '--';
 }
 
 function updateTestLabels() {
@@ -1316,6 +1348,7 @@ $('btn-settings-save').addEventListener('click', saveSettings);
 $('btn-settings-cancel').addEventListener('click', closeSettings);
 $('btn-keymap-defaults').addEventListener('click', resetKeymapDefaults);
 $('btn-sensitivity-defaults').addEventListener('click', resetSensitivityDefaults);
+$('btn-test-reset').addEventListener('click', resetTestStats);
 document.querySelectorAll('.settings-tab').forEach(tab => {
     tab.addEventListener('click', () => switchSettingsTab(tab.dataset.tab));
 });

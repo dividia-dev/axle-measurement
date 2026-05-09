@@ -312,7 +312,13 @@
 
                 <!-- Controller Test Tab -->
                 <div id="settings-tab-test" class="settings-tab-content" hidden>
-                    <p class="test-hint">Press keys or move joystick to test your controller. Arrows light up when input is detected.</p>
+                    <p class="test-hint">Push joystick slowly to find the dead zone threshold. Arrows light up when input registers.</p>
+                    <div class="test-stats-bar">
+                        <div class="test-stat"><span class="test-stat-label">Inputs</span><span id="test-stat-count" class="test-stat-value">0</span></div>
+                        <div class="test-stat"><span class="test-stat-label">Rate/sec</span><span id="test-stat-rate" class="test-stat-value">0</span></div>
+                        <div class="test-stat"><span class="test-stat-label">Last</span><span id="test-stat-last" class="test-stat-value">--</span></div>
+                        <button id="btn-test-reset" class="test-reset-btn">Clear</button>
+                    </div>
                     <div class="controller-test-diagram">
                         <div class="test-joystick-group">
                             <div class="test-joystick-label">Joystick 1 — Line 1</div>

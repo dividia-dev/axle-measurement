@@ -935,9 +935,9 @@ async function saveSettings() {
     try {
         const data = await api('PUT', '/settings/controller', pendingSettings);
         controllerSettings = data.settings;
+        pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
         buildKeyActionMap();
         updateKeyHints();
-        closeSettings();
     } catch (err) {
         $('keymap-error').textContent = err.message;
         $('keymap-error').hidden = false;
@@ -1223,7 +1223,12 @@ $('btn-weight-info').addEventListener('click', showWeightInfo);
 // Settings
 $('btn-settings').addEventListener('click', openSettings);
 $('btn-settings-save').addEventListener('click', saveSettings);
-$('btn-settings-cancel').addEventListener('click', closeSettings);
+$('btn-settings-cancel').addEventListener('click', () => {
+    if (controllerSettings) {
+        pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
+        openSettings();
+    }
+});
 $('btn-settings-close').addEventListener('click', closeSettings);
 $('btn-keymap-defaults').addEventListener('click', resetKeymapDefaults);
 $('btn-sensitivity-defaults').addEventListener('click', resetSensitivityDefaults);

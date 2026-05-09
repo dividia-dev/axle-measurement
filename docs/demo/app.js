@@ -1113,10 +1113,10 @@ function saveSettings() {
 
     controllerSettings = JSON.parse(JSON.stringify(pendingSettings));
     sessionStorage.setItem('axle_controller_settings', JSON.stringify(controllerSettings));
+    pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
     buildKeyActionMap();
     updateKeyHints();
     updateStorageMeter();
-    closeSettings();
 }
 
 function switchSettingsTab(tabName) {
@@ -1359,7 +1359,12 @@ $('mode-indicator').addEventListener('click', toggleMode);
 // Settings
 $('btn-settings').addEventListener('click', openSettings);
 $('btn-settings-save').addEventListener('click', saveSettings);
-$('btn-settings-cancel').addEventListener('click', closeSettings);
+$('btn-settings-cancel').addEventListener('click', () => {
+    if (controllerSettings) {
+        pendingSettings = JSON.parse(JSON.stringify(controllerSettings));
+        openSettings();
+    }
+});
 $('btn-settings-close').addEventListener('click', closeSettings);
 $('btn-keymap-defaults').addEventListener('click', resetKeymapDefaults);
 $('btn-sensitivity-defaults').addEventListener('click', resetSensitivityDefaults);

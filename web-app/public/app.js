@@ -163,12 +163,14 @@ function updateCalModal() {
 }
 
 async function saveCalibration() {
-    const feetVal = parseInt($('cal-feet').value) || 0;
-    const inchesVal = parseInt($('cal-inches').value) || 0;
+    const feetInput = $('cal-feet').value.trim();
+    const inchesInput = $('cal-inches').value.trim();
+    const feetVal = feetInput !== '' ? parseInt(feetInput) : 0;
+    const inchesVal = inchesInput !== '' ? parseInt(inchesInput) : 0;
     const totalInches = feetVal * 12 + inchesVal;
 
     if (totalInches <= 0) {
-        $('cal-error').textContent = 'Enter a valid distance (feet and/or inches)';
+        $('cal-error').textContent = 'Enter a distance (feet and/or inches)';
         $('cal-error').hidden = false;
         return;
     }
@@ -398,8 +400,9 @@ function drawOverlay() {
     if (state.calibration && state.calibration.inches_per_norm) {
         const normDist = Math.abs(state.line2_x - state.line1_x);
         const inches = normDist * state.calibration.inches_per_norm;
-        const feet = Math.floor(inches / 12);
-        const remainInches = Math.round(inches % 12);
+        const totalRounded = Math.round(inches);
+        const feet = Math.floor(totalRounded / 12);
+        const remainInches = totalRounded % 12;
 
         let displayText;
         if (remainInches === 0) {

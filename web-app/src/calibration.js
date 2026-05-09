@@ -69,8 +69,9 @@ function measureDistance(line1_norm, line2_norm, calibration) {
 }
 
 function formatDistance(inches) {
-    const feet = Math.floor(inches / 12);
-    const remainingInches = Math.round(inches % 12);
+    const totalRounded = Math.round(inches);
+    const feet = Math.floor(totalRounded / 12);
+    const remainingInches = totalRounded % 12;
     if (remainingInches === 0) return `${feet} ft`;
     return `${feet} ft ${remainingInches} in`;
 }

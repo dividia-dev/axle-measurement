@@ -62,6 +62,11 @@
                 </div>
             </div>
 
+            <!-- Mode Indicator (Coarse/Fine) -->
+            <div id="mode-status">
+                <span id="mode-indicator" class="mode-coarse">COARSE</span>
+            </div>
+
             <!-- Calibration Status -->
             <div id="cal-status">
                 <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
@@ -75,15 +80,14 @@
         <!-- Bottom Controls -->
         <div id="bottom-bar">
             <div id="controls-left">
-                <span class="control-hint">Line 1: <kbd>A</kbd>/<kbd>D</kbd> coarse, <kbd>Q</kbd>/<kbd>E</kbd> fine</span>
-                <span class="control-hint">Line 2: <kbd>J</kbd>/<kbd>L</kbd> coarse, <kbd>U</kbd>/<kbd>O</kbd> fine</span>
+                <span class="control-hint">Line 1: <kbd>A</kbd>/<kbd>D</kbd> | Line 2: <kbd>J</kbd>/<kbd>L</kbd> | <kbd>F</kbd> toggle fine/coarse</span>
             </div>
             <div id="controls-center">
                 <button id="btn-save-measurement" disabled>Save Measurement</button>
                 <button id="btn-reset-lines">Reset Lines</button>
             </div>
             <div id="controls-right">
-                <span class="control-hint"><kbd>Space</kbd> save | <kbd>R</kbd> reset</span>
+                <span class="control-hint"><kbd>Space</kbd> save | <kbd>R</kbd> reset | <kbd>F</kbd> fine/coarse</span>
             </div>
         </div>
 

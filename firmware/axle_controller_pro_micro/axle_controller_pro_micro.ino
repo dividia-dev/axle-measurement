@@ -87,7 +87,7 @@ enum KeyIndex {
 const char DEFAULT_KEYS[NUM_KEYS] = {
   'a', 'd',   // Joy1 coarse left/right
   'q', 'e',   // Joy1 fine left/right
-  '1',        // Joy1 button
+  'f',        // Joy1 button (toggles fine/coarse in web app)
   'j', 'l',   // Joy2 coarse left/right
   'u', 'o',   // Joy2 fine left/right
   '2'         // Joy2 button

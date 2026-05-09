@@ -283,6 +283,36 @@ body {
     color: #ff4444;
 }
 
+/* Mode Indicator (Coarse/Fine) */
+#mode-status {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+#mode-indicator {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.mode-coarse {
+    background: rgba(0, 80, 180, 0.8);
+    color: #66bbff;
+    border: 1px solid #0088ff;
+}
+
+.mode-fine {
+    background: rgba(180, 100, 0, 0.8);
+    color: #ffcc44;
+    border: 1px solid #ffaa00;
+}
+
 /* Calibration Status */
 #cal-status {
     position: absolute;

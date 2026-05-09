@@ -23,6 +23,7 @@ const state = {
     isSpecialVehicle: false,
     scaleWeight: null,  // From scale integration (future)
     weightResult: null,
+    fineMode: false,    // Toggle: false = coarse, true = fine
 };
 
 // Movement speeds (in normalized units per keystroke)
@@ -187,6 +188,18 @@ async function saveCalibration() {
     } catch (err) {
         $('cal-error').textContent = err.message;
         $('cal-error').hidden = false;
+    }
+}
+
+// === Mode Indicator ===
+function updateModeIndicator() {
+    const indicator = $('mode-indicator');
+    if (state.fineMode) {
+        indicator.textContent = 'FINE';
+        indicator.className = 'mode-fine';
+    } else {
+        indicator.textContent = 'COARSE';
+        indicator.className = 'mode-coarse';
     }
 }
 
@@ -408,19 +421,22 @@ function handleKeyDown(e) {
     if (!historyModal.hidden) return;
 
     let handled = true;
+    const step = state.fineMode ? FINE_STEP : COARSE_STEP;
 
     switch (e.key.toLowerCase()) {
-        // Joystick 1 — Line 1
-        case 'a': state.line1_x = Math.max(0, state.line1_x - COARSE_STEP); break;
-        case 'd': state.line1_x = Math.min(1, state.line1_x + COARSE_STEP); break;
-        case 'q': state.line1_x = Math.max(0, state.line1_x - FINE_STEP); break;
-        case 'e': state.line1_x = Math.min(1, state.line1_x + FINE_STEP); break;
+        // Joystick 1 — Line 1 (coarse or fine based on toggle)
+        case 'a': state.line1_x = Math.max(0, state.line1_x - step); break;
+        case 'd': state.line1_x = Math.min(1, state.line1_x + step); break;
 
-        // Joystick 2 — Line 2
-        case 'j': state.line2_x = Math.max(0, state.line2_x - COARSE_STEP); break;
-        case 'l': state.line2_x = Math.min(1, state.line2_x + COARSE_STEP); break;
-        case 'u': state.line2_x = Math.max(0, state.line2_x - FINE_STEP); break;
-        case 'o': state.line2_x = Math.min(1, state.line2_x + FINE_STEP); break;
+        // Joystick 2 — Line 2 (coarse or fine based on toggle)
+        case 'j': state.line2_x = Math.max(0, state.line2_x - step); break;
+        case 'l': state.line2_x = Math.min(1, state.line2_x + step); break;
+
+        // Fine/Coarse toggle
+        case 'f':
+            state.fineMode = !state.fineMode;
+            updateModeIndicator();
+            break;
 
         // Actions
         case ' ':

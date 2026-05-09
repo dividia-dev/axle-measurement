@@ -35,14 +35,14 @@ KEY_MAP = {
     "JOY1_RIGHT_COARSE": "d",
     "JOY1_LEFT_FINE":    "q",
     "JOY1_RIGHT_FINE":   "e",
-    "JOY1_BTN":          "1",
+    "JOY1_BTN":          "f",   # Toggles fine/coarse mode
 
     # Joystick 2 (Line 2 - right axle)
     "JOY2_LEFT_COARSE":  "j",
     "JOY2_RIGHT_COARSE": "l",
     "JOY2_LEFT_FINE":    "u",
     "JOY2_RIGHT_FINE":   "o",
-    "JOY2_BTN":          "2",
+    "JOY2_BTN":          "f",   # Also toggles fine/coarse mode
 }
 
 

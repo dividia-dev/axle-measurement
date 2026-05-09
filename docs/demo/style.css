@@ -959,6 +959,19 @@ body {
     filter: drop-shadow(0 0 6px rgba(0, 136, 255, 0.6));
 }
 
+.controller-center {
+    fill: #555;
+    stroke: #888;
+    stroke-width: 2;
+    transition: fill 0.1s, stroke 0.1s;
+}
+
+.controller-center.active {
+    fill: #0088ff;
+    stroke: #00bbff;
+    filter: drop-shadow(0 0 6px rgba(0, 136, 255, 0.6));
+}
+
 .test-key-label {
     fill: #666;
     font-size: 12px;

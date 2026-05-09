@@ -54,6 +54,25 @@ function initSchema(db) {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
+        -- Add columns if they don't exist (migrations for existing DBs)
+    `);
+
+    // Add new columns safely (ignore if they already exist)
+    const cols = db.pragma('table_info(measurements)').map(c => c.name);
+    if (!cols.includes('axle_count')) {
+        db.exec(`ALTER TABLE measurements ADD COLUMN axle_count INTEGER`);
+    }
+    if (!cols.includes('max_weight_lbs')) {
+        db.exec(`ALTER TABLE measurements ADD COLUMN max_weight_lbs REAL`);
+    }
+    if (!cols.includes('is_special_vehicle')) {
+        db.exec(`ALTER TABLE measurements ADD COLUMN is_special_vehicle INTEGER DEFAULT 0`);
+    }
+    if (!cols.includes('screenshot')) {
+        db.exec(`ALTER TABLE measurements ADD COLUMN screenshot TEXT`);
+    }
+
+    db.exec(`
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,

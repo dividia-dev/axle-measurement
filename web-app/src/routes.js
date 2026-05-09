@@ -1,8 +1,9 @@
 const express = require('express');
 const { createUser, authenticateUser, requireAuth, requireAdmin, getUsers, deleteUser, updateUser } = require('./auth');
 const { saveCalibration, getActiveCalibration, getCalibrationHistory, measureDistance } = require('./calibration');
-const { saveMeasurement, getMeasurements, getMeasurement, deleteMeasurement } = require('./measurements');
+const { saveMeasurement, getMeasurements, getMeasurement, deleteMeasurement, SCREENSHOT_DIR } = require('./measurements');
 const { analyzeWeight, formatWeight } = require('./bridge-formula');
+const path = require('path');
 
 const router = express.Router();
 
@@ -111,7 +112,7 @@ router.get('/measurements/:id', requireAuth, (req, res) => {
 });
 
 router.post('/measurements', requireAuth, (req, res) => {
-    const { line1_norm, line2_norm, notes } = req.body;
+    const { line1_norm, line2_norm, notes, axle_count, max_weight_lbs, is_special_vehicle, screenshot } = req.body;
     if (line1_norm == null || line2_norm == null) {
         return res.status(400).json({ error: 'line1_norm and line2_norm required' });
     }
@@ -129,7 +130,11 @@ router.post('/measurements', requireAuth, (req, res) => {
         distance_display: result.distance_display,
         calibration_id: cal.id,
         measured_by: req.user.username,
-        notes
+        notes,
+        axle_count: axle_count ? parseInt(axle_count) : null,
+        max_weight_lbs: max_weight_lbs ? parseFloat(max_weight_lbs) : null,
+        is_special_vehicle: !!is_special_vehicle,
+        screenshot
     });
 
     res.status(201).json({
@@ -141,6 +146,15 @@ router.post('/measurements', requireAuth, (req, res) => {
 router.delete('/measurements/:id', requireAdmin, (req, res) => {
     deleteMeasurement(parseInt(req.params.id));
     res.json({ ok: true });
+});
+
+// --- Screenshots ---
+
+router.get('/screenshots/:filename', requireAuth, (req, res) => {
+    const filePath = path.join(SCREENSHOT_DIR, req.params.filename);
+    res.sendFile(filePath, (err) => {
+        if (err) res.status(404).json({ error: 'Screenshot not found' });
+    });
 });
 
 // --- Bridge Formula Weight Calculator ---

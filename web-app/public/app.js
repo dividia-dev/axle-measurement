@@ -600,13 +600,59 @@ function resetLines() {
     debouncedWeightCheck();
 }
 
+function captureScreenshot() {
+    // Capture the video frame cropped to just the video area (no black bars)
+    // with measurement lines drawn on top (no handles)
+    const rect = getVideoRect();
+    const composite = document.createElement('canvas');
+    composite.width = video.videoWidth || rect.width;
+    composite.height = video.videoHeight || rect.height;
+    const ctx = composite.getContext('2d');
+
+    // Draw the video frame
+    ctx.drawImage(video, 0, 0, composite.width, composite.height);
+
+    // Draw lines (no handles) — scale normalized positions to video resolution
+    const l1x = state.line1_x * composite.width;
+    const l2x = state.line2_x * composite.width;
+
+    // Black outline
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(l1x, 0); ctx.lineTo(l1x, composite.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(l2x, 0); ctx.lineTo(l2x, composite.height);
+    ctx.stroke();
+
+    // Blue lines
+    ctx.strokeStyle = '#0088FF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(l1x, 0); ctx.lineTo(l1x, composite.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(l2x, 0); ctx.lineTo(l2x, composite.height);
+    ctx.stroke();
+
+    return composite.toDataURL('image/jpeg', 0.85);
+}
+
 async function saveMeasurementAction() {
     if (!state.calibration) return;
+
+    const screenshot = captureScreenshot();
+    const maxWeight = state.weightResult ? state.weightResult.maxAllowable : null;
 
     try {
         const data = await api('POST', '/measurements', {
             line1_norm: state.line1_x,
             line2_norm: state.line2_x,
+            axle_count: state.axleCount,
+            max_weight_lbs: maxWeight,
+            is_special_vehicle: state.isSpecialVehicle,
+            screenshot,
             notes: ''
         });
 
@@ -626,18 +672,25 @@ async function showHistory() {
         tbody.innerHTML = '';
 
         if (data.measurements.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#666">No measurements yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666">No measurements yet</td></tr>';
             return;
         }
 
         for (const m of data.measurements) {
             const tr = document.createElement('tr');
             const date = new Date(m.created_at).toLocaleString();
+            const maxWt = m.max_weight_lbs ? m.max_weight_lbs.toLocaleString() + ' lbs' : '-';
+            const axles = m.axle_count ? m.axle_count + (m.is_special_vehicle ? ' (D/M)' : '') : '-';
+            const imgHtml = m.screenshot
+                ? `<a href="/api/screenshots/${m.screenshot}" target="_blank" title="View screenshot">View</a>`
+                : '-';
             tr.innerHTML = `
                 <td>${date}</td>
                 <td><strong>${m.distance_display}</strong></td>
+                <td>${axles}</td>
+                <td>${maxWt}</td>
                 <td>${m.measured_by || '-'}</td>
-                <td>${m.notes || '-'}</td>
+                <td>${imgHtml}</td>
             `;
             tbody.appendChild(tr);
         }

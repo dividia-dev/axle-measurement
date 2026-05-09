@@ -33,60 +33,80 @@
             </div>
         </div>
 
-        <!-- Video + Overlay Container -->
-        <div id="video-container">
-            <!-- In production: <video> element receives WebRTC stream from go2rtc -->
-            <!-- In dev/test: plays a local test video on loop -->
-            <video id="camera-feed" autoplay muted loop playsinline></video>
-            <canvas id="overlay"></canvas>
+        <!-- Main Content Area: Video + Side Panel -->
+        <div id="main-content">
+            <!-- Video + Overlay Container -->
+            <div id="video-container">
+                <video id="camera-feed" autoplay muted loop playsinline></video>
+                <canvas id="overlay"></canvas>
 
-            <!-- Measurement Display -->
-            <div id="measurement-display" hidden>
-                <span id="measurement-value">--</span>
+                <!-- Measurement Display -->
+                <div id="measurement-display" hidden>
+                    <span id="measurement-value">--</span>
+                </div>
+
+                <!-- Calibration Status -->
+                <div id="cal-status">
+                    <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
+                </div>
+
+                <!-- Line Labels -->
+                <div id="line1-label" class="line-label" hidden>Line 1</div>
+                <div id="line2-label" class="line-label" hidden>Line 2</div>
             </div>
 
-            <!-- Weight Check Panel -->
-            <div id="weight-panel" hidden>
-                <div id="weight-inputs">
-                    <label>Axles:</label>
-                    <button class="axle-btn" id="btn-axle-minus">-</button>
-                    <span id="axle-count-display">5</span>
-                    <button class="axle-btn" id="btn-axle-plus">+</button>
-                    <label id="special-label" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)"><input type="checkbox" id="chk-special"> Dump/Mix</label>
-                </div>
-                <div id="weight-result">
-                    <div id="weight-max-line">Max: <span id="weight-max">--</span></div>
-                    <div id="weight-scale-line" hidden>Scale: <span id="weight-scale">--</span></div>
+            <!-- Right Side Control Panel -->
+            <div id="side-panel">
+                <!-- Axle / Weight Section -->
+                <div class="panel-section" id="weight-panel" hidden>
+                    <div class="panel-label">AXLES</div>
+                    <div class="panel-axle-row">
+                        <button class="axle-btn" id="btn-axle-minus">-</button>
+                        <span id="axle-count-display">5</span>
+                        <button class="axle-btn" id="btn-axle-plus">+</button>
+                    </div>
+                    <label class="panel-checkbox" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
+                        <input type="checkbox" id="chk-special"> Dump/Mix
+                    </label>
+                    <div class="panel-divider"></div>
+                    <div class="panel-label">MAX WEIGHT</div>
+                    <div id="weight-max" class="panel-big-value">--</div>
+                    <div id="weight-scale-line" hidden>
+                        <div class="panel-label">SCALE</div>
+                        <div id="weight-scale" class="panel-big-value">--</div>
+                    </div>
                     <div id="weight-status" hidden></div>
                 </div>
-            </div>
 
-            <!-- Mode Indicator (Coarse/Fine) -->
-            <div id="mode-status">
-                <span id="mode-indicator" class="mode-coarse">COARSE</span>
-            </div>
+                <!-- Divider -->
+                <div class="panel-divider"></div>
 
-            <!-- Calibration Status -->
-            <div id="cal-status">
-                <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
-            </div>
+                <!-- Actions -->
+                <div class="panel-section">
+                    <button id="btn-save-measurement" class="panel-btn panel-btn-save" disabled>Save</button>
+                    <button id="btn-reset-lines" class="panel-btn panel-btn-reset">Reset</button>
+                </div>
 
-            <!-- Line Labels -->
-            <div id="line1-label" class="line-label" hidden>Line 1</div>
-            <div id="line2-label" class="line-label" hidden>Line 2</div>
-        </div>
+                <!-- Divider -->
+                <div class="panel-divider"></div>
 
-        <!-- Bottom Controls -->
-        <div id="bottom-bar">
-            <div id="controls-left">
-                <span class="control-hint">Line 1: <kbd>A</kbd>/<kbd>D</kbd> | Line 2: <kbd>J</kbd>/<kbd>L</kbd> | <kbd>F</kbd> toggle fine/coarse</span>
-            </div>
-            <div id="controls-center">
-                <button id="btn-save-measurement" disabled>Save Measurement</button>
-                <button id="btn-reset-lines">Reset Lines</button>
-            </div>
-            <div id="controls-right">
-                <span class="control-hint"><kbd>Space</kbd> save | <kbd>R</kbd> reset | <kbd>F</kbd> fine/coarse</span>
+                <!-- Mode Indicator -->
+                <div class="panel-section">
+                    <div class="panel-label">MODE</div>
+                    <span id="mode-indicator" class="mode-coarse">COARSE</span>
+                </div>
+
+                <!-- Spacer pushes keyboard hints to bottom -->
+                <div class="panel-spacer"></div>
+
+                <!-- Keyboard Hints -->
+                <div class="panel-section panel-hints">
+                    <div><kbd>A</kbd><kbd>D</kbd> Line 1</div>
+                    <div><kbd>J</kbd><kbd>L</kbd> Line 2</div>
+                    <div><kbd>F</kbd> Fine/Coarse</div>
+                    <div><kbd>Space</kbd> Save</div>
+                    <div><kbd>R</kbd> Reset</div>
+                </div>
             </div>
         </div>
 

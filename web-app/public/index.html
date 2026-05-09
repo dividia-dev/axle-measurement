@@ -24,7 +24,12 @@
     <div id="app-screen" class="screen" hidden>
         <!-- Top Bar -->
         <div id="top-bar">
-            <span id="app-title">Axle Measurement</span>
+            <div id="top-bar-left">
+                <span id="app-title">Axle Measurement</span>
+                <div id="cal-status">
+                    <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
+                </div>
+            </div>
             <div id="top-bar-right">
                 <span id="user-info"></span>
                 <button id="btn-history" title="Measurement History">History</button>
@@ -45,11 +50,6 @@
                     <span id="measurement-value">--</span>
                 </div>
 
-                <!-- Calibration Status -->
-                <div id="cal-status">
-                    <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
-                </div>
-
                 <!-- Line Labels -->
                 <div id="line1-label" class="line-label" hidden>Line 1</div>
                 <div id="line2-label" class="line-label" hidden>Line 2</div>
@@ -57,6 +57,12 @@
 
             <!-- Right Side Control Panel -->
             <div id="side-panel">
+                <!-- Date/Time Clock -->
+                <div class="panel-section">
+                    <div id="panel-clock" class="panel-clock"></div>
+                </div>
+                <div class="panel-divider"></div>
+
                 <!-- Weight Display (top) -->
                 <div class="panel-section" id="weight-panel" hidden>
                     <div class="panel-label">MAX WEIGHT</div>
@@ -74,8 +80,10 @@
                         <button class="axle-btn" id="btn-axle-plus">+</button>
                     </div>
                     <div class="panel-axle-spacer"></div>
-                    <label class="panel-checkbox" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
-                        <input type="checkbox" id="chk-special"> Dump/Mix
+                    <label class="panel-toggle" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
+                        <input type="checkbox" id="chk-special">
+                        <span class="toggle-switch"></span>
+                        <span class="toggle-label">Dump/Mix</span>
                     </label>
                 </div>
 

@@ -109,6 +109,20 @@ function showApp() {
     loadCalibration();
     initVideo();
     resizeOverlay();
+    startClock();
+}
+
+// === Clock ===
+function startClock() {
+    const clockEl = $('panel-clock');
+    function update() {
+        const now = new Date();
+        const date = now.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        clockEl.innerHTML = `<div class="clock-date">${date}</div><div class="clock-time">${time}</div>`;
+    }
+    update();
+    setInterval(update, 1000);
 }
 
 // === Calibration ===
@@ -752,7 +766,7 @@ async function showHistory() {
 
         for (const m of data.measurements) {
             const tr = document.createElement('tr');
-            const date = new Date(m.created_at).toLocaleString();
+            const date = new Date(m.created_at + 'Z').toLocaleString();
             const maxWt = m.max_weight_lbs ? m.max_weight_lbs.toLocaleString() + ' lbs' : '-';
             const axles = m.axle_count ? m.axle_count + (m.is_special_vehicle ? ' (D/M)' : '') : '-';
             const imgHtml = m.screenshot

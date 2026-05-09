@@ -729,7 +729,7 @@ async function showHistory() {
             const maxWt = m.max_weight_lbs ? m.max_weight_lbs.toLocaleString() + ' lbs' : '-';
             const axles = m.axle_count ? m.axle_count + (m.is_special_vehicle ? ' (D/M)' : '') : '-';
             const imgHtml = m.screenshot
-                ? `<a href="/api/screenshots/${m.screenshot}" target="_blank" title="View screenshot">View</a>`
+                ? `<a href="/api/screenshots/${m.screenshot}" target="_blank" class="img-link img-link-view">View</a><a href="/api/screenshots/${m.screenshot}" download="${m.screenshot}" class="img-link img-link-download">Download</a>`
                 : '-';
             tr.innerHTML = `
                 <td>${date}</td>

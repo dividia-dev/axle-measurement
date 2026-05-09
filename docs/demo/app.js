@@ -141,8 +141,8 @@ const chkSpecial = $('chk-special');
 // === Reference Markers (normalized positions for calibration) ===
 // Two fixed markers on the test pattern, positioned near the first and last axle.
 // These are drawn on the OVERLAY so they don't appear in saved screenshots.
-const REF_MARKER_1 = 0.37;  // normalized X position (tight, centered on truck mid-section)
-const REF_MARKER_2 = 0.49;  // normalized X position (span = 0.12, ~1/4 of original)
+const REF_MARKER_1 = 0.42;  // normalized X position (tight, centered on trailer)
+const REF_MARKER_2 = 0.50;  // normalized X position (span = 0.08)
 
 function drawReferenceMarkers(ctx, rect) {
     const m1x = rect.x + REF_MARKER_1 * rect.width;
@@ -286,8 +286,8 @@ function startClock() {
 const DEFAULT_CALIBRATION = {
     ref1_norm: REF_MARKER_1,
     ref2_norm: REF_MARKER_2,
-    known_distance_inches: 240,
-    inches_per_norm: 240 / (REF_MARKER_2 - REF_MARKER_1),
+    known_distance_inches: 120,  // 10 feet across markers, makes truck ~72ft proportionally
+    inches_per_norm: 120 / (REF_MARKER_2 - REF_MARKER_1),
 };
 
 function loadCalibration() {

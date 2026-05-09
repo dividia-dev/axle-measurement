@@ -232,9 +232,17 @@ body {
     color: tomato;
 }
 
-/* Calibration mode border */
-#video-container.cal-mode {
-    box-shadow: inset 0 0 0 3px tomato;
+/* Calibration mode border — pseudo-element on top of video */
+#video-container.cal-mode::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px solid tomato;
+    z-index: 20;
+    pointer-events: none;
 }
 
 /* ========================================

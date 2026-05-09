@@ -141,14 +141,41 @@ function updateCalStatus() {
 }
 
 function openCalibration() {
+    // Save current line positions so we can restore on cancel
+    state._preCalLine1 = state.line1_x;
+    state._preCalLine2 = state.line2_x;
+
+    // Restore calibration reference positions and pre-fill distance
+    if (state.calibration && state.calibration.ref1_norm != null) {
+        state.line1_x = state.calibration.ref1_norm;
+        state.line2_x = state.calibration.ref2_norm;
+        const totalInches = state.calibration.known_distance_inches;
+        if (totalInches > 0) {
+            const ft = Math.floor(totalInches / 12);
+            const inches = totalInches % 12;
+            $('cal-feet').value = ft > 0 ? ft : '';
+            $('cal-inches').value = inches > 0 ? inches : '';
+        }
+    }
+
     state.isCalibrating = true;
     calModal.hidden = false;
+    $('cal-error').hidden = true;
     updateCalModal();
+    drawOverlay();
 }
 
 function closeCalibration() {
+    // Restore line positions from before calibration
+    if (state._preCalLine1 != null) {
+        state.line1_x = state._preCalLine1;
+        state.line2_x = state._preCalLine2;
+        state._preCalLine1 = null;
+        state._preCalLine2 = null;
+    }
     state.isCalibrating = false;
     calModal.hidden = true;
+    drawOverlay();
 }
 
 function updateCalModal() {

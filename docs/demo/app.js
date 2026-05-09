@@ -286,8 +286,8 @@ function startClock() {
 const DEFAULT_CALIBRATION = {
     ref1_norm: REF_MARKER_1,
     ref2_norm: REF_MARKER_2,
-    known_distance_inches: 120,
-    inches_per_norm: 120 / (REF_MARKER_2 - REF_MARKER_1),
+    known_distance_inches: 240,
+    inches_per_norm: 240 / (REF_MARKER_2 - REF_MARKER_1),
 };
 
 function loadCalibration() {

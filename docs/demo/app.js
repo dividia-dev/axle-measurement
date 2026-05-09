@@ -190,30 +190,34 @@ function drawReferenceMarkers(ctx, rect) {
 }
 
 // === Test Pattern Video ===
-function generateTestPattern() {
-    const canvas = $('test-pattern');
-    canvas.width = 1280;
-    canvas.height = 720;
-    const ctx = canvas.getContext('2d');
+// Keep a clean copy of the test pattern for screenshots (captureStream taints the original)
+let testPatternCopy = null;
 
-    // Clean background
+function drawTestPatternTo(ctx, w, h) {
     ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(0, 0, 1280, 720);
-
-    // Ground plane
+    ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#4a4a3a';
-    ctx.fillRect(0, 500, 1280, 220);
-
-    // Draw truck (clean, no labels)
+    ctx.fillRect(0, 500, w, 220);
     drawTruck(ctx);
-
-    // Title (minimal)
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(10, 10, 240, 32);
     ctx.fillStyle = '#0088ff';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('DEMO MODE', 20, 32);
+}
+
+function generateTestPattern() {
+    const canvas = $('test-pattern');
+    canvas.width = 1280;
+    canvas.height = 720;
+    drawTestPatternTo(canvas.getContext('2d'), 1280, 720);
+
+    // Make a clean copy for screenshots (before captureStream taints the canvas)
+    testPatternCopy = document.createElement('canvas');
+    testPatternCopy.width = 1280;
+    testPatternCopy.height = 720;
+    drawTestPatternTo(testPatternCopy.getContext('2d'), 1280, 720);
 
     // Convert to video-like source
     try {
@@ -221,7 +225,7 @@ function generateTestPattern() {
         video.srcObject = stream;
         stream.getVideoTracks()[0].requestFrame();
     } catch {
-        video.poster = canvas.toDataURL('image/png');
+        video.poster = testPatternCopy.toDataURL('image/png');
         video.style.objectFit = 'contain';
     }
 }
@@ -761,28 +765,20 @@ function captureScreenshot() {
     const composite = document.createElement('canvas');
     const sourceCanvas = $('test-pattern');
 
-    // Prefer test-pattern canvas (always available), then video, then fallback
-    let sourceW, sourceH;
-    if (sourceCanvas.width > 0 && !state._userMediaLoaded) {
-        sourceW = sourceCanvas.width;
-        sourceH = sourceCanvas.height;
-    } else {
-        sourceW = video.videoWidth || rect.width;
-        sourceH = video.videoHeight || rect.height;
-    }
+    // Use clean test pattern copy (untainted by captureStream), or video for user media
+    const useTestPattern = testPatternCopy && !state._userMediaLoaded;
 
-    composite.width = sourceW;
-    composite.height = sourceH;
+    composite.width = useTestPattern ? testPatternCopy.width : (video.videoWidth || rect.width);
+    composite.height = useTestPattern ? testPatternCopy.height : (video.videoHeight || rect.height);
     const ctx = composite.getContext('2d');
 
     try {
-        if (sourceCanvas.width > 0 && !state._userMediaLoaded) {
-            ctx.drawImage(sourceCanvas, 0, 0);
+        if (useTestPattern) {
+            ctx.drawImage(testPatternCopy, 0, 0);
         } else {
             ctx.drawImage(video, 0, 0, composite.width, composite.height);
         }
     } catch (e) {
-        // Fallback: fill with dark background if draw fails
         ctx.fillStyle = '#2a2a2a';
         ctx.fillRect(0, 0, composite.width, composite.height);
     }

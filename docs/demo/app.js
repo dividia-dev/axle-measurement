@@ -551,12 +551,14 @@ function resetToTestPattern() {
     video.srcObject = null;
     video.poster = '';
     generateTestPattern();
+    $('btn-reset-image').hidden = true;
     setTimeout(resizeOverlay, 100);
 }
 
 function loadUserMedia(file) {
     const url = URL.createObjectURL(file);
     state._userMediaLoaded = true;
+    $('btn-reset-image').hidden = false;
 
     if (file.type.startsWith('video/')) {
         // Load as video

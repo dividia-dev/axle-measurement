@@ -291,7 +291,8 @@ const DEFAULT_CALIBRATION = {
 };
 
 function loadCalibration() {
-    state.calibration = storageGet('calibration') || DEFAULT_CALIBRATION;
+    const saved = storageGet('calibration');
+    state.calibration = (saved && saved.inches_per_norm) ? saved : DEFAULT_CALIBRATION;
     updateCalStatus();
 }
 

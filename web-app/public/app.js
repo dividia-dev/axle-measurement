@@ -1058,9 +1058,11 @@ function resetSensitivityDefaults() {
 
 // Controller test visualizer
 let testStats = { count: 0, times: [], lastAction: '' };
+let activeJoyKeys = { joy1: new Set(), joy2: new Set() };
 
 function resetTestStats() {
     testStats = { count: 0, times: [], lastAction: '' };
+    activeJoyKeys = { joy1: new Set(), joy2: new Set() };
     updateTestStats();
 }
 
@@ -1071,26 +1073,30 @@ function handleControllerTest(key, isDown) {
     const settings = pendingSettings || controllerSettings;
     const normalizedKey = key.toLowerCase();
 
-    // Map key to test element, center circle, and action name
+    // Map key to test element, joystick group, and action name
     const testMap = {
-        [settings.keymap.line1_left]:  { el: 'test-joy1-left', center: 'test-joy1-center', name: 'Joy1 Left' },
-        [settings.keymap.line1_right]: { el: 'test-joy1-right', center: 'test-joy1-center', name: 'Joy1 Right' },
-        [settings.keymap.line2_left]:  { el: 'test-joy2-left', center: 'test-joy2-center', name: 'Joy2 Left' },
-        [settings.keymap.line2_right]: { el: 'test-joy2-right', center: 'test-joy2-center', name: 'Joy2 Right' },
-        [settings.keymap.toggle_mode]: { el: 'test-action-toggle', center: null, name: 'Toggle' },
-        [settings.keymap.save]:        { el: 'test-action-save', center: null, name: 'Save' },
-        [settings.keymap.reset]:       { el: 'test-action-reset', center: null, name: 'Reset' },
+        [settings.keymap.line1_left]:  { el: 'test-joy1-left', joy: 'joy1', name: 'Joy1 Left' },
+        [settings.keymap.line1_right]: { el: 'test-joy1-right', joy: 'joy1', name: 'Joy1 Right' },
+        [settings.keymap.line2_left]:  { el: 'test-joy2-left', joy: 'joy2', name: 'Joy2 Left' },
+        [settings.keymap.line2_right]: { el: 'test-joy2-right', joy: 'joy2', name: 'Joy2 Right' },
+        [settings.keymap.toggle_mode]: { el: 'test-action-toggle', joy: null, name: 'Toggle' },
+        [settings.keymap.save]:        { el: 'test-action-save', joy: null, name: 'Save' },
+        [settings.keymap.reset]:       { el: 'test-action-reset', joy: null, name: 'Reset' },
     };
 
     const entry = testMap[normalizedKey];
     if (!entry) return;
 
     const el = $(entry.el);
-    const centerEl = entry.center ? $(entry.center) : null;
     if (el) {
         if (isDown) {
             el.classList.add('active');
-            if (centerEl) centerEl.classList.add('active');
+            // Track active keys per joystick so center stays lit
+            if (entry.joy) {
+                activeJoyKeys[entry.joy].add(normalizedKey);
+                const centerEl = $('test-' + entry.joy + '-center');
+                if (centerEl) centerEl.classList.add('active');
+            }
             // Track stats on keydown
             const now = Date.now();
             testStats.count++;
@@ -1102,7 +1108,14 @@ function handleControllerTest(key, isDown) {
             updateTestStats();
         } else {
             el.classList.remove('active');
-            if (centerEl) centerEl.classList.remove('active');
+            // Only remove center glow when no keys for this joystick are held
+            if (entry.joy) {
+                activeJoyKeys[entry.joy].delete(normalizedKey);
+                if (activeJoyKeys[entry.joy].size === 0) {
+                    const centerEl = $('test-' + entry.joy + '-center');
+                    if (centerEl) centerEl.classList.remove('active');
+                }
+            }
         }
     }
 }

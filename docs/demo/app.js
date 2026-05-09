@@ -742,6 +742,7 @@ function handleKeyDown(e) {
         case 'escape':
             closeCalibration();
             historyModal.hidden = true;
+            $('weight-modal').hidden = true;
             break;
         default: handled = false;
     }
@@ -962,25 +963,37 @@ function showWeightInfo() {
         }
     }
 
-    const msg =
-        'Federal Bridge Formula B (23 USC 127)\n' +
-        '══════════════════════════════════\n\n' +
-        'W = 500 x ((L x N) / (N - 1) + 12N + 36)\n\n' +
-        'Where:\n' +
-        `  L = ${L.toFixed(1)} ft (measured axle spacing)\n` +
-        `  N = ${N} (axle count)\n\n` +
+    $('weight-info-body').textContent =
+        'Federal Bridge Formula B\n' +
+        '23 USC 127 / FL Statute 316.535\n' +
+        '────────────────────────────────────\n\n' +
+        'Formula:\n' +
+        '  W = 500 x ((L x N) / (N - 1) + 12N + 36)\n\n' +
+        'Inputs:\n' +
+        `  L = ${L.toFixed(1)} ft  (measured outer axle spacing)\n` +
+        `  N = ${N}        (axle count)\n` +
+        (state.isSpecialVehicle ? '  Special vehicle (Dump/Mix) enabled\n' : '') +
+        '\n' +
         'Calculation:\n' +
         `  W = 500 x ((${L.toFixed(1)} x ${N}) / (${N} - 1) + 12 x ${N} + 36)\n` +
-        `  W = ${formulaWeight.toLocaleString()} lbs (formula result)\n\n` +
-        `Max Allowable: ${maxAllowable.toLocaleString()} lbs\n` +
-        `Applied Cap: ${capReason}\n\n` +
-        'Caps (in order of precedence):\n' +
-        '  - Single axle: 20,000 lbs\n' +
-        '  - Tandem axle: 34,000 lbs\n' +
-        '  - Federal GVW: 80,000 lbs\n' +
-        '  - FL Dump/Mix:  70,000 lbs';
+        `  W = ${formulaWeight.toLocaleString()} lbs\n\n` +
+        '────────────────────────────────────\n' +
+        `  Max Allowable:  ${maxAllowable.toLocaleString()} lbs\n` +
+        `  Applied Cap:    ${capReason}\n` +
+        '────────────────────────────────────\n\n' +
+        'Weight Caps (in order of precedence):\n' +
+        '  Single axle:     20,000 lbs\n' +
+        '  Tandem axle:     34,000 lbs\n' +
+        '  Federal GVW:     80,000 lbs\n' +
+        '  FL Dump/Mix:     70,000 lbs\n\n' +
+        'The formula calculates max allowable gross\n' +
+        'weight for a group of axles based on the\n' +
+        'number of axles and the distance between\n' +
+        'the first and last axle. The result is\n' +
+        'rounded to the nearest 500 lbs, then\n' +
+        'capped by federal and state limits.';
 
-    alert(msg);
+    $('weight-modal').hidden = false;
 }
 
 function clearDemoData() {
@@ -1006,6 +1019,7 @@ $('btn-cal-save').addEventListener('click', saveCalibration);
 $('btn-cal-cancel').addEventListener('click', closeCalibration);
 $('btn-clear-data').addEventListener('click', clearDemoData);
 $('btn-weight-info').addEventListener('click', showWeightInfo);
+$('btn-weight-close').addEventListener('click', () => { $('weight-modal').hidden = true; });
 $('btn-special-info').addEventListener('click', () => {
     alert(
         'Dump/Mix — Special Vehicle Cap\n\n' +

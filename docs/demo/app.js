@@ -760,16 +760,31 @@ function captureScreenshot() {
     const rect = getVideoRect();
     const composite = document.createElement('canvas');
     const sourceCanvas = $('test-pattern');
-    const useTestPattern = !video.videoWidth && sourceCanvas.width > 0;
 
-    composite.width = useTestPattern ? sourceCanvas.width : (video.videoWidth || rect.width);
-    composite.height = useTestPattern ? sourceCanvas.height : (video.videoHeight || rect.height);
+    // Prefer test-pattern canvas (always available), then video, then fallback
+    let sourceW, sourceH;
+    if (sourceCanvas.width > 0 && !state._userMediaLoaded) {
+        sourceW = sourceCanvas.width;
+        sourceH = sourceCanvas.height;
+    } else {
+        sourceW = video.videoWidth || rect.width;
+        sourceH = video.videoHeight || rect.height;
+    }
+
+    composite.width = sourceW;
+    composite.height = sourceH;
     const ctx = composite.getContext('2d');
 
-    if (useTestPattern) {
-        ctx.drawImage(sourceCanvas, 0, 0);
-    } else {
-        ctx.drawImage(video, 0, 0, composite.width, composite.height);
+    try {
+        if (sourceCanvas.width > 0 && !state._userMediaLoaded) {
+            ctx.drawImage(sourceCanvas, 0, 0);
+        } else {
+            ctx.drawImage(video, 0, 0, composite.width, composite.height);
+        }
+    } catch (e) {
+        // Fallback: fill with dark background if draw fails
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(0, 0, composite.width, composite.height);
     }
 
     const l1x = state.line1_x * composite.width;

@@ -223,9 +223,13 @@ function updateModeIndicator() {
 // === Mouse Drag for Lines ===
 const DRAG_HIT_ZONE = 15; // pixels from line center to grab it
 
+const FINE_DRAG_RATIO = 0.25; // In fine mode, line moves 1/4 of mouse distance
+
 let dragState = {
     active: false,
-    line: null, // 1 or 2
+    line: null,       // 1 or 2
+    startMouseX: 0,   // mouse X at drag start (pixels)
+    startLineNorm: 0, // line normalized position at drag start
 };
 
 function getLinePixelX(lineNorm) {
@@ -254,6 +258,8 @@ function onOverlayMouseDown(e) {
     if (line) {
         dragState.active = true;
         dragState.line = line;
+        dragState.startMouseX = e.offsetX;
+        dragState.startLineNorm = line === 1 ? state.line1_x : state.line2_x;
         $('video-container').classList.add('dragging');
         e.preventDefault();
     }
@@ -261,11 +267,18 @@ function onOverlayMouseDown(e) {
 
 function onOverlayMouseMove(e) {
     if (dragState.active) {
-        const norm = pixelToNorm(e.offsetX);
+        const rect = getVideoRect();
+        const mouseDeltaPx = e.offsetX - dragState.startMouseX;
+        const mouseDeltaNorm = mouseDeltaPx / rect.width;
+
+        // In fine mode, reduce the movement ratio
+        const ratio = state.fineMode ? FINE_DRAG_RATIO : 1.0;
+        const newNorm = Math.max(0, Math.min(1, dragState.startLineNorm + mouseDeltaNorm * ratio));
+
         if (dragState.line === 1) {
-            state.line1_x = norm;
+            state.line1_x = newNorm;
         } else {
-            state.line2_x = norm;
+            state.line2_x = newNorm;
         }
         drawOverlay();
         debouncedWeightCheck();

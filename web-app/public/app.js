@@ -126,8 +126,8 @@ async function loadCalibration() {
 }
 
 function updateCalStatus() {
-    if (state.calibration) {
-        calStatus.textContent = `CALIBRATED (${state.calibration.pixels_per_inch.toFixed(2)} px/in)`;
+    if (state.calibration && state.calibration.inches_per_norm) {
+        calStatus.textContent = `CALIBRATED`;
         calStatus.className = 'calibrated';
         btnSave.disabled = false;
         measurementDisplay.hidden = false;
@@ -173,14 +173,26 @@ async function saveCalibration() {
         return;
     }
 
-    const rect = getVideoRect();
-    const ref1_px = Math.round(state.line1_x * rect.width);
-    const ref2_px = Math.round(state.line2_x * rect.width);
+    // Store normalized positions (0-1), not pixel positions
+    // This makes calibration independent of window/video size
+    const ref1_norm = state.line1_x;
+    const ref2_norm = state.line2_x;
+    const normDist = Math.abs(ref2_norm - ref1_norm);
+
+    if (normDist < 0.01) {
+        $('cal-error').textContent = 'Lines are too close together. Spread them apart.';
+        $('cal-error').hidden = false;
+        return;
+    }
+
+    // inches_per_norm = how many inches one normalized unit represents
+    const inches_per_norm = totalInches / normDist;
 
     try {
         const data = await api('POST', '/calibration', {
-            ref1_px, ref2_px,
-            known_distance_inches: totalInches
+            ref1_norm, ref2_norm,
+            known_distance_inches: totalInches,
+            inches_per_norm
         });
         state.calibration = data.calibration;
         updateCalStatus();
@@ -211,11 +223,10 @@ function updateAxleCount(delta) {
 }
 
 async function updateWeightCheck() {
-    if (!state.calibration) return;
+    if (!state.calibration || !state.calibration.inches_per_norm) return;
 
-    const rect = getVideoRect();
-    const pixelDist = Math.abs(state.line2_x - state.line1_x) * rect.width;
-    const distInches = pixelDist / state.calibration.pixels_per_inch;
+    const normDist = Math.abs(state.line2_x - state.line1_x);
+    const distInches = normDist * state.calibration.inches_per_norm;
     const distFeet = distInches / 12;
 
     try {
@@ -382,10 +393,11 @@ function drawOverlay() {
     // Calibration mode border on video container
     $('video-container').classList.toggle('cal-mode', inCalMode);
 
-    // Calculate and display measurement
-    if (state.calibration) {
-        const pixelDist = Math.abs(state.line2_x - state.line1_x) * rect.width;
-        const inches = pixelDist / state.calibration.pixels_per_inch;
+    // Calculate and display measurement using normalized coordinates
+    // This is window-size independent — same measurement regardless of resize
+    if (state.calibration && state.calibration.inches_per_norm) {
+        const normDist = Math.abs(state.line2_x - state.line1_x);
+        const inches = normDist * state.calibration.inches_per_norm;
         const feet = Math.floor(inches / 12);
         const remainInches = Math.round(inches % 12);
 
@@ -471,14 +483,10 @@ function resetLines() {
 async function saveMeasurementAction() {
     if (!state.calibration) return;
 
-    const rect = getVideoRect();
-    const l1px = Math.round(state.line1_x * rect.width);
-    const l2px = Math.round(state.line2_x * rect.width);
-
     try {
         const data = await api('POST', '/measurements', {
-            line1_px: l1px,
-            line2_px: l2px,
+            line1_norm: state.line1_x,
+            line2_norm: state.line2_x,
             notes: ''
         });
 

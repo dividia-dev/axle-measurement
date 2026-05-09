@@ -1,12 +1,14 @@
 const { getDb } = require('./db');
 
-function saveCalibration({ ref1_px, ref2_px, known_distance_inches, camera_name, calibrated_by }) {
+function saveCalibration({ ref1_norm, ref2_norm, known_distance_inches, inches_per_norm, camera_name, calibrated_by }) {
     const db = getDb();
-    const pixelDist = Math.abs(ref2_px - ref1_px);
-    if (pixelDist === 0) throw new Error('Reference points cannot be at the same pixel');
+    const normDist = Math.abs(ref2_norm - ref1_norm);
+    if (normDist < 0.001) throw new Error('Reference points are too close together');
     if (known_distance_inches <= 0) throw new Error('Distance must be positive');
 
-    const pixels_per_inch = pixelDist / known_distance_inches;
+    // inches_per_norm: how many real-world inches one normalized unit (0-1) represents
+    // This is window-size independent
+    const computed_ipn = inches_per_norm || (known_distance_inches / normDist);
 
     // Deactivate previous calibrations
     db.prepare('UPDATE calibration SET is_active = 0 WHERE is_active = 1').run();
@@ -16,16 +18,38 @@ function saveCalibration({ ref1_px, ref2_px, known_distance_inches, camera_name,
         VALUES (?, ?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(ref1_px, ref2_px, known_distance_inches, pixels_per_inch, camera_name || 'default', calibrated_by);
+    // Store ref positions as normalized * 10000 (integer column, preserve precision)
+    // Store inches_per_norm in the pixels_per_inch column (repurposed)
+    const result = stmt.run(
+        Math.round(ref1_norm * 10000),
+        Math.round(ref2_norm * 10000),
+        known_distance_inches,
+        computed_ipn,
+        camera_name || 'default',
+        calibrated_by
+    );
+
     return {
         id: result.lastInsertRowid,
-        ref1_px, ref2_px, known_distance_inches, pixels_per_inch, camera_name, calibrated_by
+        ref1_norm, ref2_norm,
+        known_distance_inches,
+        inches_per_norm: computed_ipn,
+        camera_name, calibrated_by
     };
 }
 
 function getActiveCalibration() {
     const db = getDb();
-    return db.prepare('SELECT * FROM calibration WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get() || null;
+    const row = db.prepare('SELECT * FROM calibration WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get();
+    if (!row) return null;
+
+    // Convert stored values back to normalized format
+    return {
+        ...row,
+        ref1_norm: row.ref1_px / 10000,
+        ref2_norm: row.ref2_px / 10000,
+        inches_per_norm: row.pixels_per_inch,  // repurposed column
+    };
 }
 
 function getCalibrationHistory() {
@@ -33,12 +57,12 @@ function getCalibrationHistory() {
     return db.prepare('SELECT * FROM calibration ORDER BY id DESC LIMIT 50').all();
 }
 
-function measureDistance(line1_px, line2_px, calibration) {
-    if (!calibration) return null;
-    const pixelDist = Math.abs(line2_px - line1_px);
-    const distanceInches = pixelDist / calibration.pixels_per_inch;
+function measureDistance(line1_norm, line2_norm, calibration) {
+    if (!calibration || !calibration.inches_per_norm) return null;
+    const normDist = Math.abs(line2_norm - line1_norm);
+    const distanceInches = normDist * calibration.inches_per_norm;
     return {
-        pixel_distance: pixelDist,
+        norm_distance: normDist,
         distance_inches: distanceInches,
         distance_display: formatDistance(distanceInches)
     };

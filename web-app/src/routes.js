@@ -76,16 +76,17 @@ router.get('/calibration/history', requireAuth, (req, res) => {
 });
 
 router.post('/calibration', requireAdmin, (req, res) => {
-    const { ref1_px, ref2_px, known_distance_inches, camera_name } = req.body;
-    if (ref1_px == null || ref2_px == null || !known_distance_inches) {
-        return res.status(400).json({ error: 'ref1_px, ref2_px, and known_distance_inches required' });
+    const { ref1_norm, ref2_norm, known_distance_inches, inches_per_norm, camera_name } = req.body;
+    if (ref1_norm == null || ref2_norm == null || !known_distance_inches) {
+        return res.status(400).json({ error: 'ref1_norm, ref2_norm, and known_distance_inches required' });
     }
 
     try {
         const cal = saveCalibration({
-            ref1_px: parseInt(ref1_px),
-            ref2_px: parseInt(ref2_px),
+            ref1_norm: parseFloat(ref1_norm),
+            ref2_norm: parseFloat(ref2_norm),
             known_distance_inches: parseFloat(known_distance_inches),
+            inches_per_norm: inches_per_norm ? parseFloat(inches_per_norm) : undefined,
             camera_name,
             calibrated_by: req.user.username
         });
@@ -110,20 +111,20 @@ router.get('/measurements/:id', requireAuth, (req, res) => {
 });
 
 router.post('/measurements', requireAuth, (req, res) => {
-    const { line1_px, line2_px, notes } = req.body;
-    if (line1_px == null || line2_px == null) {
-        return res.status(400).json({ error: 'line1_px and line2_px required' });
+    const { line1_norm, line2_norm, notes } = req.body;
+    if (line1_norm == null || line2_norm == null) {
+        return res.status(400).json({ error: 'line1_norm and line2_norm required' });
     }
 
     const cal = getActiveCalibration();
     if (!cal) return res.status(400).json({ error: 'No active calibration. Calibrate first.' });
 
-    const result = measureDistance(parseInt(line1_px), parseInt(line2_px), cal);
+    const result = measureDistance(parseFloat(line1_norm), parseFloat(line2_norm), cal);
 
     const saved = saveMeasurement({
-        line1_px: parseInt(line1_px),
-        line2_px: parseInt(line2_px),
-        pixel_distance: result.pixel_distance,
+        line1_px: Math.round(parseFloat(line1_norm) * 10000),
+        line2_px: Math.round(parseFloat(line2_norm) * 10000),
+        pixel_distance: Math.round(result.norm_distance * 10000),
         distance_inches: result.distance_inches,
         distance_display: result.distance_display,
         calibration_id: cal.id,

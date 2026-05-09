@@ -113,18 +113,18 @@ describe('API', () => {
         it('saves calibration as admin', async () => {
             const res = await request(app, 'POST', '/api/calibration', {
                 cookie: adminCookie,
-                body: { ref1_px: 100, ref2_px: 1100, known_distance_inches: 240 }
+                body: { ref1_norm: 0.1, ref2_norm: 0.9, known_distance_inches: 240 }
             });
             assert.strictEqual(res.status, 201);
-            assert.ok(res.body.calibration.pixels_per_inch);
-            // 1000 pixels / 240 inches = 4.1667
-            assert.ok(Math.abs(res.body.calibration.pixels_per_inch - (1000 / 240)) < 0.001);
+            assert.ok(res.body.calibration.inches_per_norm);
+            // 240 / 0.8 = 300 inches per norm
+            assert.ok(Math.abs(res.body.calibration.inches_per_norm - 300) < 0.01);
         });
 
         it('rejects calibration from operator', async () => {
             const res = await request(app, 'POST', '/api/calibration', {
                 cookie: operatorCookie,
-                body: { ref1_px: 100, ref2_px: 1100, known_distance_inches: 240 }
+                body: { ref1_norm: 0.1, ref2_norm: 0.9, known_distance_inches: 240 }
             });
             assert.strictEqual(res.status, 403);
         });
@@ -135,25 +135,27 @@ describe('API', () => {
             const res = await request(app, 'GET', '/api/calibration', { cookie: operatorCookie });
             assert.strictEqual(res.status, 200);
             assert.ok(res.body.calibration);
-            assert.ok(res.body.calibration.pixels_per_inch > 0);
+            assert.ok(res.body.calibration.inches_per_norm > 0);
         });
     });
 
     describe('POST /api/measurements', () => {
         it('saves a measurement as operator', async () => {
+            // With calibration: inches_per_norm = 300
+            // Lines at 0.2 and 0.7 = 0.5 norm dist = 150 inches
             const res = await request(app, 'POST', '/api/measurements', {
                 cookie: operatorCookie,
-                body: { line1_px: 200, line2_px: 900 }
+                body: { line1_norm: 0.2, line2_norm: 0.7 }
             });
             assert.strictEqual(res.status, 201);
             assert.ok(res.body.distance_inches > 0);
             assert.ok(res.body.distance_display);
-            assert.strictEqual(res.body.pixel_distance, 700);
+            assert.ok(Math.abs(res.body.distance_inches - 150) < 0.1);
         });
 
         it('rejects without auth', async () => {
             const res = await request(app, 'POST', '/api/measurements', {
-                body: { line1_px: 200, line2_px: 900 }
+                body: { line1_norm: 0.2, line2_norm: 0.7 }
             });
             assert.strictEqual(res.status, 401);
         });

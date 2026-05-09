@@ -1188,6 +1188,13 @@ document.querySelectorAll('.key-capture-btn').forEach(btn => {
     btn.addEventListener('click', () => startKeyCapture(btn.dataset.action));
 });
 
+// Cancel key capture when clicking anywhere else in the modal
+$('settings-modal').addEventListener('click', (e) => {
+    if (captureTarget && !e.target.classList.contains('key-capture-btn')) {
+        cancelKeyCapture();
+    }
+});
+
 // Sensitivity sliders
 $('slider-coarse').addEventListener('input', (e) => {
     $('val-coarse').textContent = parseFloat(e.target.value).toFixed(3);

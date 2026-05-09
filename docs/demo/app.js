@@ -1322,6 +1322,11 @@ document.querySelectorAll('.settings-tab').forEach(tab => {
 document.querySelectorAll('.key-capture-btn').forEach(btn => {
     btn.addEventListener('click', () => startKeyCapture(btn.dataset.action));
 });
+$('settings-modal').addEventListener('click', (e) => {
+    if (captureTarget && !e.target.classList.contains('key-capture-btn')) {
+        cancelKeyCapture();
+    }
+});
 $('slider-coarse').addEventListener('input', (e) => {
     $('val-coarse').textContent = parseFloat(e.target.value).toFixed(3);
 });

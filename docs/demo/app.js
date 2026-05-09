@@ -282,8 +282,16 @@ function startClock() {
 }
 
 // === Calibration ===
+// Default calibration: 10ft across the reference marker span (0.37-0.49 = 0.12 norm)
+const DEFAULT_CALIBRATION = {
+    ref1_norm: REF_MARKER_1,
+    ref2_norm: REF_MARKER_2,
+    known_distance_inches: 120,
+    inches_per_norm: 120 / (REF_MARKER_2 - REF_MARKER_1),
+};
+
 function loadCalibration() {
-    state.calibration = storageGet('calibration');
+    state.calibration = storageGet('calibration') || DEFAULT_CALIBRATION;
     updateCalStatus();
 }
 

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axle Measurement System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .hero {
+            text-align: center;
+            padding: 80px 24px 60px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f0f 100%);
+            border-bottom: 1px solid #222;
+        }
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+        .hero h1 span { color: #0088ff; }
+        .hero .subtitle {
+            font-size: 18px;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+        .hero .cta {
+            display: inline-block;
+            padding: 14px 36px;
+            background: #0066cc;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .hero .cta:hover { background: #0077ee; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 136, 255, 0.15);
+            color: #0088ff;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            border: 1px solid rgba(0, 136, 255, 0.3);
+        }
+
+        .features {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 60px 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .feature {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 28px 24px;
+        }
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+        .feature h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .feature p {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.6;
+        }
+
+        .how-it-works {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+        .how-it-works h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .step {
+            text-align: center;
+            padding: 20px;
+        }
+        .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #0066cc;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .step h4 {
+            font-size: 15px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .step p {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.5;
+        }
+
+        .tech-specs {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+        .tech-specs h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .spec {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 16px 20px;
+            text-align: center;
+        }
+        .spec .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0088ff;
+            font-family: 'Courier New', monospace;
+        }
+        .spec .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            border-top: 1px solid #222;
+            font-size: 13px;
+            color: #555;
+        }
+        footer a { color: #0088ff; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">Dividia Development</div>
+        <h1>Axle <span>Measurement</span> System</h1>
+        <p class="subtitle">
+            Camera-based axle spacing measurement with Federal Bridge Formula B weight calculations.
+            Built for industrial scale houses and FL DOT overweight permit verification.
+        </p>
+        <a href="demo/" class="cta">Launch Interactive Demo</a>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">&#x1F3AF;</div>
+            <h3>Precision Measurement</h3>
+            <p>Two movable reference lines on live video feed. Calibrate once with a known distance, then measure any axle spacing. Coarse and fine adjustment modes for pixel-level accuracy.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x2696;&#xFE0F;</div>
+            <h3>Bridge Formula Calculator</h3>
+            <p>Instant max allowable weight using Federal Bridge Formula B (23 USC 127). Florida-specific special vehicle caps for dump trucks, concrete mixers, waste, and fuel transport.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F4F8;</div>
+            <h3>Screenshot Evidence</h3>
+            <p>Save measurements with annotated screenshots showing line positions, distance, axle count, and weight data. Full measurement history with view and download.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F3ED;</div>
+            <h3>Scale House Integration</h3>
+            <p>Designed for cement plant and aggregate facility scale houses. Connects to existing NVR infrastructure via WebRTC for live camera feeds.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F579;&#xFE0F;</div>
+            <h3>Hardware Controller</h3>
+            <p>USB HID controller with dual joysticks for hands-free line adjustment. Arduino Pro Micro with twist potentiometers. Keyboard fallback always available.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F4CB;</div>
+            <h3>Permit Verification</h3>
+            <p>FL DOT overweight permit lookup integration (PAS portal). Verify permit validity against measured axle spacing and calculated weight limits.</p>
+        </div>
+    </div>
+
+    <div class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h4>Calibrate</h4>
+                <p>Align measurement lines to a known reference distance in the camera view</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h4>Measure</h4>
+                <p>Position lines on the first and last axle of the vehicle using keyboard or joystick</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h4>Calculate</h4>
+                <p>Bridge Formula B computes max allowable weight based on axle count and spacing</p>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <h4>Record</h4>
+                <p>Save measurement with annotated screenshot for compliance records</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tech-specs">
+        <h2>Specifications</h2>
+        <div class="spec-grid">
+            <div class="spec">
+                <div class="value">23 USC 127</div>
+                <div class="label">Federal Bridge Formula</div>
+            </div>
+            <div class="spec">
+                <div class="value">FL 316.535</div>
+                <div class="label">Florida Statute</div>
+            </div>
+            <div class="spec">
+                <div class="value">80,000</div>
+                <div class="label">Max GVW (lbs)</div>
+            </div>
+            <div class="spec">
+                <div class="value">70,000</div>
+                <div class="label">Special Vehicle Cap (lbs)</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Axle Measurement System &mdash; <a href="https://github.com/dividia-dev/axle-measurement">GitHub</a></p>
+    </footer>
+</body>
+</html>

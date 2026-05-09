@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axle Measurement - Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Demo banner */
+        #demo-banner {
+            background: linear-gradient(90deg, #1a1a2e, #0f0f2e);
+            border-bottom: 1px solid #0066cc;
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        #demo-banner .demo-tag {
+            background: #0066cc;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        #demo-banner .demo-info {
+            color: #666;
+        }
+        #demo-banner a {
+            color: #0088ff;
+            text-decoration: none;
+            margin-left: 16px;
+        }
+        #demo-banner a:hover { text-decoration: underline; }
+        /* Storage meter */
+        .storage-meter {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #555;
+        }
+        .storage-bar {
+            width: 60px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .storage-fill {
+            height: 100%;
+            background: #0066cc;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Banner -->
+    <div id="demo-banner">
+        <div>
+            <span class="demo-tag">DEMO</span>
+            <span class="demo-info">Session storage mode - data clears when tab closes</span>
+        </div>
+        <div>
+            <span class="storage-meter">
+                <span id="storage-used">0 KB</span>
+                <span class="storage-bar"><span class="storage-fill" id="storage-fill" style="width:0%"></span></span>
+            </span>
+            <a href="../">Back to Overview</a>
+        </div>
+    </div>
+
+    <!-- Main App Screen (no login in demo) -->
+    <div id="app-screen" class="screen">
+        <!-- Top Bar -->
+        <div id="top-bar">
+            <div id="top-bar-left">
+                <span id="app-title">Axle Measurement</span>
+                <div id="cal-status">
+                    <span id="cal-indicator" class="not-calibrated">NOT CALIBRATED</span>
+                </div>
+            </div>
+            <div id="top-bar-right">
+                <span id="user-info">demo (admin)</span>
+                <button id="btn-history" title="Measurement History">History</button>
+                <button id="btn-calibrate" title="Calibration">Calibrate</button>
+                <button id="btn-load-media" title="Load your own video or image">Load Video/Image</button>
+                <input type="file" id="file-input" accept="video/*,image/*" hidden>
+                <button id="btn-clear-data" title="Clear all demo data" style="background:#442222;border-color:#553333">Clear Data</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area: Video + Side Panel -->
+        <div id="main-content">
+            <!-- Video + Overlay Container -->
+            <div id="video-container">
+                <video id="camera-feed" autoplay muted loop playsinline></video>
+                <canvas id="test-pattern" style="display:none"></canvas>
+                <canvas id="overlay"></canvas>
+
+                <!-- Measurement Display -->
+                <div id="measurement-display" hidden>
+                    <span id="measurement-value">--</span>
+                </div>
+
+                <!-- Line Labels -->
+                <div id="line1-label" class="line-label" hidden>Line 1</div>
+                <div id="line2-label" class="line-label" hidden>Line 2</div>
+            </div>
+
+            <!-- Right Side Control Panel -->
+            <div id="side-panel">
+                <!-- Date/Time Clock -->
+                <div class="panel-section">
+                    <div id="panel-clock" class="panel-clock"></div>
+                </div>
+                <div class="panel-divider"></div>
+
+                <!-- Weight Display -->
+                <div class="panel-section" id="weight-panel" hidden>
+                    <div class="panel-label">MAX WEIGHT</div>
+                    <div id="weight-max" class="panel-big-value">--</div>
+                    <div id="weight-scale-line" hidden>
+                        <div class="panel-label">SCALE</div>
+                        <div id="weight-scale" class="panel-big-value">--</div>
+                    </div>
+                    <div id="weight-status" hidden></div>
+                    <div class="panel-divider"></div>
+                    <div class="panel-label">AXLES</div>
+                    <div class="panel-axle-row">
+                        <button class="axle-btn" id="btn-axle-minus">-</button>
+                        <span id="axle-count-display">5</span>
+                        <button class="axle-btn" id="btn-axle-plus">+</button>
+                    </div>
+                    <div class="panel-axle-spacer"></div>
+                    <label class="panel-toggle" title="Dump truck, concrete mixer, waste, or fuel transport (70,000 lb cap)">
+                        <input type="checkbox" id="chk-special">
+                        <span class="toggle-switch"></span>
+                        <span class="toggle-label">Dump/Mix</span>
+                    </label>
+                </div>
+
+                <!-- Divider -->
+                <div class="panel-divider"></div>
+
+                <!-- Actions -->
+                <div class="panel-section">
+                    <button id="btn-save-measurement" class="panel-btn panel-btn-save" disabled>Save</button>
+                    <button id="btn-reset-lines" class="panel-btn panel-btn-reset">Reset</button>
+                </div>
+
+                <!-- Divider -->
+                <div class="panel-divider"></div>
+
+                <!-- Mode Toggle Button -->
+                <div class="panel-section">
+                    <div class="panel-label">MODE</div>
+                    <button id="mode-indicator" class="panel-btn mode-coarse">COARSE</button>
+                </div>
+
+                <!-- Spacer pushes keyboard hints to bottom -->
+                <div class="panel-spacer"></div>
+
+                <!-- Keyboard Hints -->
+                <div class="panel-section panel-hints">
+                    <div><kbd>A</kbd><kbd>D</kbd> Line 1</div>
+                    <div><kbd>J</kbd><kbd>L</kbd> Line 2</div>
+                    <div><kbd>F</kbd> Fine/Coarse</div>
+                    <div><kbd>Space</kbd> Save</div>
+                    <div><kbd>R</kbd> Reset</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calibration Panel -->
+        <div id="calibration-modal" class="cal-panel" hidden>
+            <div class="cal-panel-content">
+                <div class="cal-header">
+                    <strong>CALIBRATION MODE</strong>
+                    <span class="cal-hint">Move lines to reference markers</span>
+                </div>
+                <div class="cal-stats">
+                    <span>Px dist: <strong id="cal-pixel-dist">--</strong></span>
+                </div>
+                <div class="cal-distance-input">
+                    <label>Known distance:</label>
+                    <div class="cal-feet-inches">
+                        <input type="number" id="cal-feet" min="0" max="200" step="1" placeholder="ft" class="cal-input-sm">
+                        <span>ft</span>
+                        <input type="number" id="cal-inches" min="0" max="11" step="1" placeholder="in" class="cal-input-sm">
+                        <span>in</span>
+                    </div>
+                </div>
+                <div class="cal-actions">
+                    <button id="btn-cal-save">Save</button>
+                    <button id="btn-cal-cancel" class="secondary">Cancel</button>
+                </div>
+                <div id="cal-error" class="error" hidden></div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="history-modal" class="modal" hidden>
+            <div class="modal-content modal-wide">
+                <h2>Measurement History</h2>
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Distance</th>
+                            <th>Axles</th>
+                            <th>Max Weight</th>
+                            <th>Operator</th>
+                            <th>Image</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+                <div class="modal-buttons">
+                    <button id="btn-history-close" class="secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

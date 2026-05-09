@@ -28,6 +28,12 @@
  *   Joy2 fine left/right:   U / O
  *   Joy1 button:            1
  *   Joy2 button:            2
+ *
+ * Dead zone auto-calibration:
+ *   Hold joystick button for 3 seconds to calibrate that joystick.
+ *   LED blinks fast, then samples resting noise for 2 seconds.
+ *   Sets dead zone to noise peak + margin, saves to EEPROM.
+ *   Can also calibrate via serial: CAL 1 or CAL 2
  */
 
 #include <Keyboard.h>
@@ -65,8 +71,10 @@ const int EEPROM_KEYS_START = 2;      // 10 bytes for key mappings
 //   7: JOY2_LEFT_FINE
 //   8: JOY2_RIGHT_FINE
 //   9: JOY2_BTN
+const int EEPROM_DEADZONE_START = 12; // 4 bytes: J1 coarse, J1 fine, J2 coarse, J2 fine
+const int EEPROM_CENTER_START = 16;   // 4 bytes: J1 X center (2 bytes), J2 X center (2 bytes)
 
-const byte EEPROM_MAGIC_VALUE = 0xAC; // "AC" for Axle Controller
+const byte EEPROM_MAGIC_VALUE = 0xAD; // Bumped from 0xAC to force re-init with new fields
 const int NUM_KEYS = 10;
 
 // === Key Mapping Indices ===
@@ -97,9 +105,18 @@ const char DEFAULT_KEYS[NUM_KEYS] = {
 char keys[NUM_KEYS];
 
 // === Tuning Parameters ===
-const int DEADZONE_COARSE = 80;
-const int DEADZONE_FINE = 60;
-const int CENTER = 512;
+// Default dead zones (used on first run, then EEPROM values take over)
+const int DEFAULT_DEADZONE_COARSE = 80;
+const int DEFAULT_DEADZONE_FINE = 60;
+const int DEFAULT_CENTER = 512;
+
+// Active dead zone values (loaded from EEPROM)
+int deadzone1Coarse = DEFAULT_DEADZONE_COARSE;
+int deadzone1Fine = DEFAULT_DEADZONE_FINE;
+int deadzone2Coarse = DEFAULT_DEADZONE_COARSE;
+int deadzone2Fine = DEFAULT_DEADZONE_FINE;
+int center1 = DEFAULT_CENTER;
+int center2 = DEFAULT_CENTER;
 
 // Repeat rate control (milliseconds between keystrokes)
 const int REPEAT_FAST = 30;
@@ -108,6 +125,9 @@ const int REPEAT_FINE = 150;
 
 // Fine axis engagement threshold
 const int FINE_ACTIVE_THRESHOLD = 40;
+
+// Dead zone calibration margin (added to measured noise peak)
+const int DEADZONE_MARGIN = 15;
 
 // === State ===
 unsigned long lastRepeat1 = 0;
@@ -121,6 +141,14 @@ bool discreteFineMode2 = false;
 unsigned long lastBtn1Press = 0;
 unsigned long lastBtn2Press = 0;
 const unsigned long DEBOUNCE_MS = 200;
+
+// Calibration state
+const unsigned long CAL_HOLD_MS = 3000;   // Hold button 3 sec to start
+const unsigned long CAL_SAMPLE_MS = 2000; // Sample noise for 2 sec
+unsigned long btn1HoldStart = 0;
+unsigned long btn2HoldStart = 0;
+bool btn1WasPressed = false;
+bool btn2WasPressed = false;
 
 // Serial config command buffer
 String serialBuffer = "";
@@ -174,17 +202,25 @@ void loop() {
     return;
   }
 
+  // Check for calibration hold (button held 3 seconds)
+  checkCalibrationHold(JOY1_BTN, btn1WasPressed, btn1HoldStart,
+                       JOY1_X, JOY1_Y, LED_FINE1, 1);
+  checkCalibrationHold(JOY2_BTN, btn2WasPressed, btn2HoldStart,
+                       JOY2_X, JOY2_Y, LED_FINE2, 2);
+
   // Process each joystick
   processJoystick(
     JOY1_X, JOY1_Y, JOY1_BTN, LED_FINE1,
     lastRepeat1, lastBtn1Press, discreteFineMode1,
-    J1_LEFT_COARSE, J1_RIGHT_COARSE, J1_LEFT_FINE, J1_RIGHT_FINE, J1_BTN
+    J1_LEFT_COARSE, J1_RIGHT_COARSE, J1_LEFT_FINE, J1_RIGHT_FINE, J1_BTN,
+    deadzone1Coarse, deadzone1Fine, center1
   );
 
   processJoystick(
     JOY2_X, JOY2_Y, JOY2_BTN, LED_FINE2,
     lastRepeat2, lastBtn2Press, discreteFineMode2,
-    J2_LEFT_COARSE, J2_RIGHT_COARSE, J2_LEFT_FINE, J2_RIGHT_FINE, J2_BTN
+    J2_LEFT_COARSE, J2_RIGHT_COARSE, J2_LEFT_FINE, J2_RIGHT_FINE, J2_BTN,
+    deadzone2Coarse, deadzone2Fine, center2
   );
 }
 
@@ -192,14 +228,15 @@ void loop() {
 void processJoystick(
   int pinX, int pinY, int pinBtn, int ledFine,
   unsigned long &lastRepeat, unsigned long &lastBtnPress, bool &discreteFine,
-  int keyLeftCoarse, int keyRightCoarse, int keyLeftFine, int keyRightFine, int keyBtn
+  int keyLeftCoarse, int keyRightCoarse, int keyLeftFine, int keyRightFine, int keyBtn,
+  int dzCoarse, int dzFine, int centerVal
 ) {
   int rawX = analogRead(pinX);
   int rawY = analogRead(pinY);
   bool btnPressed = (digitalRead(pinBtn) == LOW);
 
-  int deflectX = rawX - CENTER;
-  int deflectY = rawY - CENTER;
+  int deflectX = rawX - centerVal;
+  int deflectY = rawY - centerVal;
 
   // Handle button press
   unsigned long now = millis();
@@ -242,13 +279,13 @@ void processJoystick(
       // Proportional mode fine: use Y/twist axis
       deflection = deflectY;
     }
-    deadzone = DEADZONE_FINE;
+    deadzone = dzFine;
     repeatRate = REPEAT_FINE;
     keyLeft = keyLeftFine;
     keyRight = keyRightFine;
   } else {
     deflection = deflectX;
-    deadzone = DEADZONE_COARSE;
+    deadzone = dzCoarse;
     keyLeft = keyLeftCoarse;
     keyRight = keyRightCoarse;
 
@@ -279,10 +316,122 @@ void processJoystick(
   }
 }
 
+// === Dead Zone Auto-Calibration ===
+void checkCalibrationHold(int pinBtn, bool &wasPressed, unsigned long &holdStart,
+                          int pinX, int pinY, int ledFine, int joyNum) {
+  bool pressed = (digitalRead(pinBtn) == LOW);
+
+  if (pressed && !wasPressed) {
+    // Button just pressed, start timing
+    holdStart = millis();
+  } else if (pressed && wasPressed) {
+    // Button still held, check duration
+    if (millis() - holdStart >= CAL_HOLD_MS) {
+      // Held long enough — run calibration
+      runCalibration(pinX, pinY, ledFine, joyNum);
+      holdStart = 0;
+      // Wait for button release to avoid triggering normal button action
+      while (digitalRead(pinBtn) == LOW) delay(10);
+    }
+  }
+
+  wasPressed = pressed;
+}
+
+void runCalibration(int pinX, int pinY, int ledFine, int joyNum) {
+  Serial.print("CALIBRATING Joystick ");
+  Serial.println(joyNum);
+  Serial.println("  Release joystick and don't touch...");
+
+  // Fast blink LED to indicate calibration mode
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(ledFine, HIGH);
+    delay(100);
+    digitalWrite(ledFine, LOW);
+    delay(100);
+  }
+
+  // Wait a moment for the operator to release the joystick
+  delay(500);
+
+  // Sample the resting position and noise for CAL_SAMPLE_MS
+  int minX = 1023, maxX = 0;
+  int minY = 1023, maxY = 0;
+  long sumX = 0, sumY = 0;
+  int samples = 0;
+
+  unsigned long start = millis();
+  while (millis() - start < CAL_SAMPLE_MS) {
+    int x = analogRead(pinX);
+    int y = analogRead(pinY);
+
+    sumX += x;
+    sumY += y;
+    samples++;
+
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+
+    // Blink LED during sampling
+    digitalWrite(ledFine, (millis() / 80) % 2 ? HIGH : LOW);
+    delay(5);
+  }
+
+  // Calculate center point (average of all samples)
+  int centerX = sumX / samples;
+  int centerY = sumY / samples;
+
+  // Calculate noise range (max deflection from center at rest)
+  int noiseX = max(abs(maxX - centerX), abs(minX - centerX));
+  int noiseY = max(abs(maxY - centerY), abs(minY - centerY));
+
+  // Dead zone = noise peak + margin
+  int dzCoarse = noiseX + DEADZONE_MARGIN;
+  int dzFine = noiseY + DEADZONE_MARGIN;
+
+  // Minimum dead zones (safety floor)
+  if (dzCoarse < 20) dzCoarse = 20;
+  if (dzFine < 20) dzFine = 20;
+
+  // Store results
+  if (joyNum == 1) {
+    center1 = centerX;
+    deadzone1Coarse = dzCoarse;
+    deadzone1Fine = dzFine;
+  } else {
+    center2 = centerX;
+    deadzone2Coarse = dzCoarse;
+    deadzone2Fine = dzFine;
+  }
+
+  saveDeadzones();
+
+  // Solid LED for 1 second to confirm
+  digitalWrite(ledFine, HIGH);
+  delay(1000);
+  digitalWrite(ledFine, LOW);
+
+  Serial.print("  Center: ");
+  Serial.println(centerX);
+  Serial.print("  Noise X: ");
+  Serial.print(noiseX);
+  Serial.print("  Noise Y: ");
+  Serial.println(noiseY);
+  Serial.print("  Dead zone coarse: ");
+  Serial.println(dzCoarse);
+  Serial.print("  Dead zone fine: ");
+  Serial.println(dzFine);
+  Serial.print("  Samples: ");
+  Serial.println(samples);
+  Serial.println("CALIBRATION COMPLETE");
+}
+
 // === EEPROM Settings ===
 void loadSettings() {
   if (EEPROM.read(EEPROM_MAGIC) != EEPROM_MAGIC_VALUE) {
-    // First run — write defaults
+    // First run or magic changed — write defaults
     saveDefaults();
   }
 
@@ -290,6 +439,24 @@ void loadSettings() {
   for (int i = 0; i < NUM_KEYS; i++) {
     keys[i] = EEPROM.read(EEPROM_KEYS_START + i);
   }
+
+  // Load dead zones
+  deadzone1Coarse = EEPROM.read(EEPROM_DEADZONE_START);
+  deadzone1Fine = EEPROM.read(EEPROM_DEADZONE_START + 1);
+  deadzone2Coarse = EEPROM.read(EEPROM_DEADZONE_START + 2);
+  deadzone2Fine = EEPROM.read(EEPROM_DEADZONE_START + 3);
+
+  // Load centers (2 bytes each, high byte then low byte)
+  center1 = (EEPROM.read(EEPROM_CENTER_START) << 8) | EEPROM.read(EEPROM_CENTER_START + 1);
+  center2 = (EEPROM.read(EEPROM_CENTER_START + 2) << 8) | EEPROM.read(EEPROM_CENTER_START + 3);
+
+  // Sanity checks
+  if (deadzone1Coarse < 10 || deadzone1Coarse > 250) deadzone1Coarse = DEFAULT_DEADZONE_COARSE;
+  if (deadzone1Fine < 10 || deadzone1Fine > 250) deadzone1Fine = DEFAULT_DEADZONE_FINE;
+  if (deadzone2Coarse < 10 || deadzone2Coarse > 250) deadzone2Coarse = DEFAULT_DEADZONE_COARSE;
+  if (deadzone2Fine < 10 || deadzone2Fine > 250) deadzone2Fine = DEFAULT_DEADZONE_FINE;
+  if (center1 < 100 || center1 > 900) center1 = DEFAULT_CENTER;
+  if (center2 < 100 || center2 > 900) center2 = DEFAULT_CENTER;
 }
 
 void saveDefaults() {
@@ -298,6 +465,16 @@ void saveDefaults() {
   for (int i = 0; i < NUM_KEYS; i++) {
     EEPROM.write(EEPROM_KEYS_START + i, DEFAULT_KEYS[i]);
   }
+  // Default dead zones
+  EEPROM.write(EEPROM_DEADZONE_START, DEFAULT_DEADZONE_COARSE);
+  EEPROM.write(EEPROM_DEADZONE_START + 1, DEFAULT_DEADZONE_FINE);
+  EEPROM.write(EEPROM_DEADZONE_START + 2, DEFAULT_DEADZONE_COARSE);
+  EEPROM.write(EEPROM_DEADZONE_START + 3, DEFAULT_DEADZONE_FINE);
+  // Default centers
+  EEPROM.write(EEPROM_CENTER_START, highByte(DEFAULT_CENTER));
+  EEPROM.write(EEPROM_CENTER_START + 1, lowByte(DEFAULT_CENTER));
+  EEPROM.write(EEPROM_CENTER_START + 2, highByte(DEFAULT_CENTER));
+  EEPROM.write(EEPROM_CENTER_START + 3, lowByte(DEFAULT_CENTER));
 }
 
 void saveSettings() {
@@ -305,6 +482,17 @@ void saveSettings() {
   for (int i = 0; i < NUM_KEYS; i++) {
     EEPROM.write(EEPROM_KEYS_START + i, keys[i]);
   }
+}
+
+void saveDeadzones() {
+  EEPROM.write(EEPROM_DEADZONE_START, deadzone1Coarse);
+  EEPROM.write(EEPROM_DEADZONE_START + 1, deadzone1Fine);
+  EEPROM.write(EEPROM_DEADZONE_START + 2, deadzone2Coarse);
+  EEPROM.write(EEPROM_DEADZONE_START + 3, deadzone2Fine);
+  EEPROM.write(EEPROM_CENTER_START, highByte(center1));
+  EEPROM.write(EEPROM_CENTER_START + 1, lowByte(center1));
+  EEPROM.write(EEPROM_CENTER_START + 2, highByte(center2));
+  EEPROM.write(EEPROM_CENTER_START + 3, lowByte(center2));
 }
 
 // === Serial Configuration Interface ===
@@ -348,11 +536,28 @@ void processCommand(String cmd) {
   else if (cmd.startsWith("SET ")) {
     handleSetKey(cmd.substring(4));
   }
+  else if (cmd == "DEADZONE" || cmd == "DZ") {
+    printDeadzones();
+  }
+  else if (cmd.startsWith("DZ ") || cmd.startsWith("DEADZONE ")) {
+    String args = cmd.startsWith("DZ ") ? cmd.substring(3) : cmd.substring(9);
+    handleSetDeadzone(args);
+  }
+  else if (cmd == "CALIBRATE 1" || cmd == "CAL 1") {
+    runCalibration(JOY1_X, JOY1_Y, LED_FINE1, 1);
+  }
+  else if (cmd == "CALIBRATE 2" || cmd == "CAL 2") {
+    runCalibration(JOY2_X, JOY2_Y, LED_FINE2, 2);
+  }
+  else if (cmd == "RAW") {
+    printRawValues();
+  }
   else if (cmd == "DEFAULTS") {
     saveDefaults();
     loadSettings();
-    Serial.println("All settings reset to defaults.");
+    Serial.println("All settings reset to defaults (including dead zones).");
     printKeys();
+    printDeadzones();
   }
   else {
     Serial.println("Unknown command. Type HELP for commands.");
@@ -408,19 +613,102 @@ void handleSetKey(String args) {
   Serial.println("'");
 }
 
+void handleSetDeadzone(String args) {
+  // Format: DZ <JOY> <COARSE> <FINE>
+  // Example: DZ 1 60 40
+  args.trim();
+  int sp1 = args.indexOf(' ');
+  if (sp1 < 0) {
+    Serial.println("Usage: DZ <1|2> <coarse> <fine>");
+    Serial.println("  Example: DZ 1 60 40");
+    return;
+  }
+  int joyNum = args.substring(0, sp1).toInt();
+  String rest = args.substring(sp1 + 1);
+  rest.trim();
+  int sp2 = rest.indexOf(' ');
+  if (sp2 < 0 || (joyNum != 1 && joyNum != 2)) {
+    Serial.println("Usage: DZ <1|2> <coarse> <fine>");
+    return;
+  }
+  int coarse = rest.substring(0, sp2).toInt();
+  int fine = rest.substring(sp2 + 1).toInt();
+
+  if (coarse < 10 || coarse > 250 || fine < 10 || fine > 250) {
+    Serial.println("Values must be 10-250.");
+    return;
+  }
+
+  if (joyNum == 1) {
+    deadzone1Coarse = coarse;
+    deadzone1Fine = fine;
+  } else {
+    deadzone2Coarse = coarse;
+    deadzone2Fine = fine;
+  }
+  saveDeadzones();
+  Serial.print("Joystick ");
+  Serial.print(joyNum);
+  Serial.print(" dead zones set: coarse=");
+  Serial.print(coarse);
+  Serial.print(" fine=");
+  Serial.println(fine);
+}
+
+void printDeadzones() {
+  Serial.println();
+  Serial.println("Dead Zone Settings:");
+  Serial.println("------------------------------");
+  Serial.print("  Joy1 coarse: ");
+  Serial.print(deadzone1Coarse);
+  Serial.print("  fine: ");
+  Serial.print(deadzone1Fine);
+  Serial.print("  center: ");
+  Serial.println(center1);
+  Serial.print("  Joy2 coarse: ");
+  Serial.print(deadzone2Coarse);
+  Serial.print("  fine: ");
+  Serial.print(deadzone2Fine);
+  Serial.print("  center: ");
+  Serial.println(center2);
+  Serial.println();
+}
+
+void printRawValues() {
+  Serial.println("Raw analog values (10 readings):");
+  for (int i = 0; i < 10; i++) {
+    Serial.print("  J1 X=");
+    Serial.print(analogRead(JOY1_X));
+    Serial.print(" Y=");
+    Serial.print(analogRead(JOY1_Y));
+    Serial.print("  J2 X=");
+    Serial.print(analogRead(JOY2_X));
+    Serial.print(" Y=");
+    Serial.println(analogRead(JOY2_Y));
+    delay(100);
+  }
+}
+
 void printHelp() {
   Serial.println();
   Serial.println("=== CV Axle Controller ===");
   Serial.println("Commands (via Serial Monitor):");
   Serial.println("  HELP       - Show this help");
-  Serial.println("  STATUS     - Show current mode and lock state");
+  Serial.println("  STATUS     - Show current mode, lock, and dead zones");
   Serial.println("  KEYS       - Show current key mappings");
   Serial.println("  MODE PROPORTIONAL - Deflection = speed (default)");
   Serial.println("  MODE DISCRETE     - Button toggles coarse/fine");
   Serial.println("  SET <SLOT> <KEY>  - Remap a key");
   Serial.println("    Slots: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B");
   Serial.println("    Example: SET J1LC w");
-  Serial.println("  DEFAULTS   - Reset all settings to factory");
+  Serial.println("  DZ             - Show dead zone values");
+  Serial.println("  DZ <1|2> <C> <F> - Set dead zones manually");
+  Serial.println("    Example: DZ 1 60 40");
+  Serial.println("  CAL <1|2>      - Auto-calibrate joystick dead zone");
+  Serial.println("  RAW            - Show raw analog readings");
+  Serial.println("  DEFAULTS       - Reset all settings to factory");
+  Serial.println();
+  Serial.println("Auto-calibrate: hold joystick button 3 sec");
   Serial.println();
 }
 
@@ -430,7 +718,7 @@ void printStatus() {
   Serial.println(controlMode == 0 ? "PROPORTIONAL" : "DISCRETE TOGGLE");
   Serial.print("Lock: ");
   Serial.println(locked ? "LOCKED" : "ACTIVE");
-  Serial.println();
+  printDeadzones();
 }
 
 void printKeys() {

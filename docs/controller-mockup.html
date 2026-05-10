@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Concept Sketches</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 40px 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 50px;
+  }
+  .views {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 50px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .view-card {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    flex: 0 1 420px;
+  }
+  .view-card h2 {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7ec8e3;
+    margin-bottom: 20px;
+  }
+  .view-card svg {
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+  }
+  .legend {
+    max-width: 800px;
+    margin: 50px auto 0;
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 30px 40px;
+  }
+  .legend h2 {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7ec8e3;
+    margin-bottom: 16px;
+  }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 30px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #bbb;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-rect {
+    width: 20px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .notes {
+    max-width: 800px;
+    margin: 30px auto 0;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<h1>CV AXLE CONTROLLER</h1>
+<p class="subtitle">Concept Sketches &mdash; 3D Printed Enclosure with Dual Joysticks</p>
+
+<div class="views">
+
+  <!-- TOP VIEW -->
+  <div class="view-card">
+    <h2>Top View</h2>
+    <svg width="380" height="280" viewBox="0 0 380 280">
+      <!-- Enclosure body -->
+      <rect x="30" y="30" width="320" height="220" rx="18" ry="18"
+            fill="#2d2d3f" stroke="#555" stroke-width="2"/>
+      <!-- Subtle top surface detail -->
+      <rect x="38" y="38" width="304" height="204" rx="14" ry="14"
+            fill="none" stroke="#3a3a50" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- Section divider (subtle ridge between joystick areas) -->
+      <line x1="190" y1="55" x2="190" y2="235" stroke="#3a3a50" stroke-width="1" stroke-dasharray="6,4"/>
+
+      <!-- LEFT JOYSTICK (Line 1) -->
+      <!-- Base plate -->
+      <circle cx="120" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <!-- Twist ring -->
+      <circle cx="120" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <!-- Stick -->
+      <circle cx="120" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+      <!-- Label -->
+      <text x="120" y="205" text-anchor="middle" fill="#7ec8e3" font-size="11" font-weight="500">JOYSTICK 1</text>
+      <text x="120" y="218" text-anchor="middle" fill="#666" font-size="9">Line 1 Control</text>
+      <!-- Arrows showing X axis -->
+      <text x="62" y="149" text-anchor="middle" fill="#666" font-size="16">&larr;</text>
+      <text x="178" y="149" text-anchor="middle" fill="#666" font-size="16">&rarr;</text>
+      <!-- Twist indicator: arcs above outer joystick circle (r=60, center 120,145) -->
+      <!-- Left arrow: counterclockwise from ~11 o'clock to ~8 o'clock -->
+      <path d="M 94 91 A 60 60 0 0 0 68 114" fill="none" stroke="#4a6fa5" stroke-width="1.5" marker-end="url(#twistArrow)"/>
+      <!-- Curved text along the top arc -->
+      <defs><path id="twistArc1" d="M 88 94 A 60 60 0 0 1 152 94"/></defs>
+      <text fill="#4a6fa5" font-size="7" font-weight="500">
+        <textPath href="#twistArc1" startOffset="50%" text-anchor="middle">TWIST=FINE</textPath>
+      </text>
+      <!-- Right arrow: clockwise from ~1 o'clock to ~4 o'clock -->
+      <path d="M 146 91 A 60 60 0 0 1 172 114" fill="none" stroke="#4a6fa5" stroke-width="1.5" marker-end="url(#twistArrow)"/>
+
+      <!-- RIGHT JOYSTICK (Line 2) -->
+      <circle cx="260" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <circle cx="260" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <circle cx="260" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+      <text x="260" y="205" text-anchor="middle" fill="#7ec8e3" font-size="11" font-weight="500">JOYSTICK 2</text>
+      <text x="260" y="218" text-anchor="middle" fill="#666" font-size="9">Line 2 Control</text>
+      <text x="202" y="149" text-anchor="middle" fill="#666" font-size="16">&larr;</text>
+      <text x="318" y="149" text-anchor="middle" fill="#666" font-size="16">&rarr;</text>
+      <!-- Twist indicator: arcs above outer joystick circle (r=60, center 260,145) -->
+      <path d="M 234 91 A 60 60 0 0 0 208 114" fill="none" stroke="#4a6fa5" stroke-width="1.5" marker-end="url(#twistArrow)"/>
+      <defs><path id="twistArc2" d="M 228 94 A 60 60 0 0 1 292 94"/></defs>
+      <text fill="#4a6fa5" font-size="7" font-weight="500">
+        <textPath href="#twistArc2" startOffset="50%" text-anchor="middle">TWIST=FINE</textPath>
+      </text>
+      <path d="M 286 91 A 60 60 0 0 1 312 114" fill="none" stroke="#4a6fa5" stroke-width="1.5" marker-end="url(#twistArrow)"/>
+
+      <!-- LEDs row (top center) -->
+      <!-- Fine LED 1 -->
+      <circle cx="155" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="155" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 1</text>
+      <!-- Lock LED (dual-color: green=active, red=locked) -->
+      <circle cx="190" cy="55" r="4.5" fill="#1a5e2a" stroke="#44cc66" stroke-width="1"/>
+      <circle cx="190" cy="55" r="2" fill="#44cc66" opacity="0.6"/>
+      <text x="190" y="68" text-anchor="middle" fill="#44cc66" font-size="7">LOCK</text>
+      <text x="190" y="76" text-anchor="middle" fill="#555" font-size="5">GRN/RED</text>
+      <!-- Fine LED 2 -->
+      <circle cx="225" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="225" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 2</text>
+
+      <!-- Micro flip/toggle switch (top left area) -->
+      <rect x="56" y="50" width="16" height="10" rx="2" fill="#333" stroke="#555" stroke-width="1"/>
+      <rect x="60" y="44" width="8" height="10" rx="2" fill="#555" stroke="#666" stroke-width="0.5"/>
+      <circle cx="64" cy="44" r="2.5" fill="#44cc66"/>
+      <text x="64" y="74" text-anchor="middle" fill="#44cc66" font-size="7">ENABLE</text>
+
+      <!-- Arrow markers -->
+      <defs>
+        <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" fill="none" stroke="#4a6fa5" stroke-width="1"/>
+        </marker>
+        <marker id="twistArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,1 L5,3 L0,5" fill="#4a6fa5" stroke="none"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- FRONT VIEW -->
+  <div class="view-card">
+    <h2>Front View</h2>
+    <svg width="380" height="280" viewBox="0 0 380 280">
+      <!-- Enclosure front face -->
+      <rect x="30" y="80" width="320" height="100" rx="12" ry="12"
+            fill="#2d2d3f" stroke="#555" stroke-width="2"/>
+      <!-- Top surface (perspective hint) -->
+      <path d="M 42 80 L 60 40 L 320 40 L 338 80" fill="#353548" stroke="#555" stroke-width="1.5"/>
+      <!-- Top edge -->
+      <line x1="60" y1="40" x2="320" y2="40" stroke="#666" stroke-width="1"/>
+
+      <!-- Joystick 1 sticking up -->
+      <ellipse cx="130" cy="55" rx="30" ry="8" fill="#222235" stroke="#444" stroke-width="1"/>
+      <rect x="122" y="20" width="16" height="35" rx="4" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+      <ellipse cx="130" cy="20" rx="8" ry="4" fill="#444" stroke="#555" stroke-width="1"/>
+      <text x="130" y="205" text-anchor="middle" fill="#666" font-size="9">JOY 1</text>
+
+      <!-- Joystick 2 sticking up -->
+      <ellipse cx="250" cy="55" rx="30" ry="8" fill="#222235" stroke="#444" stroke-width="1"/>
+      <rect x="242" y="20" width="16" height="35" rx="4" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+      <ellipse cx="250" cy="20" rx="8" ry="4" fill="#444" stroke="#555" stroke-width="1"/>
+      <text x="250" y="205" text-anchor="middle" fill="#666" font-size="9">JOY 2</text>
+
+      <!-- LEDs on top surface (far edge, between joysticks — no labels, too small at this angle) -->
+      <circle cx="165" cy="50" r="3" fill="#2266aa" stroke="#4488cc" stroke-width="1"/>
+      <circle cx="190" cy="50" r="3" fill="#228833" stroke="#44cc66" stroke-width="1"/>
+      <circle cx="190" cy="50" r="1.5" fill="#44cc66" opacity="0.5"/>
+      <circle cx="215" cy="50" r="3" fill="#2266aa" stroke="#4488cc" stroke-width="1"/>
+
+      <!-- Micro flip/toggle switch on top surface (far left, near LEDs) -->
+      <rect x="90" y="49" width="12" height="6" rx="2" fill="#333" stroke="#555" stroke-width="0.5"/>
+      <rect x="93" y="42" width="6" height="9" rx="1.5" fill="#555" stroke="#666" stroke-width="0.5"/>
+      <circle cx="96" cy="42" r="1.5" fill="#44cc66"/>
+
+      <!-- Bottom rubber feet hints -->
+      <rect x="55" y="180" width="20" height="4" rx="2" fill="#222" stroke="#333" stroke-width="1"/>
+      <rect x="305" y="180" width="20" height="4" rx="2" fill="#222" stroke="#333" stroke-width="1"/>
+
+      <!-- Front face label area -->
+      <text x="190" y="150" text-anchor="middle" fill="#444" font-size="10" font-style="italic">CV AXLE CONTROLLER</text>
+
+      <!-- Dimension hint -->
+      <line x1="30" y1="195" x2="350" y2="195" stroke="#444" stroke-width="0.5"/>
+      <line x1="30" y1="192" x2="30" y2="198" stroke="#444" stroke-width="0.5"/>
+      <line x1="350" y1="192" x2="350" y2="198" stroke="#444" stroke-width="0.5"/>
+      <text x="190" y="215" text-anchor="middle" fill="#555" font-size="10">~ 180mm (7")</text>
+
+      <!-- Height dimension -->
+      <line x1="365" y1="20" x2="365" y2="180" stroke="#444" stroke-width="0.5"/>
+      <line x1="362" y1="20" x2="368" y2="20" stroke="#444" stroke-width="0.5"/>
+      <line x1="362" y1="180" x2="368" y2="180" stroke="#444" stroke-width="0.5"/>
+      <text x="370" y="105" text-anchor="start" fill="#555" font-size="9" transform="rotate(90, 370, 105)">~ 55mm (2.2") + sticks</text>
+    </svg>
+  </div>
+
+  <!-- 3/4 PERSPECTIVE VIEW -->
+  <div class="view-card" style="flex: 0 1 500px;">
+    <h2>3/4 Perspective</h2>
+    <svg width="460" height="330" viewBox="0 0 460 330">
+      <!--
+        Box geometry: 180mm W x 120mm D x 35mm H
+        Front face: (60,260)-(310,260)-(310,210)-(60,210)  250px wide, 50px tall
+        Depth offset: dx=+110, dy=-55
+        Right side: (310,260)-(420,205)-(420,155)-(310,210)
+        Top face: (60,210)-(310,210)-(420,155)-(170,155)
+      -->
+
+      <!-- Shadow on ground -->
+      <ellipse cx="240" cy="280" rx="170" ry="14" fill="rgba(0,0,0,0.25)"/>
+
+      <!-- Right side face with rounded corners -->
+      <path d="M 310 210 L 412 159 Q 420 155 420 163 L 420 195 Q 420 203 413 200 L 310 253 Q 310 260 310 250 Z" fill="#252538" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Front face with rounded corners on all 4 -->
+      <path d="M 60 218 Q 60 210 70 210 L 300 210 Q 310 210 310 220 L 310 248 Q 310 260 298 260 L 72 260 Q 60 260 60 248 Z" fill="#2d2d3f" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Front label -->
+      <text x="130" y="240" fill="#444" font-size="9" font-style="italic">CV AXLE CONTROLLER</text>
+
+      <!-- Top face with rounded back-left corner -->
+      <path d="M 60 218 Q 60 210 70 210 L 310 210 L 420 155 L 180 155 Q 170 155 167 158 Z" fill="#353550" stroke="#555" stroke-width="1.5"/>
+      <!-- Inner bevel detail on top -->
+      <path d="M 72 209 L 305 209 L 412 157 L 179 157 Z" fill="#393955" stroke="none"/>
+
+      <!-- Micro flip/toggle switch on top surface (far-left, near back edge) -->
+      <rect x="157" y="168" width="12" height="7" rx="2" fill="#333" stroke="#555" stroke-width="1"/>
+      <rect x="160" y="161" width="6" height="9" rx="1.5" fill="#555" stroke="#666" stroke-width="0.5"/>
+      <circle cx="163" cy="161" r="2" fill="#44cc66"/>
+
+      <!-- Joystick 1 base on top surface (u=0.25, v=0.5) -->
+      <ellipse cx="178" cy="182" rx="30" ry="13" fill="#222235" stroke="#444" stroke-width="1"/>
+      <ellipse cx="178" cy="181" rx="24" ry="10" fill="#1a1a2a" stroke="#3a3a50" stroke-width="1"/>
+      <ellipse cx="178" cy="181" rx="19" ry="8" fill="none" stroke="#4a6fa5" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <!-- Stick 1 -->
+      <rect x="172" y="145" width="12" height="36" rx="4" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+      <ellipse cx="178" cy="145" rx="6" ry="3.5" fill="#484868" stroke="#555" stroke-width="1"/>
+      <line x1="174" y1="153" x2="182" y2="153" stroke="#555" stroke-width="0.5"/>
+      <line x1="174" y1="156" x2="182" y2="156" stroke="#555" stroke-width="0.5"/>
+      <line x1="174" y1="159" x2="182" y2="159" stroke="#555" stroke-width="0.5"/>
+
+      <!-- Joystick 2 base on top surface (u=0.75, v=0.5) -->
+      <ellipse cx="303" cy="182" rx="30" ry="13" fill="#222235" stroke="#444" stroke-width="1"/>
+      <ellipse cx="303" cy="181" rx="24" ry="10" fill="#1a1a2a" stroke="#3a3a50" stroke-width="1"/>
+      <ellipse cx="303" cy="181" rx="19" ry="8" fill="none" stroke="#4a6fa5" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <!-- Stick 2 -->
+      <rect x="297" y="145" width="12" height="36" rx="4" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+      <ellipse cx="303" cy="145" rx="6" ry="3.5" fill="#484868" stroke="#555" stroke-width="1"/>
+      <line x1="299" y1="153" x2="307" y2="153" stroke="#555" stroke-width="0.5"/>
+      <line x1="299" y1="156" x2="307" y2="156" stroke="#555" stroke-width="0.5"/>
+      <line x1="299" y1="159" x2="307" y2="159" stroke="#555" stroke-width="0.5"/>
+
+      <!-- LEDs on top surface (between joysticks, near back edge, v=0.75) -->
+      <circle cx="250" cy="169" r="3.5" fill="#2266aa" stroke="#4488cc" stroke-width="1"/>
+      <circle cx="268" cy="169" r="3.5" fill="#228833" stroke="#44cc66" stroke-width="1"/>
+      <circle cx="268" cy="169" r="1.5" fill="#44cc66" opacity="0.5"/>
+      <circle cx="286" cy="169" r="3.5" fill="#2266aa" stroke="#4488cc" stroke-width="1"/>
+
+      <!-- LED glow effects -->
+      <circle cx="250" cy="169" r="8" fill="url(#glowBlue)" opacity="0.5"/>
+      <circle cx="268" cy="169" r="8" fill="url(#glowGreen)" opacity="0.5"/>
+      <circle cx="286" cy="169" r="8" fill="url(#glowBlue)" opacity="0.5"/>
+
+      <!-- Rubber feet visible at front-bottom -->
+      <ellipse cx="90" cy="262" rx="8" ry="3" fill="#1a1a2a" stroke="#333" stroke-width="0.5"/>
+      <ellipse cx="280" cy="262" rx="8" ry="3" fill="#1a1a2a" stroke="#333" stroke-width="0.5"/>
+
+      <!-- Labels with leader lines -->
+      <line x1="163" y1="161" x2="80" y2="125" stroke="#44cc66" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <text x="15" y="123" fill="#44cc66" font-size="9">Lock Switch</text>
+
+      <line x1="178" y1="145" x2="110" y2="100" stroke="#7ec8e3" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <text x="30" y="95" fill="#7ec8e3" font-size="9">Joystick 1 (Line 1)</text>
+
+      <line x1="303" y1="145" x2="370" y2="100" stroke="#7ec8e3" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <text x="330" y="95" fill="#7ec8e3" font-size="9">Joystick 2 (Line 2)</text>
+
+      <line x1="268" y1="169" x2="310" y2="295" stroke="#888" stroke-width="0.5" stroke-dasharray="2,2"/>
+      <text x="155" y="310" fill="#888" font-size="9">3 LEDs: Blue (Fine 1) / Red-Green (Lock) / Blue (Fine 2)</text>
+
+      <!-- Gradient defs for LED glow -->
+      <defs>
+        <radialGradient id="glowBlue">
+          <stop offset="0%" stop-color="#4488cc" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#4488cc" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glowGreen">
+          <stop offset="0%" stop-color="#44cc66" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#44cc66" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- REAR VIEW -->
+  <div class="view-card">
+    <h2>Rear View</h2>
+    <svg width="380" height="280" viewBox="0 0 380 280">
+      <!-- Rear face -->
+      <rect x="30" y="80" width="320" height="100" rx="12" ry="12"
+            fill="#2d2d3f" stroke="#555" stroke-width="2"/>
+      <!-- Top surface hint -->
+      <path d="M 42 80 L 60 50 L 320 50 L 338 80" fill="#353548" stroke="#555" stroke-width="1.5"/>
+      <line x1="60" y1="50" x2="320" y2="50" stroke="#666" stroke-width="1"/>
+
+      <!-- Joystick silhouettes from rear -->
+      <ellipse cx="130" cy="65" rx="28" ry="7" fill="#222235" stroke="#444" stroke-width="1"/>
+      <rect x="123" y="30" width="14" height="35" rx="3" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+      <ellipse cx="250" cy="65" rx="28" ry="7" fill="#222235" stroke="#444" stroke-width="1"/>
+      <rect x="243" y="30" width="14" height="35" rx="3" fill="#3a3a55" stroke="#555" stroke-width="1"/>
+
+      <!-- USB-C port (centered on rear) -->
+      <rect x="180" y="119" width="20" height="10" rx="5" fill="#111" stroke="#666" stroke-width="1.5"/>
+      <rect x="183" y="122" width="14" height="4" rx="2" fill="#1a1a2a" stroke="#555" stroke-width="0.5"/>
+      <text x="190" y="145" text-anchor="middle" fill="#888" font-size="9">USB-C</text>
+
+      <!-- Ventilation slots -->
+      <line x1="80" y1="100" x2="80" y2="160" stroke="#222" stroke-width="2"/>
+      <line x1="88" y1="100" x2="88" y2="160" stroke="#222" stroke-width="2"/>
+      <line x1="96" y1="100" x2="96" y2="160" stroke="#222" stroke-width="2"/>
+
+      <line x1="284" y1="100" x2="284" y2="160" stroke="#222" stroke-width="2"/>
+      <line x1="292" y1="100" x2="292" y2="160" stroke="#222" stroke-width="2"/>
+      <line x1="300" y1="100" x2="300" y2="160" stroke="#222" stroke-width="2"/>
+
+      <text x="88" y="175" text-anchor="middle" fill="#555" font-size="7">VENTS</text>
+      <text x="292" y="175" text-anchor="middle" fill="#555" font-size="7">VENTS</text>
+
+      <!-- Screw holes / access panel hint -->
+      <circle cx="55" cy="100" r="3" fill="none" stroke="#444" stroke-width="1"/>
+      <line x1="53" y1="98" x2="57" y2="102" stroke="#444" stroke-width="0.5"/>
+      <line x1="57" y1="98" x2="53" y2="102" stroke="#444" stroke-width="0.5"/>
+
+      <circle cx="325" cy="100" r="3" fill="none" stroke="#444" stroke-width="1"/>
+      <line x1="323" y1="98" x2="327" y2="102" stroke="#444" stroke-width="0.5"/>
+      <line x1="327" y1="98" x2="323" y2="102" stroke="#444" stroke-width="0.5"/>
+
+      <!-- Bottom feet -->
+      <rect x="55" y="180" width="20" height="4" rx="2" fill="#222" stroke="#333" stroke-width="1"/>
+      <rect x="305" y="180" width="20" height="4" rx="2" fill="#222" stroke="#333" stroke-width="1"/>
+
+      <!-- Dimension -->
+      <line x1="15" y1="30" x2="15" y2="184" stroke="#444" stroke-width="0.5"/>
+      <line x1="12" y1="30" x2="18" y2="30" stroke="#444" stroke-width="0.5"/>
+      <line x1="12" y1="184" x2="18" y2="184" stroke="#444" stroke-width="0.5"/>
+      <text x="10" y="115" text-anchor="middle" fill="#555" font-size="9" transform="rotate(-90, 10, 115)">~ 55mm + sticks</text>
+
+      <text x="190" y="210" text-anchor="middle" fill="#555" font-size="10">~ 120mm deep (4.7")</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- COMPONENT LEGEND -->
+<div class="legend">
+  <h2>Component Legend</h2>
+  <div class="legend-grid">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #3a3a55; border: 1.5px solid #666;"></div>
+      <span><strong>Joystick 1</strong> &mdash; JH-D400X-R4, Line 1 coarse (X) + fine (twist)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #3a3a55; border: 1.5px solid #666;"></div>
+      <span><strong>Joystick 2</strong> &mdash; JH-D400X-R4, Line 2 coarse (X) + fine (twist)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #2266aa; border: 1.5px solid #4488cc;"></div>
+      <span><strong>Fine LED 1</strong> &mdash; Blue, fine mode active + dead zone/centering calibration for Joystick 1</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #2266aa; border: 1.5px solid #4488cc;"></div>
+      <span><strong>Fine LED 2</strong> &mdash; Blue, fine mode active + dead zone/centering calibration for Joystick 2</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: linear-gradient(135deg, #228833 50%, #882233 50%); border: 1.5px solid #44cc66;"></div>
+      <span><strong>Lock LED</strong> &mdash; Dual-color: green = active, red = locked (single bi-color LED)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-rect" style="background: #333; border: 1.5px solid #555;"></div>
+      <span><strong>Flip Switch</strong> &mdash; Micro toggle, master lock/enable for all input</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-rect" style="background: #111; border: 1.5px solid #666;"></div>
+      <span><strong>USB-C</strong> &mdash; Power + HID keyboard to computer</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-rect" style="background: #222; border: 1px solid #333;"></div>
+      <span><strong>Rubber Feet</strong> &mdash; Anti-slip pads on bottom</span>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  Approximate dimensions: 180mm W &times; 120mm D &times; 35mm H (body only, ~55mm with joystick sticks)<br>
+  Enclosure designed for FDM 3D printing &mdash; snap-fit or screw-closed halves<br>
+  Internal cavity houses Arduino Pro Micro, wiring, and resistors<br>
+  Vent slots on rear for passive cooling &mdash; optional depending on operating environment
+</div>
+
+<!-- VARIANT COMPARISON -->
+<h1 style="margin-top:60px;">LAYOUT VARIANTS</h1>
+<p class="subtitle">Lock LED placement options</p>
+
+<div class="views">
+  <!-- VARIANT A: Current layout (LEDs centered) -->
+  <div class="view-card">
+    <h2>Variant A: LEDs Centered</h2>
+    <svg width="380" height="280" viewBox="0 0 380 280">
+      <rect x="30" y="30" width="320" height="220" rx="18" ry="18"
+            fill="#2d2d3f" stroke="#555" stroke-width="2"/>
+      <rect x="38" y="38" width="304" height="204" rx="14" ry="14"
+            fill="none" stroke="#3a3a50" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="190" y1="55" x2="190" y2="235" stroke="#3a3a50" stroke-width="1" stroke-dasharray="6,4"/>
+
+      <!-- Joystick 1 -->
+      <circle cx="120" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <circle cx="120" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <circle cx="120" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+
+      <!-- Joystick 2 -->
+      <circle cx="260" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <circle cx="260" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <circle cx="260" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+
+      <!-- Toggle switch (top left) -->
+      <rect x="56" y="50" width="16" height="10" rx="2" fill="#333" stroke="#555" stroke-width="1"/>
+      <rect x="60" y="44" width="8" height="10" rx="2" fill="#555" stroke="#666" stroke-width="0.5"/>
+      <circle cx="64" cy="44" r="2.5" fill="#44cc66"/>
+      <text x="64" y="74" text-anchor="middle" fill="#44cc66" font-size="7">ENABLE</text>
+
+      <!-- 3 LEDs centered: FINE 1 / LOCK / FINE 2 -->
+      <circle cx="155" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="155" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 1</text>
+      <circle cx="190" cy="55" r="4.5" fill="#1a5e2a" stroke="#44cc66" stroke-width="1"/>
+      <circle cx="190" cy="55" r="2" fill="#44cc66" opacity="0.6"/>
+      <text x="190" y="68" text-anchor="middle" fill="#44cc66" font-size="7">LOCK</text>
+      <text x="190" y="76" text-anchor="middle" fill="#555" font-size="5">GRN/RED</text>
+      <circle cx="225" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="225" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 2</text>
+
+      <text x="190" y="235" text-anchor="middle" fill="#555" font-size="9">All 3 LEDs in one row, switch separate</text>
+    </svg>
+  </div>
+
+  <!-- VARIANT B: Lock LED next to toggle switch -->
+  <div class="view-card">
+    <h2>Variant B: Lock LED by Switch</h2>
+    <svg width="380" height="280" viewBox="0 0 380 280">
+      <rect x="30" y="30" width="320" height="220" rx="18" ry="18"
+            fill="#2d2d3f" stroke="#555" stroke-width="2"/>
+      <rect x="38" y="38" width="304" height="204" rx="14" ry="14"
+            fill="none" stroke="#3a3a50" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="190" y1="55" x2="190" y2="235" stroke="#3a3a50" stroke-width="1" stroke-dasharray="6,4"/>
+
+      <!-- Joystick 1 -->
+      <circle cx="120" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <circle cx="120" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <circle cx="120" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="120" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+
+      <!-- Joystick 2 -->
+      <circle cx="260" cy="145" r="48" fill="#222235" stroke="#555" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="42" fill="#1a1a2a" stroke="#444" stroke-width="1"/>
+      <circle cx="260" cy="145" r="36" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="8,4"/>
+      <circle cx="260" cy="145" r="14" fill="#3a3a55" stroke="#666" stroke-width="1.5"/>
+      <circle cx="260" cy="145" r="6" fill="#444" stroke="#555" stroke-width="1"/>
+
+      <!-- Toggle switch + Lock LED grouped together (top left) -->
+      <rect x="50" y="50" width="16" height="10" rx="2" fill="#333" stroke="#555" stroke-width="1"/>
+      <rect x="54" y="44" width="8" height="10" rx="2" fill="#555" stroke="#666" stroke-width="0.5"/>
+      <circle cx="58" cy="44" r="2.5" fill="#44cc66"/>
+      <!-- Lock LED right next to switch -->
+      <circle cx="82" cy="55" r="4.5" fill="#1a5e2a" stroke="#44cc66" stroke-width="1"/>
+      <circle cx="82" cy="55" r="2" fill="#44cc66" opacity="0.6"/>
+      <text x="66" y="74" text-anchor="middle" fill="#44cc66" font-size="6">LOCK GROUP</text>
+      <text x="82" y="68" text-anchor="middle" fill="#44cc66" font-size="5">GRN/RED</text>
+
+      <!-- 2 Fine LEDs centered (without lock) -->
+      <circle cx="172" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="172" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 1</text>
+      <circle cx="208" cy="55" r="4.5" fill="#1a3a6e" stroke="#4488cc" stroke-width="1"/>
+      <text x="208" y="68" text-anchor="middle" fill="#4488cc" font-size="7">FINE 2</text>
+
+      <!-- Grouping indicators -->
+      <rect x="44" y="40" width="50" height="28" rx="6" fill="none" stroke="#44cc66" stroke-width="0.5" stroke-dasharray="3,2"/>
+      <rect x="162" y="42" width="56" height="26" rx="6" fill="none" stroke="#4488cc" stroke-width="0.5" stroke-dasharray="3,2"/>
+
+      <text x="190" y="235" text-anchor="middle" fill="#555" font-size="9">Lock LED grouped with switch, fine LEDs centered</text>
+    </svg>
+  </div>
+</div>
+
+</body>
+</html>

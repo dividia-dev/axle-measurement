@@ -532,6 +532,13 @@ body {
     text-align: center;
 }
 
+.version-label {
+    font-size: 9px;
+    color: #444;
+    text-align: center;
+    margin-top: 8px;
+}
+
 /* ========================================
    CALIBRATION PANEL (overlays video area)
    ======================================== */

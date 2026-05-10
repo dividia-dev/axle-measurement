@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Breadboard Wiring Guide</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 40px 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 40px;
+  }
+  .content {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Schematic canvas */
+  .schematic-card {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 40px;
+  }
+  .schematic-card h2 {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7ec8e3;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+
+  /* Parts list */
+  .parts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .part-card {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .part-card h3 {
+    font-size: 14px;
+    color: #7ec8e3;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .part-card .qty {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  .part-card p {
+    font-size: 13px;
+    color: #bbb;
+    line-height: 1.5;
+  }
+
+  /* Wiring table */
+  .wiring-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .wiring-table th {
+    background: #0f3460;
+    color: #7ec8e3;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+  }
+  .wiring-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #1a2a4a;
+  }
+  .wiring-table tr:hover td {
+    background: #1a2a4a;
+  }
+  .wire-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .pin-label {
+    font-family: 'Courier New', monospace;
+    color: #ff6;
+    font-weight: bold;
+  }
+
+  /* Notes */
+  .notes {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 40px;
+  }
+  .notes h2 {
+    font-size: 14px;
+    color: #7ec8e3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .notes ul {
+    list-style: none;
+    padding: 0;
+  }
+  .notes li {
+    font-size: 13px;
+    color: #bbb;
+    line-height: 1.8;
+    padding-left: 16px;
+    position: relative;
+  }
+  .notes li::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: #555;
+  }
+  .back-link {
+    text-align: center;
+    margin-top: 40px;
+  }
+  .back-link a {
+    color: #7ec8e3;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<h1>Breadboard Wiring Guide</h1>
+<p class="subtitle">CV Axle Controller — Arduino Pro Micro + 2x JH-D400X-R4 Joysticks</p>
+
+<div class="content">
+
+  <!-- Parts List -->
+  <div class="parts-grid">
+    <div class="part-card">
+      <h3>Arduino Pro Micro</h3>
+      <div class="qty">Qty: 1</div>
+      <p>ATmega32U4, 5V/16MHz. Native USB HID — the computer sees it as a keyboard. Micro-USB or USB-C depending on variant.</p>
+    </div>
+    <div class="part-card">
+      <h3>JH-D400X-R4 Joystick</h3>
+      <div class="qty">Qty: 2</div>
+      <p>4-axis: X (left/right), Y (up/down), Z (twist barrel), pushbutton. 10K pots, 5V. We use X for coarse, twist (Y) for fine.</p>
+    </div>
+    <div class="part-card">
+      <h3>Blue LEDs</h3>
+      <div class="qty">Qty: 2 + 220 ohm resistors</div>
+      <p>Fine mode indicators. One per joystick. Lights up when twist/fine axis is active.</p>
+    </div>
+    <div class="part-card">
+      <h3>Green LED</h3>
+      <div class="qty">Qty: 1 + 220 ohm resistor</div>
+      <p>Lock indicator. ON when controller is active (unlocked). OFF when locked.</p>
+    </div>
+    <div class="part-card">
+      <h3>Toggle Switch (SPST)</h3>
+      <div class="qty">Qty: 1</div>
+      <p>Lock/enable switch. Connects D4 to GND when flipped. Uses internal pullup — no external resistor needed.</p>
+    </div>
+    <div class="part-card">
+      <h3>Breadboard + Jumpers</h3>
+      <div class="qty">Half-size breadboard, ~20 jumper wires</div>
+      <p>Standard solderless breadboard. The Pro Micro straddles the center channel. Joysticks connect via jumper wires to analog/digital pins.</p>
+    </div>
+  </div>
+
+  <!-- Schematic Diagram -->
+  <div class="schematic-card">
+    <h2>Wiring Schematic</h2>
+    <canvas id="schematic" width="1000" height="700"></canvas>
+  </div>
+
+  <!-- Wiring Table -->
+  <div class="schematic-card">
+    <h2>Pin-by-Pin Wiring</h2>
+    <table class="wiring-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Component Pin</th>
+          <th>Arduino Pin</th>
+          <th>Wire Color</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5" style="color:#7ec8e3;font-weight:600;padding-top:14px">JOYSTICK 1 (Left — Line 1)</td></tr>
+        <tr>
+          <td>Joystick 1</td>
+          <td>VCC</td>
+          <td><span class="pin-label">VCC (5V)</span></td>
+          <td><span class="wire-color" style="background:#e33"></span>Red</td>
+          <td>5V power rail</td>
+        </tr>
+        <tr>
+          <td>Joystick 1</td>
+          <td>GND</td>
+          <td><span class="pin-label">GND</span></td>
+          <td><span class="wire-color" style="background:#222"></span>Black</td>
+          <td>Ground rail</td>
+        </tr>
+        <tr>
+          <td>Joystick 1</td>
+          <td>VRx (X-axis)</td>
+          <td><span class="pin-label">A0</span></td>
+          <td><span class="wire-color" style="background:#f90"></span>Orange</td>
+          <td>Coarse left/right</td>
+        </tr>
+        <tr>
+          <td>Joystick 1</td>
+          <td>VRy (Twist)</td>
+          <td><span class="pin-label">A1</span></td>
+          <td><span class="wire-color" style="background:#ff0"></span>Yellow</td>
+          <td>Fine adjustment (twist barrel)</td>
+        </tr>
+        <tr>
+          <td>Joystick 1</td>
+          <td>SW (Button)</td>
+          <td><span class="pin-label">D2</span></td>
+          <td><span class="wire-color" style="background:#0af"></span>Blue</td>
+          <td>Pushbutton. Hold 3s = auto-calibrate</td>
+        </tr>
+
+        <tr><td colspan="5" style="color:#7ec8e3;font-weight:600;padding-top:14px">JOYSTICK 2 (Right — Line 2)</td></tr>
+        <tr>
+          <td>Joystick 2</td>
+          <td>VCC</td>
+          <td><span class="pin-label">VCC (5V)</span></td>
+          <td><span class="wire-color" style="background:#e33"></span>Red</td>
+          <td>5V power rail</td>
+        </tr>
+        <tr>
+          <td>Joystick 2</td>
+          <td>GND</td>
+          <td><span class="pin-label">GND</span></td>
+          <td><span class="wire-color" style="background:#222"></span>Black</td>
+          <td>Ground rail</td>
+        </tr>
+        <tr>
+          <td>Joystick 2</td>
+          <td>VRx (X-axis)</td>
+          <td><span class="pin-label">A2</span></td>
+          <td><span class="wire-color" style="background:#f90"></span>Orange</td>
+          <td>Coarse left/right</td>
+        </tr>
+        <tr>
+          <td>Joystick 2</td>
+          <td>VRy (Twist)</td>
+          <td><span class="pin-label">A3</span></td>
+          <td><span class="wire-color" style="background:#ff0"></span>Yellow</td>
+          <td>Fine adjustment (twist barrel)</td>
+        </tr>
+        <tr>
+          <td>Joystick 2</td>
+          <td>SW (Button)</td>
+          <td><span class="pin-label">D3</span></td>
+          <td><span class="wire-color" style="background:#0af"></span>Blue</td>
+          <td>Pushbutton. Hold 3s = auto-calibrate</td>
+        </tr>
+
+        <tr><td colspan="5" style="color:#7ec8e3;font-weight:600;padding-top:14px">LEDs (with 220 ohm resistors)</td></tr>
+        <tr>
+          <td>Lock LED (green)</td>
+          <td>Anode (+)</td>
+          <td><span class="pin-label">D5</span></td>
+          <td><span class="wire-color" style="background:#0c0"></span>Green</td>
+          <td>D5 → 220R → LED anode. Cathode → GND</td>
+        </tr>
+        <tr>
+          <td>Fine LED 1 (blue)</td>
+          <td>Anode (+)</td>
+          <td><span class="pin-label">D6</span></td>
+          <td><span class="wire-color" style="background:#44f"></span>Blue</td>
+          <td>D6 → 220R → LED anode. Cathode → GND</td>
+        </tr>
+        <tr>
+          <td>Fine LED 2 (blue)</td>
+          <td>Anode (+)</td>
+          <td><span class="pin-label">D7</span></td>
+          <td><span class="wire-color" style="background:#44f"></span>Blue</td>
+          <td>D7 → 220R → LED anode. Cathode → GND</td>
+        </tr>
+
+        <tr><td colspan="5" style="color:#7ec8e3;font-weight:600;padding-top:14px">LOCK SWITCH</td></tr>
+        <tr>
+          <td>Toggle switch</td>
+          <td>Terminal 1</td>
+          <td><span class="pin-label">D4</span></td>
+          <td><span class="wire-color" style="background:#a0a"></span>Purple</td>
+          <td>Uses INPUT_PULLUP — no resistor needed</td>
+        </tr>
+        <tr>
+          <td>Toggle switch</td>
+          <td>Terminal 2</td>
+          <td><span class="pin-label">GND</span></td>
+          <td><span class="wire-color" style="background:#222"></span>Black</td>
+          <td>Switch connects D4 to GND when ON</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Notes -->
+  <div class="notes">
+    <h2>Breadboarding Notes</h2>
+    <ul>
+      <li>The Pro Micro straddles the breadboard center channel. Pin labels are on the bottom — flip it to verify pin numbers before wiring.</li>
+      <li>Use the breadboard power rails for 5V and GND. Run one jumper from Pro Micro VCC to the + rail, one from GND to the - rail.</li>
+      <li>Both joysticks share the same 5V and GND rails. Run power and ground to each joystick from the breadboard rails.</li>
+      <li>LEDs need 220 ohm current-limiting resistors. Wire: Arduino pin → resistor → LED anode (long leg) → LED cathode (short leg) → GND rail.</li>
+      <li>The joystick buttons and lock switch use INPUT_PULLUP in firmware — they connect the pin to GND when pressed/flipped. No external resistors needed.</li>
+      <li>The JH-D400X-R4 has 5 wires: VCC, GND, VRx, VRy, SW. The twist barrel is mapped to VRy.</li>
+      <li>After wiring, upload the firmware and open Serial Monitor at 115200 baud. Type <code>RAW</code> to see live analog readings — verify joysticks are centered around 512.</li>
+      <li>Type <code>STATUS</code> to see current mode, deadzones, and lock state. Type <code>HELP</code> for all commands.</li>
+      <li>Hold a joystick button for 3 seconds to auto-calibrate its deadzone. The fine LED will blink during calibration.</li>
+      <li>The lock switch disables all keystrokes when engaged. The green LED turns off to indicate locked state.</li>
+    </ul>
+  </div>
+
+  <div class="notes" style="margin-top:20px">
+    <h2>Testing Checklist</h2>
+    <ul>
+      <li>Upload firmware → Serial Monitor at 115200 → type <code>STATUS</code> — should show "Proportional" mode, lock OFF</li>
+      <li>Push Joystick 1 left/right → see A/D keystrokes in a text editor (or Serial Monitor shows them)</li>
+      <li>Twist Joystick 1 barrel → see Q/E keystrokes (fine mode), blue LED 1 lights up</li>
+      <li>Push Joystick 2 left/right → see J/L keystrokes</li>
+      <li>Twist Joystick 2 barrel → see U/O keystrokes, blue LED 2 lights up</li>
+      <li>Flip lock switch → green LED off, all keystrokes stop</li>
+      <li>Hold Joystick 1 button 3 seconds → LED blinks → "Calibrated" in Serial Monitor</li>
+      <li>Type <code>RAW</code> → verify analog values near 512 when joysticks are centered</li>
+      <li>Open the Axle Measurement web app → verify joystick moves the measurement lines</li>
+    </ul>
+  </div>
+
+  <p class="back-link"><a href="./">Back to Overview</a> · <a href="controller-mockup.html">Enclosure Sketches</a></p>
+</div>
+
+<script>
+// Draw the wiring schematic
+const canvas = document.getElementById('schematic');
+const ctx = canvas.getContext('2d');
+
+function draw() {
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Background
+  ctx.fillStyle = '#0f1a33';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid dots
+  ctx.fillStyle = '#1a2a44';
+  for (let x = 20; x < W; x += 20) {
+    for (let y = 20; y < H; y += 20) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // === Arduino Pro Micro (center) ===
+  const ardX = 420, ardY = 120, ardW = 160, ardH = 280;
+  ctx.fillStyle = '#1a5c3a';
+  ctx.strokeStyle = '#2a8c5a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(ardX, ardY, ardW, ardH, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  // USB port
+  ctx.fillStyle = '#555';
+  ctx.fillRect(ardX + 55, ardY - 12, 50, 16);
+  ctx.strokeStyle = '#777';
+  ctx.strokeRect(ardX + 55, ardY - 12, 50, 16);
+  ctx.fillStyle = '#888';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('USB', ardX + 80, ardY - 1);
+
+  // Label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ARDUINO', ardX + ardW/2, ardY + 30);
+  ctx.fillText('PRO MICRO', ardX + ardW/2, ardY + 46);
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#8c8';
+  ctx.fillText('ATmega32U4', ardX + ardW/2, ardY + 62);
+
+  // Pin labels - left side (top to bottom)
+  const leftPins = ['D2', 'GND', 'GND', 'D3', 'D4', 'D5', 'D6', 'D7'];
+  const leftPinY = ardY + 90;
+  const pinSpacing = 22;
+
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  for (let i = 0; i < leftPins.length; i++) {
+    const py = leftPinY + i * pinSpacing;
+    // Pin dot
+    ctx.fillStyle = '#ff6';
+    ctx.beginPath();
+    ctx.arc(ardX - 4, py, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#ff6';
+    ctx.fillText(leftPins[i], ardX - 14, py + 4);
+  }
+
+  // Pin labels - right side (top to bottom)
+  const rightPins = ['VCC', 'A0', 'A1', 'A2', 'A3', '', '', 'RAW'];
+  ctx.textAlign = 'left';
+  for (let i = 0; i < rightPins.length; i++) {
+    if (!rightPins[i]) continue;
+    const py = leftPinY + i * pinSpacing;
+    ctx.fillStyle = '#ff6';
+    ctx.beginPath();
+    ctx.arc(ardX + ardW + 4, py, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff6';
+    ctx.fillText(rightPins[i], ardX + ardW + 14, py + 4);
+  }
+
+  // === Joystick 1 (Left) ===
+  const j1x = 60, j1y = 100;
+  drawJoystick(j1x, j1y, 'JOYSTICK 1', 'Line 1 (Left)', '#3a7abf');
+
+  // Wires from Joystick 1 to Arduino
+  // VCC → VCC (right side)
+  drawWire(j1x + 140, j1y + 50, ardX + ardW + 4, leftPinY, '#e33', [
+    { x: ardX + ardW + 60, y: j1y + 50 },
+    { x: ardX + ardW + 60, y: leftPinY }
+  ]);
+  drawWireLabel(ardX + ardW + 70, j1y + 50, '5V', '#e33');
+
+  // GND → GND (left side)
+  drawWire(j1x + 140, j1y + 76, ardX - 4, leftPinY + pinSpacing, '#555', [
+    { x: j1x + 200, y: j1y + 76 },
+    { x: j1x + 200, y: leftPinY + pinSpacing }
+  ]);
+
+  // VRx → A0
+  drawWire(j1x + 140, j1y + 102, ardX + ardW + 4, leftPinY + pinSpacing, '#f90', [
+    { x: ardX + ardW + 44, y: j1y + 102 },
+    { x: ardX + ardW + 44, y: leftPinY + pinSpacing }
+  ]);
+
+  // VRy → A1
+  drawWire(j1x + 140, j1y + 128, ardX + ardW + 4, leftPinY + pinSpacing * 2, '#dd0', [
+    { x: ardX + ardW + 34, y: j1y + 128 },
+    { x: ardX + ardW + 34, y: leftPinY + pinSpacing * 2 }
+  ]);
+
+  // SW → D2
+  drawWire(j1x + 140, j1y + 154, ardX - 4, leftPinY, '#0af', [
+    { x: j1x + 210, y: j1y + 154 },
+    { x: j1x + 210, y: leftPinY }
+  ]);
+
+  // === Joystick 2 (Right) ===
+  const j2x = 740, j2y = 100;
+  drawJoystick(j2x, j2y, 'JOYSTICK 2', 'Line 2 (Right)', '#bf5a3a');
+
+  // VCC → VCC rail
+  drawWire(j2x, j2y + 50, ardX + ardW + 4, leftPinY, '#e33', [
+    { x: ardX + ardW + 70, y: j2y + 50 },
+    { x: ardX + ardW + 70, y: leftPinY - 10 },
+    { x: ardX + ardW + 60, y: leftPinY }
+  ]);
+
+  // GND → GND
+  drawWire(j2x, j2y + 76, ardX - 4, leftPinY + pinSpacing * 2, '#555', [
+    { x: j2x - 50, y: j2y + 76 },
+    { x: j2x - 50, y: leftPinY + pinSpacing * 2 }
+  ]);
+
+  // VRx → A2
+  drawWire(j2x, j2y + 102, ardX + ardW + 4, leftPinY + pinSpacing * 3, '#f90', [
+    { x: ardX + ardW + 50, y: j2y + 102 },
+    { x: ardX + ardW + 50, y: leftPinY + pinSpacing * 3 }
+  ]);
+
+  // VRy → A3
+  drawWire(j2x, j2y + 128, ardX + ardW + 4, leftPinY + pinSpacing * 4, '#dd0', [
+    { x: ardX + ardW + 40, y: j2y + 128 },
+    { x: ardX + ardW + 40, y: leftPinY + pinSpacing * 4 }
+  ]);
+
+  // SW → D3
+  drawWire(j2x, j2y + 154, ardX - 4, leftPinY + pinSpacing * 3, '#0af', [
+    { x: j2x - 40, y: j2y + 154 },
+    { x: j2x - 40, y: leftPinY + pinSpacing * 3 }
+  ]);
+
+  // === LEDs (bottom left) ===
+  const ledY = 500;
+  drawLED(120, ledY, 'FINE LED 1', '#44f', 'D6');
+  drawLED(300, ledY, 'LOCK LED', '#0c0', 'D5');
+  drawLED(480, ledY, 'FINE LED 2', '#44f', 'D7');
+
+  // LED wires to Arduino
+  drawWire(120, ledY - 10, ardX - 4, leftPinY + pinSpacing * 6, '#44f', [
+    { x: 120, y: leftPinY + pinSpacing * 6 }
+  ]);
+  drawWire(300, ledY - 10, ardX - 4, leftPinY + pinSpacing * 5, '#0c0', [
+    { x: 300, y: leftPinY + pinSpacing * 5 }
+  ]);
+  drawWire(480, ledY - 10, ardX - 4, leftPinY + pinSpacing * 7, '#44f', [
+    { x: 480, y: leftPinY + pinSpacing * 7 }
+  ]);
+
+  // === Lock Switch (bottom right) ===
+  const swX = 700, swY = 510;
+  drawSwitch(swX, swY);
+
+  // Switch wire to D4
+  drawWire(swX, swY - 20, ardX - 4, leftPinY + pinSpacing * 4, '#a0a', [
+    { x: swX, y: leftPinY + pinSpacing * 4 },
+  ]);
+  // Switch GND
+  drawWire(swX + 50, swY - 20, swX + 50, swY + 50, '#555', []);
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GND', swX + 50, swY + 64);
+
+  // === Legend ===
+  const legX = 40, legY = 630;
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('WIRE COLORS:', legX, legY);
+
+  const legend = [
+    ['#e33', 'Red = 5V Power'],
+    ['#222', 'Black = Ground'],
+    ['#f90', 'Orange = X-axis (Coarse)'],
+    ['#dd0', 'Yellow = Y-axis (Fine/Twist)'],
+    ['#0af', 'Blue = Button'],
+    ['#0c0', 'Green = Lock LED'],
+    ['#44f', 'Blue = Fine LEDs'],
+    ['#a0a', 'Purple = Lock Switch'],
+  ];
+
+  for (let i = 0; i < legend.length; i++) {
+    const lx = legX + (i < 4 ? 0 : 400);
+    const ly = legY + 20 + (i % 4) * 18;
+    ctx.fillStyle = legend[i][0];
+    ctx.fillRect(lx, ly - 8, 12, 12);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeRect(lx, ly - 8, 12, 12);
+    ctx.fillStyle = '#bbb';
+    ctx.fillText(legend[i][1], lx + 20, ly + 2);
+  }
+}
+
+function drawJoystick(x, y, label, sublabel, color) {
+  // Body
+  ctx.fillStyle = '#2a2a3a';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, 140, 180, 10);
+  ctx.fill();
+  ctx.stroke();
+
+  // Stick circle
+  ctx.fillStyle = '#444';
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x + 70, y - 10, 20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x + 70, y + 22);
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.fillText(sublabel, x + 70, y + 36);
+
+  // Pin labels on the joystick
+  const pins = ['VCC', 'GND', 'VRx', 'VRy', 'SW'];
+  const colors = ['#e33', '#555', '#f90', '#dd0', '#0af'];
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  for (let i = 0; i < pins.length; i++) {
+    const py = y + 50 + i * 26;
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.arc(x + 14, py, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ccc';
+    ctx.fillText(pins[i], x + 24, py + 4);
+  }
+}
+
+function drawLED(x, y, label, color, pin) {
+  // LED triangle
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(x - 10, y + 10);
+  ctx.lineTo(x + 10, y + 10);
+  ctx.lineTo(x, y - 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - 10, y + 10);
+  ctx.lineTo(x + 10, y + 10);
+  ctx.lineTo(x, y - 10);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Resistor
+  ctx.strokeStyle = '#a86';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 10);
+  for (let i = 0; i < 4; i++) {
+    ctx.lineTo(x + (i % 2 === 0 ? 6 : -6), y + 16 + i * 6);
+  }
+  ctx.lineTo(x, y + 44);
+  ctx.stroke();
+  ctx.fillStyle = '#888';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('220R', x + 20, y + 30);
+
+  // GND line
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 44);
+  ctx.lineTo(x, y + 56);
+  ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.fillText('GND', x, y + 66);
+
+  // Label
+  ctx.fillStyle = '#ccc';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x, y + 80);
+  ctx.fillStyle = '#ff6';
+  ctx.fillText('(' + pin + ')', x, y + 93);
+}
+
+function drawSwitch(x, y) {
+  // Switch body
+  ctx.fillStyle = '#2a2a3a';
+  ctx.strokeStyle = '#a0a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x - 25, y - 20, 100, 40, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  // Toggle handle
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x + 20, y - 12, 20, 24);
+  ctx.strokeStyle = '#888';
+  ctx.strokeRect(x + 20, y - 12, 20, 24);
+
+  // Labels
+  ctx.fillStyle = '#ccc';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('LOCK SWITCH', x + 25, y + 36);
+  ctx.fillStyle = '#ff6';
+  ctx.fillText('D4 → GND', x + 25, y + 50);
+
+  // Pin dots
+  ctx.fillStyle = '#a0a';
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.arc(x + 50, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWire(x1, y1, x2, y2, color, waypoints) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  for (const wp of waypoints) {
+    ctx.lineTo(wp.x, wp.y);
+  }
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawWireLabel(x, y, text, color) {
+  ctx.fillStyle = color;
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, x, y + 4);
+}
+
+draw();
+</script>
+
+</body>
+</html>

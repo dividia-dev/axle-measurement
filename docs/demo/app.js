@@ -284,21 +284,18 @@ function generateTestPattern() {
     canvas.height = 720;
     drawTestPatternTo(canvas.getContext('2d'), 1280, 720);
 
-    // Make a clean copy for screenshots (before captureStream taints the canvas)
+    // Make a clean copy for screenshots
     testPatternCopy = document.createElement('canvas');
     testPatternCopy.width = 1280;
     testPatternCopy.height = 720;
     drawTestPatternTo(testPatternCopy.getContext('2d'), 1280, 720);
 
-    // Convert to video-like source
-    try {
-        const stream = canvas.captureStream(0);
-        video.srcObject = stream;
-        stream.getVideoTracks()[0].requestFrame();
-    } catch {
-        video.poster = testPatternCopy.toDataURL('image/png');
-        video.style.objectFit = 'contain';
-    }
+    // Show canvas directly, hide video element
+    canvas.style.display = '';
+    video.style.display = 'none';
+    video.srcObject = null;
+    video.src = '';
+    video.poster = '';
 }
 
 function drawTruck(ctx) {
@@ -631,9 +628,6 @@ function initVideo() {
 
 function resetToTestPattern() {
     state._userMediaLoaded = false;
-    video.src = '';
-    video.srcObject = null;
-    video.poster = '';
     generateTestPattern();
     $('btn-reset-image').hidden = true;
     setTimeout(resizeOverlay, 100);
@@ -645,14 +639,15 @@ function loadUserMedia(file) {
     $('btn-reset-image').hidden = false;
 
     if (file.type.startsWith('video/')) {
-        // Load as video
+        // Show video element, hide canvas
+        $('test-pattern').style.display = 'none';
         video.style.display = '';
         video.srcObject = null;
         video.poster = '';
         video.src = url;
         video.play().catch(() => {});
     } else if (file.type.startsWith('image/')) {
-        // Load image into a canvas, then feed to video as a static frame
+        // Draw image directly to canvas, hide video
         const img = new Image();
         img.onload = () => {
             const canvas = $('test-pattern');
@@ -660,14 +655,8 @@ function loadUserMedia(file) {
             canvas.height = img.naturalHeight;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-
-            try {
-                const stream = canvas.captureStream(0);
-                video.srcObject = stream;
-                stream.getVideoTracks()[0].requestFrame();
-            } catch {
-                video.poster = canvas.toDataURL('image/png');
-            }
+            canvas.style.display = '';
+            video.style.display = 'none';
             setTimeout(resizeOverlay, 100);
             URL.revokeObjectURL(url);
         };
@@ -681,8 +670,10 @@ function getVideoRect() {
     const cw = container.clientWidth;
     const ch = container.clientHeight;
 
-    const vw = video.videoWidth || 1280;
-    const vh = video.videoHeight || 720;
+    const canvas = $('test-pattern');
+    const useCanvas = canvas.style.display !== 'none';
+    const vw = useCanvas ? (canvas.width || 1280) : (video.videoWidth || 1280);
+    const vh = useCanvas ? (canvas.height || 720) : (video.videoHeight || 720);
 
     const containerRatio = cw / ch;
     const videoRatio = vw / vh;
@@ -885,17 +876,28 @@ function captureScreenshot() {
     const rect = getVideoRect();
     const composite = document.createElement('canvas');
     const sourceCanvas = $('test-pattern');
+    const useCanvas = sourceCanvas.style.display !== 'none';
 
-    // Use clean test pattern copy (untainted by captureStream), or video for user media
+    // Determine source: test pattern copy, visible canvas (user image), or video
     const useTestPattern = testPatternCopy && !state._userMediaLoaded;
 
-    composite.width = useTestPattern ? testPatternCopy.width : (video.videoWidth || rect.width);
-    composite.height = useTestPattern ? testPatternCopy.height : (video.videoHeight || rect.height);
+    if (useTestPattern) {
+        composite.width = testPatternCopy.width;
+        composite.height = testPatternCopy.height;
+    } else if (useCanvas) {
+        composite.width = sourceCanvas.width;
+        composite.height = sourceCanvas.height;
+    } else {
+        composite.width = video.videoWidth || rect.width;
+        composite.height = video.videoHeight || rect.height;
+    }
     const ctx = composite.getContext('2d');
 
     try {
         if (useTestPattern) {
             ctx.drawImage(testPatternCopy, 0, 0);
+        } else if (useCanvas) {
+            ctx.drawImage(sourceCanvas, 0, 0);
         } else {
             ctx.drawImage(video, 0, 0, composite.width, composite.height);
         }

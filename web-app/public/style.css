@@ -14,10 +14,13 @@ body {
     color: #e0e0e0;
     overflow: hidden;
     height: 100vh;
+    height: 100dvh; /* dynamic viewport height — shrinks when mobile browser chrome shows */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .screen {
     height: 100vh;
+    height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -156,6 +159,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    touch-action: none; /* prevent browser scroll/zoom during line drag */
     /* pointer-events managed by JS — enabled for drag, disabled otherwise */
 }
 

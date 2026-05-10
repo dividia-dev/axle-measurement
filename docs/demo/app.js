@@ -434,8 +434,9 @@ function updateModeIndicator() {
     }
 }
 
-// === Mouse Drag for Lines ===
-const DRAG_HIT_ZONE = 15;
+// === Pointer Drag for Lines (unified mouse + touch + pen) ===
+const DRAG_HIT_ZONE = 15; // pixels from line center to grab (mouse/pen)
+const TOUCH_HIT_ZONE = 30; // wider zone for touch (fingers are bigger)
 const FINE_DRAG_RATIO = 0.25;
 
 let dragState = {
@@ -443,6 +444,7 @@ let dragState = {
     line: null,
     startMouseX: 0,
     startLineNorm: 0,
+    pointerId: null,
 };
 
 function getLinePixelX(lineNorm) {
@@ -455,51 +457,62 @@ function pixelToNorm(pixelX) {
     return Math.max(0, Math.min(1, (pixelX - rect.x) / rect.width));
 }
 
-function getHoveredLine(mouseX) {
+function getHoveredLine(mouseX, isTouch) {
+    const hitZone = isTouch ? TOUCH_HIT_ZONE : DRAG_HIT_ZONE;
     const l1x = getLinePixelX(state.line1_x);
     const l2x = getLinePixelX(state.line2_x);
     const d1 = Math.abs(mouseX - l1x);
     const d2 = Math.abs(mouseX - l2x);
-    if (d1 <= DRAG_HIT_ZONE && d1 <= d2) return 1;
-    if (d2 <= DRAG_HIT_ZONE) return 2;
+    if (d1 <= hitZone && d1 <= d2) return 1;
+    if (d2 <= hitZone) return 2;
     return null;
 }
 
-function onOverlayMouseDown(e) {
-    const line = getHoveredLine(e.offsetX);
+function onOverlayPointerDown(e) {
+    const isTouch = (e.pointerType === 'touch');
+    const line = getHoveredLine(e.offsetX, isTouch);
     if (line) {
         dragState.active = true;
         dragState.line = line;
         dragState.startMouseX = e.offsetX;
         dragState.startLineNorm = line === 1 ? state.line1_x : state.line2_x;
+        dragState.pointerId = e.pointerId;
+        overlay.setPointerCapture(e.pointerId);
         $('video-container').classList.add('dragging');
         e.preventDefault();
     }
 }
 
-function onOverlayMouseMove(e) {
+function onOverlayPointerMove(e) {
     if (dragState.active) {
         const rect = getVideoRect();
-        const mouseDeltaPx = e.offsetX - dragState.startMouseX;
-        const mouseDeltaNorm = mouseDeltaPx / rect.width;
+        const deltaPx = e.offsetX - dragState.startMouseX;
+        const deltaNorm = deltaPx / rect.width;
         const ratio = state.fineMode ? FINE_DRAG_RATIO : 1.0;
-        const newNorm = Math.max(0, Math.min(1, dragState.startLineNorm + mouseDeltaNorm * ratio));
+        const newNorm = Math.max(0, Math.min(1, dragState.startLineNorm + deltaNorm * ratio));
         if (dragState.line === 1) state.line1_x = newNorm;
         else state.line2_x = newNorm;
         drawOverlay();
         debouncedWeightCheck();
+        e.preventDefault();
     } else {
-        const line = getHoveredLine(e.offsetX);
-        const container = $('video-container');
-        if (line) container.classList.add('drag-hover');
-        else container.classList.remove('drag-hover');
+        if (e.pointerType === 'mouse') {
+            const line = getHoveredLine(e.offsetX, false);
+            const container = $('video-container');
+            if (line) container.classList.add('drag-hover');
+            else container.classList.remove('drag-hover');
+        }
     }
 }
 
-function onOverlayMouseUp() {
+function onOverlayPointerUp(e) {
     if (dragState.active) {
+        if (dragState.pointerId != null) {
+            overlay.releasePointerCapture(dragState.pointerId);
+        }
         dragState.active = false;
         dragState.line = null;
+        dragState.pointerId = null;
         $('video-container').classList.remove('dragging');
     }
 }
@@ -1390,14 +1403,24 @@ $('slider-fine').addEventListener('input', (e) => {
     $('val-fine').textContent = parseFloat(e.target.value).toFixed(4);
 });
 
-overlay.addEventListener('mousedown', onOverlayMouseDown);
-overlay.addEventListener('mousemove', onOverlayMouseMove);
-overlay.addEventListener('mouseup', onOverlayMouseUp);
-overlay.addEventListener('mouseleave', onOverlayMouseUp);
+// Pointer drag for lines (unified mouse + touch + pen)
+overlay.addEventListener('pointerdown', onOverlayPointerDown);
+overlay.addEventListener('pointermove', onOverlayPointerMove);
+overlay.addEventListener('pointerup', onOverlayPointerUp);
+overlay.addEventListener('pointercancel', onOverlayPointerUp);
 
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 window.addEventListener('resize', resizeOverlay);
+
+// Fullscreen toggle
+$('btn-fullscreen').addEventListener('click', () => {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+});
 
 video.addEventListener('loadedmetadata', resizeOverlay);
 video.addEventListener('playing', resizeOverlay);

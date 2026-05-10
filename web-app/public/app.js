@@ -74,6 +74,59 @@ const weightScale = $('weight-scale');
 const weightStatus = $('weight-status');
 const chkSpecial = $('chk-special');
 
+// === In-app Dialog (replaces confirm/alert to stay in fullscreen) ===
+function appConfirm(msg) {
+    return new Promise(resolve => {
+        const dialog = $('app-dialog');
+        $('app-dialog-msg').textContent = msg;
+        $('app-dialog-cancel').hidden = false;
+        dialog.hidden = false;
+        const cleanup = (result) => {
+            dialog.hidden = true;
+            $('app-dialog-ok').removeEventListener('click', onOk);
+            $('app-dialog-cancel').removeEventListener('click', onCancel);
+            resolve(result);
+        };
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        $('app-dialog-ok').addEventListener('click', onOk);
+        $('app-dialog-cancel').addEventListener('click', onCancel);
+        $('app-dialog-ok').focus();
+    });
+}
+
+function appAlert(msg) {
+    return new Promise(resolve => {
+        const dialog = $('app-dialog');
+        $('app-dialog-msg').textContent = msg;
+        $('app-dialog-cancel').hidden = true;
+        dialog.hidden = false;
+        const onOk = () => {
+            dialog.hidden = true;
+            $('app-dialog-ok').removeEventListener('click', onOk);
+            resolve();
+        };
+        $('app-dialog-ok').addEventListener('click', onOk);
+        $('app-dialog-ok').focus();
+    });
+}
+
+// === Mobile Keyboard for Key Capture ===
+const mobileKeyInput = $('mobile-key-input');
+const hasTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+mobileKeyInput.addEventListener('keydown', (e) => {
+    if (captureTarget) {
+        e.preventDefault();
+        const key = e.key === ' ' ? ' ' : e.key;
+        if (key.length === 1 || ['Tab', 'Enter', 'Backspace', 'Delete', 'Escape'].includes(key)) {
+            completeKeyCapture(key);
+        }
+        mobileKeyInput.value = '';
+        mobileKeyInput.blur();
+    }
+});
+
 // === API Helpers ===
 async function api(method, path, body) {
     const opts = {
@@ -376,7 +429,7 @@ function onOverlayPointerUp(e) {
 
 function showWeightInfo() {
     if (!state.calibration || !state.calibration.inches_per_norm) {
-        alert('Calibrate first to see weight calculations.');
+        appAlert('Calibrate first to see weight calculations.');
         return;
     }
     const normDist = Math.abs(state.line2_x - state.line1_x);
@@ -395,7 +448,7 @@ function showWeightInfo() {
         if (maxAllowable > 80000) { maxAllowable = 80000; capReason = 'Federal GVW cap (80,000 lbs)'; }
         if (state.isSpecialVehicle && maxAllowable > 70000) { maxAllowable = 70000; capReason = 'FL special vehicle cap (70,000 lbs)'; }
     }
-    alert(
+    appAlert(
         'Federal Bridge Formula B (23 USC 127)\n══════════════════════════════════\n\n' +
         'W = 500 x ((L x N) / (N - 1) + 12N + 36)\n\n' +
         'Where:\n' +
@@ -818,7 +871,7 @@ async function saveMeasurementAction() {
     const maxWt = state.weightResult ? state.weightResult.maxAllowable.toLocaleString() + ' lbs' : '--';
 
     const msg = `Save this measurement?\n\nDistance: ${distStr}\nAxles: ${state.axleCount}\nMax Weight: ${maxWt}`;
-    if (!confirm(msg)) return;
+    if (!(await appConfirm(msg))) return;
 
     const screenshot = captureScreenshot();
     const maxWeight = state.weightResult ? state.weightResult.maxAllowable : null;
@@ -985,11 +1038,16 @@ function startKeyCapture(action) {
     captureTarget = action;
     const btn = $('settings-modal').querySelector(`.key-capture-btn[data-action="${action}"]`);
     if (btn) {
-        btn.textContent = 'Press a key...';
+        btn.textContent = hasTouchScreen ? 'Tap to type key...' : 'Press a key...';
         btn.classList.add('listening');
         btn.classList.remove('conflict');
     }
     $('keymap-error').hidden = true;
+    // On touch devices, focus hidden input to bring up keyboard
+    if (hasTouchScreen) {
+        mobileKeyInput.value = '';
+        mobileKeyInput.focus();
+    }
 }
 
 function completeKeyCapture(key) {
@@ -1023,6 +1081,7 @@ function completeKeyCapture(key) {
     }
     captureTarget = null;
     $('keymap-error').hidden = true;
+    mobileKeyInput.blur();
     updateTestLabels();
 }
 
@@ -1034,6 +1093,7 @@ function cancelKeyCapture() {
         btn.classList.remove('listening');
     }
     captureTarget = null;
+    mobileKeyInput.blur();
 }
 
 function getActionLabel(action) {
@@ -1217,7 +1277,7 @@ chkSpecial.addEventListener('change', () => {
 });
 
 $('btn-special-info').addEventListener('click', () => {
-    alert(
+    appAlert(
         'Dump/Mix — Special Vehicle Cap\n\n' +
         'Florida law (FL Statute 316.535) limits certain vehicle types to 70,000 lbs GVW ' +
         'instead of the standard 80,000 lbs max.\n\n' +

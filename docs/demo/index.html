@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -198,9 +201,9 @@
                 <div class="cal-distance-input">
                     <label>Known distance:</label>
                     <div class="cal-feet-inches">
-                        <input type="number" id="cal-feet" min="0" max="200" step="1" placeholder="ft" class="cal-input-sm">
+                        <input type="number" id="cal-feet" min="0" max="200" step="1" placeholder="ft" class="cal-input-sm" inputmode="numeric">
                         <span>ft</span>
-                        <input type="number" id="cal-inches" min="0" max="11" step="1" placeholder="in" class="cal-input-sm">
+                        <input type="number" id="cal-inches" min="0" max="11" step="1" placeholder="in" class="cal-input-sm" inputmode="numeric">
                         <span>in</span>
                     </div>
                 </div>
@@ -374,6 +377,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Generic Confirm/Alert Modal (stays in fullscreen) -->
+    <div id="app-dialog" class="modal" hidden>
+        <div class="modal-content" style="width:420px">
+            <pre id="app-dialog-msg" style="white-space:pre-wrap;font-family:inherit;margin:0 0 16px 0"></pre>
+            <div class="modal-buttons">
+                <button id="app-dialog-ok">OK</button>
+                <button id="app-dialog-cancel" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden input for mobile keyboard during key capture -->
+    <input id="mobile-key-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+           style="position:fixed;top:-100px;left:-100px;opacity:0;width:1px;height:1px;">
 
     <script src="app.js"></script>
 </body>

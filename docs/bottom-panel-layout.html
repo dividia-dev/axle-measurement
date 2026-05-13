@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Bottom Panel Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 30px 20px;
+  }
+  h1 { text-align: center; font-size: 24px; font-weight: 300; letter-spacing: 2px; color: #fff; margin-bottom: 6px; }
+  .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 30px; }
+  .layout-wrap { display: flex; gap: 30px; max-width: 1400px; margin: 0 auto; align-items: flex-start; }
+  .canvas-card { flex: 1; background: #16213e; border: 1px solid #2a3a5c; border-radius: 16px; padding: 24px; }
+  .canvas-card h2 { font-size: 14px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: #7ec8e3; margin-bottom: 16px; text-align: center; }
+  canvas { display: block; margin: 0 auto; }
+  .controls { width: 320px; flex-shrink: 0; }
+  .control-card { background: #16213e; border: 1px solid #2a3a5c; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .control-card h3 { font-size: 12px; color: #7ec8e3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .slider-row { margin-bottom: 14px; }
+  .slider-row label { display: flex; justify-content: space-between; font-size: 12px; color: #bbb; margin-bottom: 4px; }
+  .slider-row label span { color: #ff6; font-family: monospace; }
+  input[type=range] { width: 100%; accent-color: #7ec8e3; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: #bbb; }
+  .toggle-row input[type=checkbox] { accent-color: #7ec8e3; }
+  .dims { font-size: 12px; color: #bbb; line-height: 1.8; }
+  .dims strong { color: #ff6; font-family: monospace; }
+  .dims .label { color: #888; display: inline-block; width: 160px; }
+  select { background: #0f1a33; color: #e0e0e0; border: 1px solid #2a3a5c; border-radius: 4px; padding: 4px 8px; font-size: 12px; width: 100%; margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #bbb; margin-bottom: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .note { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>Bottom Panel Layout</h1>
+<p class="subtitle">CV Axle Controller Enclosure — Bottom View (looking up from underneath, flipped so front is at bottom)</p>
+
+<div class="layout-wrap">
+  <div class="canvas-card">
+    <h2>Bottom Panel — Underside View</h2>
+    <canvas id="panel" width="900" height="550"></canvas>
+    <p class="note">Dimensions in mm. Viewing from underneath. Internal features shown as ghost outlines.</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-card">
+      <h3>Enclosure (from approved layouts)</h3>
+      <div class="dims">
+        <span class="label">Width:</span> <strong>190mm</strong><br>
+        <span class="label">Depth:</span> <strong>100mm</strong><br>
+        <span class="label">Bottom panel thickness:</span> <strong>3mm</strong><br>
+        <span class="label">Internal cavity:</span> <strong>35mm</strong><br>
+        <span class="label">Corner radius:</span> <strong>8mm</strong>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Closure Method</h3>
+      <select id="closureType">
+        <option value="screws" selected>Corner screws (M3)</option>
+        <option value="snap">Snap-fit tabs</option>
+        <option value="combo">Screws + snap-fit</option>
+      </select>
+      <div class="slider-row">
+        <label>Screw inset from edge <span id="v_screwInset">12</span>mm</label>
+        <input type="range" id="screwInset" min="8" max="20" value="12" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Perfboard Position</h3>
+      <div class="slider-row">
+        <label>X offset from center <span id="v_pbX">0</span>mm</label>
+        <input type="range" id="pbX" min="-30" max="30" value="0" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Y offset from center <span id="v_pbY">8</span>mm</label>
+        <input type="range" id="pbY" min="-15" max="25" value="8" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Standoff height <span id="v_standoff">5</span>mm</label>
+        <input type="range" id="standoff" min="3" max="10" value="5" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Rubber Feet (13x13x4mm square)</h3>
+      <div class="slider-row">
+        <label>Foot inset from edge <span id="v_footInset">12</span>mm</label>
+        <input type="range" id="footInset" min="8" max="20" value="12" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Structural Reinforcement</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="showLip" checked>
+        <span>Perimeter nesting lip (2mm)</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showPillars" checked>
+        <span>Support pillars (top→bottom)</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showRibs" checked>
+        <span>Underside ribs (around joystick mounts)</span>
+      </div>
+      <div class="slider-row">
+        <label>Center pillar spread <span id="v_pillarSpread">20</span>mm</label>
+        <input type="range" id="pillarSpread" min="10" max="40" value="20" step="2">
+      </div>
+      <div class="slider-row">
+        <label>Pillar diameter <span id="v_pillarD">8</span>mm</label>
+        <input type="range" id="pillarD" min="5" max="12" value="8" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Display Options</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="showLabels" checked>
+        <span>Show labels</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showDims" checked>
+        <span>Show dimensions</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showGrid">
+        <span>Show 10mm grid</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showGhosts" checked>
+        <span>Show internal components (ghost)</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showClearance" checked>
+        <span>Show clearance zones</span>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Computed</h3>
+      <div class="dims" id="computedDims"></div>
+    </div>
+
+    <div class="control-card">
+      <h3>Legend</h3>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f90"></div> Perfboard (50x70mm)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#e33"></div> Pro Micro on perfboard</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#4a8a4a"></div> USB-C breakout</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3a7abf"></div> Joystick bases (ghost)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ff6"></div> Closure screws / standoffs</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#555"></div> Rubber feet (13x13mm square)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,100,100,0.2)"></div> Clearance zones</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(0,200,255,0.3)"></div> Perimeter nesting lip</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(200,100,255,0.4)"></div> Support pillars</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,200,0,0.2)"></div> Underside ribs</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('panel');
+const ctx = canvas.getContext('2d');
+
+const SCALE = 3.8;
+function mm(v) { return v * SCALE; }
+function getVal(id) { return parseFloat(document.getElementById(id).value); }
+function isChecked(id) { return document.getElementById(id).checked; }
+
+// Fixed from approved layouts
+const ENC_W = 190;
+const ENC_D = 100;
+const BOT_T = 3;
+const CORNER_R = 8;
+const INTERNAL_H = 35;
+
+// From top layout
+const JOY_CC = 100;       // joystick center-to-center
+const JOY_YOFF = -4;      // joystick Y offset
+const SIDE_MARGIN = 18;
+const BACK_MARGIN = 30;
+const FRONT_MARGIN = 16;
+const JOY_BASE = 40;      // joystick base square
+const JOY_BASE_POTS = 50; // with pots
+
+// Perfboard
+const PB_W = 70;  // along enclosure width
+const PB_D = 50;  // along enclosure depth
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  const closureType = document.getElementById('closureType').value;
+  const screwInset = getVal('screwInset');
+  const pbXoff = getVal('pbX');
+  const pbYoff = getVal('pbY');
+  const standoffH = getVal('standoff');
+  const footInset = getVal('footInset');
+  const footSize = 13; // 13x13mm square rubber feet
+
+  // Enclosure position on canvas (centered)
+  const ex = (W / SCALE - ENC_W) / 2;
+  const ey = (H / SCALE - ENC_D) / 2;
+  const cx = ex + ENC_W / 2;
+  const cy = ey + ENC_D / 2;
+
+  // Joystick centers (same as top layout, front=bottom)
+  const j1x = ex + SIDE_MARGIN + 54 / 2; // 54 = flange OD
+  const j2x = j1x + JOY_CC;
+  const jy = ey + BACK_MARGIN + 54 / 2 + JOY_YOFF;
+
+  // Clear
+  ctx.fillStyle = '#0f1a33';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  if (isChecked('showGrid')) {
+    ctx.strokeStyle = '#1a2a44';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x += mm(10)) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += mm(10)) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  // --- BOTTOM PANEL OUTLINE ---
+  ctx.fillStyle = '#1a2a3a';
+  ctx.strokeStyle = '#4a6a8a';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex), mm(ey), mm(ENC_W), mm(ENC_D), mm(CORNER_R));
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner bevel
+  ctx.strokeStyle = '#2a3a5a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex) + 3, mm(ey) + 3, mm(ENC_W) - 6, mm(ENC_D) - 6, mm(CORNER_R) - 1);
+  ctx.stroke();
+
+  // --- GHOST: JOYSTICK BASES (hanging from top panel) ---
+  if (isChecked('showGhosts')) {
+    ctx.globalAlpha = 0.12;
+
+    // J1 base
+    ctx.fillStyle = '#3a7abf';
+    ctx.strokeStyle = '#3a7abf';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.rect(mm(j1x - JOY_BASE_POTS / 2), mm(jy - JOY_BASE_POTS / 2), mm(JOY_BASE_POTS), mm(JOY_BASE_POTS));
+    ctx.fill();
+    ctx.stroke();
+
+    // J2 base
+    ctx.beginPath();
+    ctx.rect(mm(j2x - JOY_BASE_POTS / 2), mm(jy - JOY_BASE_POTS / 2), mm(JOY_BASE_POTS), mm(JOY_BASE_POTS));
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+
+    if (isChecked('showLabels')) {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#3a7abf';
+      ctx.font = `${mm(2.5)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('J1 base', mm(j1x), mm(jy + 1));
+      ctx.fillText('50x50', mm(j1x), mm(jy + 4.5));
+      ctx.fillText('J2 base', mm(j2x), mm(jy + 1));
+      ctx.fillText('50x50', mm(j2x), mm(jy + 4.5));
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // --- CLEARANCE ZONES (joystick bases must not be blocked) ---
+  if (isChecked('showClearance')) {
+    ctx.strokeStyle = 'rgba(255,100,100,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    // J1
+    ctx.strokeRect(mm(j1x - JOY_BASE_POTS / 2 - 2), mm(jy - JOY_BASE_POTS / 2 - 2), mm(JOY_BASE_POTS + 4), mm(JOY_BASE_POTS + 4));
+    // J2
+    ctx.strokeRect(mm(j2x - JOY_BASE_POTS / 2 - 2), mm(jy - JOY_BASE_POTS / 2 - 2), mm(JOY_BASE_POTS + 4), mm(JOY_BASE_POTS + 4));
+    ctx.setLineDash([]);
+  }
+
+  // --- PERFBOARD ---
+  const pbCX = cx + pbXoff;
+  const pbCY = cy + pbYoff;
+  const pbX = pbCX - PB_W / 2;
+  const pbY = pbCY - PB_D / 2;
+
+  // Board
+  ctx.fillStyle = 'rgba(255,153,0,0.15)';
+  ctx.strokeStyle = '#f90';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(mm(pbX), mm(pbY), mm(PB_W), mm(PB_D), mm(1.5));
+  ctx.fill();
+  ctx.stroke();
+
+  // Dot grid on perfboard
+  ctx.fillStyle = 'rgba(255,153,0,0.15)';
+  for (let px = pbX + 2.54; px < pbX + PB_W - 1; px += 2.54) {
+    for (let py = pbY + 2.54; py < pbY + PB_D - 1; py += 2.54) {
+      ctx.beginPath();
+      ctx.arc(mm(px), mm(py), mm(0.4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Pro Micro on perfboard
+  const pmW = 34, pmD = 19;
+  const pmX = pbCX - pmW / 2;
+  const pmY = pbCY - pmD / 2 - 5; // offset toward back
+  ctx.fillStyle = 'rgba(220,50,50,0.2)';
+  ctx.strokeStyle = '#e33';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(mm(pmX), mm(pmY), mm(pmW), mm(pmD), mm(1));
+  ctx.fill();
+  ctx.stroke();
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#e33';
+    ctx.globalAlpha = 0.6;
+    ctx.font = `${mm(2)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('Pro Micro', mm(pmX + pmW / 2), mm(pmY + pmD / 2 + 1));
+    ctx.globalAlpha = 1;
+  }
+
+  // USB-C breakout (on back wall, connected by wires)
+  const usbBrdW = 18, usbBrdD = 13;
+  const usbBrdX = cx - usbBrdW / 2;
+  const usbBrdY = ey + 3; // against back wall
+  ctx.fillStyle = 'rgba(74,138,74,0.2)';
+  ctx.strokeStyle = '#4a8a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(mm(usbBrdX), mm(usbBrdY), mm(usbBrdW), mm(usbBrdD), mm(1));
+  ctx.fill();
+  ctx.stroke();
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#4a8a4a';
+    ctx.globalAlpha = 0.6;
+    ctx.font = `${mm(1.8)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('USB-C breakout', mm(usbBrdX + usbBrdW / 2), mm(usbBrdY + usbBrdD / 2 + 0.8));
+    ctx.globalAlpha = 1;
+  }
+
+  // Perfboard standoff mounting holes (4 corners of perfboard)
+  const standoffInset = 3; // from perfboard edge
+  const standoffPositions = [
+    [pbX + standoffInset, pbY + standoffInset],
+    [pbX + PB_W - standoffInset, pbY + standoffInset],
+    [pbX + standoffInset, pbY + PB_D - standoffInset],
+    [pbX + PB_W - standoffInset, pbY + PB_D - standoffInset],
+  ];
+
+  for (const [sx, sy] of standoffPositions) {
+    // Standoff base
+    ctx.fillStyle = 'rgba(255,255,100,0.2)';
+    ctx.strokeStyle = '#ff6';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(mm(sx), mm(sy), mm(3), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Center hole
+    ctx.fillStyle = '#0f1a33';
+    ctx.beginPath();
+    ctx.arc(mm(sx), mm(sy), mm(1), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#f90';
+    ctx.font = `bold ${mm(2.5)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('PERFBOARD 70x50mm', mm(pbCX), mm(pbY + PB_D + 5));
+    ctx.fillStyle = '#886';
+    ctx.font = `${mm(1.8)}px monospace`;
+    ctx.fillText(`standoffs: ${standoffH}mm tall, M2 screws`, mm(pbCX), mm(pbY + PB_D + 8.5));
+  }
+
+  // --- CLOSURE SCREWS ---
+  if (closureType === 'screws' || closureType === 'combo') {
+    const screwPositions = [
+      [ex + screwInset, ey + screwInset],
+      [ex + ENC_W - screwInset, ey + screwInset],
+      [ex + screwInset, ey + ENC_D - screwInset],
+      [ex + ENC_W - screwInset, ey + ENC_D - screwInset],
+    ];
+
+    for (const [sx, sy] of screwPositions) {
+      // Countersink
+      ctx.fillStyle = 'rgba(200,200,200,0.08)';
+      ctx.strokeStyle = 'rgba(255,255,100,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(mm(sx), mm(sy), mm(4), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Screw head
+      ctx.fillStyle = 'rgba(255,255,100,0.3)';
+      ctx.strokeStyle = '#ff6';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(mm(sx), mm(sy), mm(2.5), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Phillips cross
+      ctx.strokeStyle = 'rgba(255,255,100,0.5)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(mm(sx - 1.2), mm(sy));
+      ctx.lineTo(mm(sx + 1.2), mm(sy));
+      ctx.moveTo(mm(sx), mm(sy - 1.2));
+      ctx.lineTo(mm(sx), mm(sy + 1.2));
+      ctx.stroke();
+    }
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#ff6';
+      ctx.font = `${mm(1.6)}px monospace`;
+      ctx.textAlign = 'left';
+      ctx.fillText('M3 countersunk', mm(ex + screwInset + 6), mm(ey + screwInset + 1));
+    }
+  }
+
+  // --- SNAP-FIT TABS ---
+  if (closureType === 'snap' || closureType === 'combo') {
+    const tabW = 10;
+    const tabH = 4;
+    ctx.strokeStyle = 'rgba(100,200,255,0.5)';
+    ctx.fillStyle = 'rgba(100,200,255,0.1)';
+    ctx.lineWidth = 1;
+
+    // Tabs on long sides (left and right)
+    const tabPositions = [
+      // Left side tabs
+      [ex, ey + ENC_D * 0.3 - tabH / 2, -tabW, tabH],
+      [ex, ey + ENC_D * 0.7 - tabH / 2, -tabW, tabH],
+      // Right side tabs
+      [ex + ENC_W, ey + ENC_D * 0.3 - tabH / 2, tabW, tabH],
+      [ex + ENC_W, ey + ENC_D * 0.7 - tabH / 2, tabW, tabH],
+    ];
+
+    for (const [tx, ty, tw, th] of tabPositions) {
+      ctx.beginPath();
+      ctx.rect(mm(Math.min(tx, tx + tw)), mm(ty), mm(Math.abs(tw)), mm(th));
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = 'rgba(100,200,255,0.6)';
+      ctx.font = `${mm(1.5)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('snap tab', mm(ex - 5), mm(ey + ENC_D * 0.3 + 5));
+    }
+  }
+
+  // --- PERIMETER NESTING LIP ---
+  if (isChecked('showLip')) {
+    const lipW = 2; // 2mm lip
+    ctx.strokeStyle = 'rgba(0,200,255,0.35)';
+    ctx.lineWidth = mm(lipW);
+    ctx.beginPath();
+    ctx.roundRect(mm(ex + lipW / 2 + 3), mm(ey + lipW / 2 + 3), mm(ENC_W - lipW - 6), mm(ENC_D - lipW - 6), mm(CORNER_R - 3));
+    ctx.stroke();
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = 'rgba(0,200,255,0.5)';
+      ctx.font = `${mm(1.5)}px monospace`;
+      ctx.textAlign = 'left';
+      ctx.fillText('2mm nesting lip', mm(ex + CORNER_R + 6), mm(ey + 8));
+    }
+  }
+
+  // --- SUPPORT PILLARS ---
+  const pillarSpread = getVal('pillarSpread');
+  const pillarD = getVal('pillarD');
+
+  if (isChecked('showPillars')) {
+    // Pillars must avoid: joystick bases (50x50 at j1x/j2x, jy) and perfboard (70x50 at pbCX, pbCY)
+    // Clear zones: back center strip (between joystick bases, near back wall)
+    //              front center strip (below perfboard, near front wall)
+    // Place 4 pillars in a rectangle around the center span
+
+    const backPillarY = ey + BACK_MARGIN / 2 + 3;  // ~18mm from back edge, behind joystick bases
+    const frontPillarY = pbCY + PB_D / 2 + 6;       // ~6mm in front of perfboard bottom edge
+
+    const pillarPositions = [
+      [cx - pillarSpread, backPillarY],    // back left
+      [cx + pillarSpread, backPillarY],    // back right
+      [cx - pillarSpread, frontPillarY],   // front left
+      [cx + pillarSpread, frontPillarY],   // front right
+    ];
+
+    for (const [px, py] of pillarPositions) {
+      // Check if pillar is inside perfboard or joystick base footprint
+      const inPB = px > pbCX - PB_W/2 - 1 && px < pbCX + PB_W/2 + 1 && py > pbCY - PB_D/2 - 1 && py < pbCY + PB_D/2 + 1;
+      const inJ1 = px > j1x - JOY_BASE_POTS/2 - 1 && px < j1x + JOY_BASE_POTS/2 + 1 && py > jy - JOY_BASE_POTS/2 - 1 && py < jy + JOY_BASE_POTS/2 + 1;
+      const inJ2 = px > j2x - JOY_BASE_POTS/2 - 1 && px < j2x + JOY_BASE_POTS/2 + 1 && py > jy - JOY_BASE_POTS/2 - 1 && py < jy + JOY_BASE_POTS/2 + 1;
+      const collision = inPB || inJ1 || inJ2;
+
+      // Pillar base (printed on bottom shell)
+      ctx.fillStyle = collision ? 'rgba(255,50,50,0.25)' : 'rgba(200,100,255,0.15)';
+      ctx.strokeStyle = collision ? '#f44' : 'rgba(200,100,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(mm(px), mm(py), mm(pillarD / 2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Center alignment pin hole
+      ctx.fillStyle = collision ? 'rgba(255,50,50,0.4)' : 'rgba(200,100,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(mm(px), mm(py), mm(2), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Center dot
+      ctx.fillStyle = '#0f1a33';
+      ctx.beginPath();
+      ctx.arc(mm(px), mm(py), mm(0.8), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Collision label
+      if (collision && isChecked('showLabels')) {
+        ctx.fillStyle = '#f44';
+        ctx.font = `bold ${mm(1.5)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('COLLISION', mm(px), mm(py - pillarD / 2 - 2));
+      }
+    }
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = 'rgba(200,100,255,0.6)';
+      ctx.font = `${mm(1.6)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`support pillars ${pillarD}mm (x4)`, mm(cx), mm(backPillarY - pillarD / 2 - 3));
+      ctx.fillText('back pair: behind joystick bases', mm(cx), mm(backPillarY - pillarD / 2 - 0.5));
+      ctx.fillText('front pair: below perfboard', mm(cx), mm(frontPillarY + pillarD / 2 + 3));
+    }
+  }
+
+  // --- UNDERSIDE RIBS (around joystick mounts) ---
+  if (isChecked('showRibs')) {
+    ctx.strokeStyle = 'rgba(255,200,0,0.2)';
+    ctx.lineWidth = mm(1.5);
+
+    // Ribs radiating from each joystick center
+    for (const jx of [j1x, j2x]) {
+      // Cross ribs
+      const ribLen = JOY_BASE_POTS / 2 + 5;
+      // Horizontal rib
+      ctx.beginPath();
+      ctx.moveTo(mm(jx - ribLen), mm(jy));
+      ctx.lineTo(mm(jx + ribLen), mm(jy));
+      ctx.stroke();
+      // Vertical rib
+      ctx.beginPath();
+      ctx.moveTo(mm(jx), mm(jy - ribLen));
+      ctx.lineTo(mm(jx), mm(jy + ribLen));
+      ctx.stroke();
+      // Diagonal ribs
+      const diagLen = ribLen * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(mm(jx - diagLen), mm(jy - diagLen));
+      ctx.lineTo(mm(jx + diagLen), mm(jy + diagLen));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(mm(jx + diagLen), mm(jy - diagLen));
+      ctx.lineTo(mm(jx - diagLen), mm(jy + diagLen));
+      ctx.stroke();
+    }
+
+    // Center span rib connecting the two joystick areas
+    ctx.strokeStyle = 'rgba(255,200,0,0.15)';
+    ctx.lineWidth = mm(2);
+    ctx.beginPath();
+    ctx.moveTo(mm(j1x + JOY_BASE_POTS / 2 + 2), mm(jy));
+    ctx.lineTo(mm(j2x - JOY_BASE_POTS / 2 - 2), mm(jy));
+    ctx.stroke();
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = 'rgba(255,200,0,0.4)';
+      ctx.font = `${mm(1.5)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('underside ribs (3mm tall)', mm(j1x), mm(jy + JOY_BASE_POTS / 2 + 10));
+    }
+  }
+
+  // --- RUBBER FEET (13x13mm square) ---
+  const feetPositions = [
+    [ex + footInset, ey + footInset],
+    [ex + ENC_W - footInset, ey + footInset],
+    [ex + footInset, ey + ENC_D - footInset],
+    [ex + ENC_W - footInset, ey + ENC_D - footInset],
+  ];
+
+  for (const [fx, fy] of feetPositions) {
+    // Foot recess (square with rounded corners)
+    ctx.fillStyle = 'rgba(80,80,80,0.3)';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(mm(fx - footSize / 2), mm(fy - footSize / 2), mm(footSize), mm(footSize), mm(1.5));
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner square
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.roundRect(mm(fx - footSize / 2 + 1.5), mm(fy - footSize / 2 + 1.5), mm(footSize - 3), mm(footSize - 3), mm(1));
+    ctx.stroke();
+  }
+
+  if (isChecked('showLabels')) {
+    const lastFoot = feetPositions[3];
+    ctx.fillStyle = '#555';
+    ctx.font = `${mm(1.6)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('rubber foot 13x13mm', mm(lastFoot[0]), mm(lastFoot[1] + footSize / 2 + 3));
+  }
+
+  // --- DIMENSION LINES ---
+  if (isChecked('showDims')) {
+    ctx.strokeStyle = 'rgba(255,255,100,0.5)';
+    ctx.fillStyle = 'rgba(255,255,100,0.8)';
+    ctx.lineWidth = 1;
+    ctx.font = `${mm(2.2)}px monospace`;
+    ctx.textAlign = 'center';
+
+    // Width
+    const dimY1 = ey - 6;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath(); ctx.moveTo(mm(ex), mm(dimY1)); ctx.lineTo(mm(ex + ENC_W), mm(dimY1)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex), mm(dimY1 - 1.5)); ctx.lineTo(mm(ex), mm(dimY1 + 1.5)); ctx.stroke();
+    ctx.moveTo(mm(ex + ENC_W), mm(dimY1 - 1.5)); ctx.lineTo(mm(ex + ENC_W), mm(dimY1 + 1.5)); ctx.stroke();
+    ctx.fillText(`${ENC_W}mm`, mm(cx), mm(dimY1 - 2));
+
+    // Depth
+    const dimX1 = ex - 6;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath(); ctx.moveTo(mm(dimX1), mm(ey)); ctx.lineTo(mm(dimX1), mm(ey + ENC_D)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(dimX1 - 1.5), mm(ey)); ctx.lineTo(mm(dimX1 + 1.5), mm(ey)); ctx.stroke();
+    ctx.moveTo(mm(dimX1 - 1.5), mm(ey + ENC_D)); ctx.lineTo(mm(dimX1 + 1.5), mm(ey + ENC_D)); ctx.stroke();
+    ctx.save();
+    ctx.translate(mm(dimX1 - 2.5), mm(ey + ENC_D / 2));
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`${ENC_D}mm`, 0, 0);
+    ctx.restore();
+
+    // Perfboard position from back wall
+    ctx.strokeStyle = 'rgba(255,153,0,0.4)';
+    ctx.fillStyle = 'rgba(255,153,0,0.7)';
+    ctx.font = `${mm(1.8)}px monospace`;
+    const pbDistBack = pbY - ey;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(pbX - 3), mm(ey)); ctx.lineTo(mm(pbX - 3), mm(pbY)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${pbDistBack.toFixed(0)}mm`, mm(pbX - 4), mm((ey + pbY) / 2 + 1));
+    ctx.textAlign = 'center';
+  }
+
+  // --- ORIENTATION LABELS ---
+  ctx.fillStyle = '#444';
+  ctx.font = `${mm(2.2)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('BACK', mm(cx), mm(ey - 10));
+  ctx.fillText('FRONT (operator side)', mm(cx), mm(ey + ENC_D + 8));
+
+  // Check for collisions between perfboard and joystick bases
+  const j1Left = j1x - JOY_BASE_POTS / 2;
+  const j1Right = j1x + JOY_BASE_POTS / 2;
+  const j2Left = j2x - JOY_BASE_POTS / 2;
+  const j2Right = j2x + JOY_BASE_POTS / 2;
+  const jTop = jy - JOY_BASE_POTS / 2;
+  const jBot = jy + JOY_BASE_POTS / 2;
+
+  const pbLeft = pbX;
+  const pbRight = pbX + PB_W;
+  const pbTop = pbY;
+  const pbBot = pbY + PB_D;
+
+  const overlapJ1 = !(pbRight < j1Left || pbLeft > j1Right || pbBot < jTop || pbTop > jBot);
+  const overlapJ2 = !(pbRight < j2Left || pbLeft > j2Right || pbBot < jTop || pbTop > jBot);
+
+  // --- COMPUTED DIMS ---
+  const hasLip = isChecked('showLip');
+  const hasPillars = isChecked('showPillars');
+  const hasRibs = isChecked('showRibs');
+
+  document.getElementById('computedDims').innerHTML = `
+    <span class="label">Perfboard center X:</span> <strong>${pbXoff >= 0 ? '+' : ''}${pbXoff}mm</strong> from center<br>
+    <span class="label">Perfboard center Y:</span> <strong>${pbYoff >= 0 ? '+' : ''}${pbYoff}mm</strong> from center<br>
+    <span class="label">PB dist from back wall:</span> <strong>${(pbY - ey).toFixed(0)}mm</strong><br>
+    <span class="label">Standoff height:</span> <strong>${standoffH}mm</strong><br>
+    <span class="label">PB top clearance:</span> <strong>${(INTERNAL_H - standoffH - 8).toFixed(0)}mm</strong> above Pro Micro<br>
+    <hr style="border-color:#2a3a5c; margin:6px 0">
+    <span class="label">Closure:</span> <strong>${closureType}</strong><br>
+    <span class="label">Rubber feet:</span> <strong>13x13x4mm</strong> square<br>
+    <span class="label">Nesting lip:</span> ${hasLip ? '<strong style="color:#0c0">2mm perimeter</strong>' : '<strong style="color:#888">OFF</strong>'}<br>
+    <span class="label">Support pillars:</span> ${hasPillars ? '<strong style="color:#0c0">4x ' + pillarD + 'mm dia, ' + pillarSpread + 'mm spread</strong>' : '<strong style="color:#888">OFF</strong>'}<br>
+    <span class="label">Underside ribs:</span> ${hasRibs ? '<strong style="color:#0c0">3mm tall, cross pattern</strong>' : '<strong style="color:#888">OFF</strong>'}<br>
+    <hr style="border-color:#2a3a5c; margin:6px 0">
+    <span class="label">J1 base overlap:</span> ${overlapJ1 ? '<strong style="color:#f44">COLLISION</strong>' : '<strong style="color:#0c0">CLEAR</strong>'}<br>
+    <span class="label">J2 base overlap:</span> ${overlapJ2 ? '<strong style="color:#f44">COLLISION</strong>' : '<strong style="color:#0c0">CLEAR</strong>'}<br>
+  `;
+}
+
+// Bind controls
+['screwInset', 'pbX', 'pbY', 'standoff', 'footInset', 'pillarSpread', 'pillarD'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    document.getElementById('v_' + id).textContent = el.value;
+    draw();
+  });
+});
+['closureType'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+['showLabels', 'showDims', 'showGrid', 'showGhosts', 'showClearance', 'showLip', 'showPillars', 'showRibs'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+
+draw();
+</script>
+
+</body>
+</html>

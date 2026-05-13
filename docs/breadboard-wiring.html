@@ -250,14 +250,14 @@
           <td>VRx (X-axis)</td>
           <td><span class="pin-label">A0</span></td>
           <td><span class="wire-color" style="background:#f90"></span>Orange</td>
-          <td>Coarse left/right</td>
+          <td>Coarse left/right — 4th pin below VCC</td>
         </tr>
         <tr>
           <td>Joystick 1</td>
           <td>VRy (Twist)</td>
           <td><span class="pin-label">A1</span></td>
           <td><span class="wire-color" style="background:#ff0"></span>Yellow</td>
-          <td>Fine adjustment (twist barrel)</td>
+          <td>Fine adjustment (twist barrel) — 3rd pin below VCC</td>
         </tr>
         <tr>
           <td>Joystick 1</td>
@@ -287,14 +287,14 @@
           <td>VRx (X-axis)</td>
           <td><span class="pin-label">A2</span></td>
           <td><span class="wire-color" style="background:#f90"></span>Orange</td>
-          <td>Coarse left/right</td>
+          <td>Coarse left/right — 2nd pin below VCC</td>
         </tr>
         <tr>
           <td>Joystick 2</td>
           <td>VRy (Twist)</td>
           <td><span class="pin-label">A3</span></td>
           <td><span class="wire-color" style="background:#ff0"></span>Yellow</td>
-          <td>Fine adjustment (twist barrel)</td>
+          <td>Fine adjustment (twist barrel) — 1st pin below VCC</td>
         </tr>
         <tr>
           <td>Joystick 2</td>
@@ -351,6 +351,7 @@
     <h2>Breadboarding Notes</h2>
     <ul>
       <li>The Pro Micro straddles the breadboard center channel. Pin labels are on the bottom — flip it to verify pin numbers before wiring.</li>
+      <li><strong>Right side pin order (top→bottom):</strong> RAW, GND, RST, VCC, A3, A2, A1, A0, 15, 14, 16, 10. Note: A3 is nearest to VCC, A0 is furthest.</li>
       <li>Use the breadboard power rails for 5V and GND. Run one jumper from Pro Micro VCC to the + rail, one from GND to the - rail.</li>
       <li>Both joysticks share the same 5V and GND rails. Run power and ground to each joystick from the breadboard rails.</li>
       <li>LEDs need 220 ohm current-limiting resistors. Wire: Arduino pin → resistor → LED anode (long leg) → LED cathode (short leg) → GND rail.</li>
@@ -382,377 +383,293 @@
 </div>
 
 <script>
-// Draw the wiring schematic
 const canvas = document.getElementById('schematic');
 const ctx = canvas.getContext('2d');
 
-function draw() {
-  const W = canvas.width;
-  const H = canvas.height;
+// Helpers
+function dot(x, y, r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+function wire(points, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+  ctx.stroke();
+  // dots at endpoints
+  dot(points[0][0], points[0][1], 3, color);
+  dot(points[points.length-1][0], points[points.length-1][1], 3, color);
+}
+function label(x, y, text, color, align, font) {
+  ctx.fillStyle = color || '#ccc';
+  ctx.font = font || '10px monospace';
+  ctx.textAlign = align || 'left';
+  ctx.fillText(text, x, y);
+}
 
-  // Background
+function draw() {
+  const W = canvas.width, H = canvas.height;
   ctx.fillStyle = '#0f1a33';
   ctx.fillRect(0, 0, W, H);
 
-  // Grid dots
-  ctx.fillStyle = '#1a2a44';
-  for (let x = 20; x < W; x += 20) {
+  // Grid
+  ctx.fillStyle = '#152040';
+  for (let x = 20; x < W; x += 20)
     for (let y = 20; y < H; y += 20) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(x, y, 1, 1);
     }
-  }
 
-  // === Arduino Pro Micro (center) ===
-  const ardX = 420, ardY = 120, ardW = 160, ardH = 280;
+  // ============ ARDUINO PRO MICRO (center) ============
+  const AX = 400, AY = 80, AW = 200, AH = 340;
   ctx.fillStyle = '#1a5c3a';
   ctx.strokeStyle = '#2a8c5a';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(ardX, ardY, ardW, ardH, 8);
-  ctx.fill();
-  ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(AX, AY, AW, AH, 10); ctx.fill(); ctx.stroke();
 
-  // USB port
+  // USB
   ctx.fillStyle = '#555';
-  ctx.fillRect(ardX + 55, ardY - 12, 50, 16);
-  ctx.strokeStyle = '#777';
-  ctx.strokeRect(ardX + 55, ardY - 12, 50, 16);
-  ctx.fillStyle = '#888';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('USB', ardX + 80, ardY - 1);
+  ctx.fillRect(AX + 70, AY - 14, 60, 18);
+  ctx.strokeStyle = '#777'; ctx.lineWidth = 1;
+  ctx.strokeRect(AX + 70, AY - 14, 60, 18);
+  label(AX + 100, AY - 2, 'USB-C', '#999', 'center', '9px monospace');
 
-  // Label
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 13px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('ARDUINO', ardX + ardW/2, ardY + 30);
-  ctx.fillText('PRO MICRO', ardX + ardW/2, ardY + 46);
-  ctx.font = '10px monospace';
-  ctx.fillStyle = '#8c8';
-  ctx.fillText('ATmega32U4', ardX + ardW/2, ardY + 62);
+  // Title
+  label(AX + AW/2, AY + 30, 'ARDUINO PRO MICRO', '#fff', 'center', 'bold 12px monospace');
+  label(AX + AW/2, AY + 46, 'ATmega32U4', '#8c8', 'center', '10px monospace');
 
-  // Pin labels - left side (top to bottom)
-  const leftPins = ['D2', 'GND', 'GND', 'D3', 'D4', 'D5', 'D6', 'D7'];
-  const leftPinY = ardY + 90;
-  const pinSpacing = 22;
+  // Left pins: D2, GND, GND, D3, D4, D5, D6, D7
+  const LP = ['D2','GND','GND','D3','D4','D5','D6','D7'];
+  const LPY0 = AY + 75, LPS = 32;
+  const lx = AX;  // left edge
 
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'right';
-  for (let i = 0; i < leftPins.length; i++) {
-    const py = leftPinY + i * pinSpacing;
-    // Pin dot
-    ctx.fillStyle = '#ff6';
-    ctx.beginPath();
-    ctx.arc(ardX - 4, py, 4, 0, Math.PI * 2);
-    ctx.fill();
-    // Label
-    ctx.fillStyle = '#ff6';
-    ctx.fillText(leftPins[i], ardX - 14, py + 4);
+  for (let i = 0; i < LP.length; i++) {
+    const py = LPY0 + i * LPS;
+    dot(lx, py, 5, '#ff6');
+    label(lx + 8, py + 4, LP[i], '#ff6', 'left', '11px monospace');
   }
 
-  // Pin labels - right side (top to bottom)
-  const rightPins = ['VCC', 'A0', 'A1', 'A2', 'A3', '', '', 'RAW'];
-  ctx.textAlign = 'left';
-  for (let i = 0; i < rightPins.length; i++) {
-    if (!rightPins[i]) continue;
-    const py = leftPinY + i * pinSpacing;
-    ctx.fillStyle = '#ff6';
-    ctx.beginPath();
-    ctx.arc(ardX + ardW + 4, py, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ff6';
-    ctx.fillText(rightPins[i], ardX + ardW + 14, py + 4);
+  // Right pins: VCC, A3, A2, A1, A0, -, -, RAW (matches actual Pro Micro silkscreen)
+  const RP = ['VCC','A3','A2','A1','A0','','','RAW'];
+  const rx = AX + AW;  // right edge
+
+  for (let i = 0; i < RP.length; i++) {
+    if (!RP[i]) continue;
+    const py = LPY0 + i * LPS;
+    dot(rx, py, 5, '#ff6');
+    label(rx - 8, py + 4, RP[i], '#ff6', 'right', '11px monospace');
   }
 
-  // === Joystick 1 (Left) ===
-  const j1x = 60, j1y = 100;
-  drawJoystick(j1x, j1y, 'JOYSTICK 1', 'Line 1 (Left)', '#3a7abf');
+  // Pin Y helper
+  function lpY(i) { return LPY0 + i * LPS; }
+  function rpY(i) { return LPY0 + i * LPS; }
 
-  // Wires from Joystick 1 to Arduino
-  // VCC → VCC (right side)
-  drawWire(j1x + 140, j1y + 50, ardX + ardW + 4, leftPinY, '#e33', [
-    { x: ardX + ardW + 60, y: j1y + 50 },
-    { x: ardX + ardW + 60, y: leftPinY }
-  ]);
-  drawWireLabel(ardX + ardW + 70, j1y + 50, '5V', '#e33');
+  // ============ JOYSTICK 1 (left side) ============
+  const J1X = 40, J1Y = 60, J1W = 150, J1H = 210;
+  ctx.fillStyle = '#2a2a3a';
+  ctx.strokeStyle = '#3a7abf';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(J1X, J1Y, J1W, J1H, 10); ctx.fill(); ctx.stroke();
 
-  // GND → GND (left side)
-  drawWire(j1x + 140, j1y + 76, ardX - 4, leftPinY + pinSpacing, '#555', [
-    { x: j1x + 200, y: j1y + 76 },
-    { x: j1x + 200, y: leftPinY + pinSpacing }
-  ]);
-
-  // VRx → A0
-  drawWire(j1x + 140, j1y + 102, ardX + ardW + 4, leftPinY + pinSpacing, '#f90', [
-    { x: ardX + ardW + 44, y: j1y + 102 },
-    { x: ardX + ardW + 44, y: leftPinY + pinSpacing }
-  ]);
-
-  // VRy → A1
-  drawWire(j1x + 140, j1y + 128, ardX + ardW + 4, leftPinY + pinSpacing * 2, '#dd0', [
-    { x: ardX + ardW + 34, y: j1y + 128 },
-    { x: ardX + ardW + 34, y: leftPinY + pinSpacing * 2 }
-  ]);
-
-  // SW → D2
-  drawWire(j1x + 140, j1y + 154, ardX - 4, leftPinY, '#0af', [
-    { x: j1x + 210, y: j1y + 154 },
-    { x: j1x + 210, y: leftPinY }
-  ]);
-
-  // === Joystick 2 (Right) ===
-  const j2x = 740, j2y = 100;
-  drawJoystick(j2x, j2y, 'JOYSTICK 2', 'Line 2 (Right)', '#bf5a3a');
-
-  // VCC → VCC rail
-  drawWire(j2x, j2y + 50, ardX + ardW + 4, leftPinY, '#e33', [
-    { x: ardX + ardW + 70, y: j2y + 50 },
-    { x: ardX + ardW + 70, y: leftPinY - 10 },
-    { x: ardX + ardW + 60, y: leftPinY }
-  ]);
-
-  // GND → GND
-  drawWire(j2x, j2y + 76, ardX - 4, leftPinY + pinSpacing * 2, '#555', [
-    { x: j2x - 50, y: j2y + 76 },
-    { x: j2x - 50, y: leftPinY + pinSpacing * 2 }
-  ]);
-
-  // VRx → A2
-  drawWire(j2x, j2y + 102, ardX + ardW + 4, leftPinY + pinSpacing * 3, '#f90', [
-    { x: ardX + ardW + 50, y: j2y + 102 },
-    { x: ardX + ardW + 50, y: leftPinY + pinSpacing * 3 }
-  ]);
-
-  // VRy → A3
-  drawWire(j2x, j2y + 128, ardX + ardW + 4, leftPinY + pinSpacing * 4, '#dd0', [
-    { x: ardX + ardW + 40, y: j2y + 128 },
-    { x: ardX + ardW + 40, y: leftPinY + pinSpacing * 4 }
-  ]);
-
-  // SW → D3
-  drawWire(j2x, j2y + 154, ardX - 4, leftPinY + pinSpacing * 3, '#0af', [
-    { x: j2x - 40, y: j2y + 154 },
-    { x: j2x - 40, y: leftPinY + pinSpacing * 3 }
-  ]);
-
-  // === LEDs (bottom left) ===
-  const ledY = 500;
-  drawLED(120, ledY, 'FINE LED 1', '#44f', 'D6');
-  drawLED(300, ledY, 'LOCK LED', '#0c0', 'D5');
-  drawLED(480, ledY, 'FINE LED 2', '#44f', 'D7');
-
-  // LED wires to Arduino
-  drawWire(120, ledY - 10, ardX - 4, leftPinY + pinSpacing * 6, '#44f', [
-    { x: 120, y: leftPinY + pinSpacing * 6 }
-  ]);
-  drawWire(300, ledY - 10, ardX - 4, leftPinY + pinSpacing * 5, '#0c0', [
-    { x: 300, y: leftPinY + pinSpacing * 5 }
-  ]);
-  drawWire(480, ledY - 10, ardX - 4, leftPinY + pinSpacing * 7, '#44f', [
-    { x: 480, y: leftPinY + pinSpacing * 7 }
-  ]);
-
-  // === Lock Switch (bottom right) ===
-  const swX = 700, swY = 510;
-  drawSwitch(swX, swY);
-
-  // Switch wire to D4
-  drawWire(swX, swY - 20, ardX - 4, leftPinY + pinSpacing * 4, '#a0a', [
-    { x: swX, y: leftPinY + pinSpacing * 4 },
-  ]);
-  // Switch GND
-  drawWire(swX + 50, swY - 20, swX + 50, swY + 50, '#555', []);
+  // Thumbstick cap
+  ctx.fillStyle = '#444'; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(J1X + J1W/2, J1Y - 5, 22, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#555';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('GND', swX + 50, swY + 64);
+  ctx.beginPath(); ctx.arc(J1X + J1W/2, J1Y - 5, 8, 0, Math.PI*2); ctx.fill();
 
-  // === Legend ===
-  const legX = 40, legY = 630;
-  ctx.fillStyle = '#888';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('WIRE COLORS:', legX, legY);
+  label(J1X + J1W/2, J1Y + 24, 'JOYSTICK 1', '#fff', 'center', 'bold 11px monospace');
+  label(J1X + J1W/2, J1Y + 40, 'Line 1 (Left)', '#888', 'center', '10px monospace');
 
+  // J1 pins on right edge of joystick module
+  const j1Pins = [
+    { name: 'GND', color: '#666',  y: J1Y + 60 },
+    { name: 'VCC', color: '#e33',  y: J1Y + 84 },
+    { name: 'VRx', color: '#f90',  y: J1Y + 108 },
+    { name: 'VRy', color: '#dd0',  y: J1Y + 132 },
+    { name: 'SW',  color: '#0af',  y: J1Y + 156 },
+  ];
+  const j1px = J1X + J1W; // pin x = right edge
+  for (const p of j1Pins) {
+    dot(j1px, p.y, 4, p.color);
+    label(j1px - 10, p.y + 4, p.name, '#ccc', 'right', '10px monospace');
+  }
+
+  // J1 wires (right edge of joystick → Arduino pins)
+  // GND → left GND (index 1)
+  wire([[j1px, j1Pins[0].y], [j1px+20, j1Pins[0].y], [j1px+20, lpY(1)], [lx, lpY(1)]], '#666');
+  // VCC → right VCC (index 0)
+  wire([[j1px, j1Pins[1].y], [j1px+30, j1Pins[1].y], [j1px+30, lpY(0)-20], [rx+30, lpY(0)-20], [rx+30, rpY(0)], [rx, rpY(0)]], '#e33');
+  // VRx → A0 (right index 4)
+  wire([[j1px, j1Pins[2].y], [j1px+40, j1Pins[2].y], [j1px+40, rpY(4)+6], [rx+20, rpY(4)+6], [rx+20, rpY(4)], [rx, rpY(4)]], '#f90');
+  // VRy → A1 (right index 3)
+  wire([[j1px, j1Pins[3].y], [j1px+50, j1Pins[3].y], [j1px+50, rpY(3)+6], [rx+14, rpY(3)+6], [rx+14, rpY(3)], [rx, rpY(3)]], '#dd0');
+  // SW → D2 (left index 0)
+  wire([[j1px, j1Pins[4].y], [j1px+14, j1Pins[4].y], [j1px+14, lpY(0)], [lx, lpY(0)]], '#0af');
+
+  // J1 wire labels at Arduino end
+  label(lx - 4, lpY(0) - 8, 'J1 BTN', '#0af', 'right', '8px monospace');
+  label(lx - 4, lpY(1) - 8, 'J1 GND', '#666', 'right', '8px monospace');
+
+  // ============ JOYSTICK 2 (right side) ============
+  const J2X = 810, J2Y = 60, J2W = 150, J2H = 210;
+  ctx.fillStyle = '#2a2a3a';
+  ctx.strokeStyle = '#bf5a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(J2X, J2Y, J2W, J2H, 10); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = '#444'; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(J2X + J2W/2, J2Y - 5, 22, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(J2X + J2W/2, J2Y - 5, 8, 0, Math.PI*2); ctx.fill();
+
+  label(J2X + J2W/2, J2Y + 24, 'JOYSTICK 2', '#fff', 'center', 'bold 11px monospace');
+  label(J2X + J2W/2, J2Y + 40, 'Line 2 (Right)', '#888', 'center', '10px monospace');
+
+  // J2 pins on LEFT edge of joystick module
+  const j2Pins = [
+    { name: 'GND', color: '#666',  y: J2Y + 60 },
+    { name: 'VCC', color: '#e33',  y: J2Y + 84 },
+    { name: 'VRx', color: '#f90',  y: J2Y + 108 },
+    { name: 'VRy', color: '#dd0',  y: J2Y + 132 },
+    { name: 'SW',  color: '#0af',  y: J2Y + 156 },
+  ];
+  const j2px = J2X; // pin x = left edge
+  for (const p of j2Pins) {
+    dot(j2px, p.y, 4, p.color);
+    label(j2px + 10, p.y + 4, p.name, '#ccc', 'left', '10px monospace');
+  }
+
+  // J2 wires (left edge of joystick → Arduino pins)
+  // GND → left GND (index 2)
+  wire([[j2px, j2Pins[0].y], [j2px-20, j2Pins[0].y], [j2px-20, lpY(2)], [rx+40, lpY(2)], [rx+40, lpY(2)-14], [lx-40, lpY(2)-14], [lx-40, lpY(2)], [lx, lpY(2)]], '#666');
+  // VCC → right VCC (shares with J1, tap off the VCC pin)
+  wire([[j2px, j2Pins[1].y], [j2px-14, j2Pins[1].y], [j2px-14, rpY(0)-30], [rx+36, rpY(0)-30], [rx+36, rpY(0)], [rx, rpY(0)]], '#e33');
+  // VRx → A2 (right index 2)
+  wire([[j2px, j2Pins[2].y], [j2px-30, j2Pins[2].y], [j2px-30, rpY(2)], [rx, rpY(2)]], '#f90');
+  // VRy → A3 (right index 1)
+  wire([[j2px, j2Pins[3].y], [j2px-40, j2Pins[3].y], [j2px-40, rpY(1)], [rx, rpY(1)]], '#dd0');
+  // SW → D3 (left index 3)
+  wire([[j2px, j2Pins[4].y], [j2px-50, j2Pins[4].y], [j2px-50, lpY(3)], [rx+50, lpY(3)], [rx+50, lpY(3)-22], [lx-50, lpY(3)-22], [lx-50, lpY(3)], [lx, lpY(3)]], '#0af');
+
+  // ============ LEDs (bottom area) ============
+  const ledBaseY = 480;
+
+  function drawLED(cx, cy, name, color, pin, ardPin) {
+    // LED body
+    ctx.fillStyle = color; ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.stroke();
+
+    // + and - labels
+    label(cx - 3, cy + 4, '+', '#fff', 'center', 'bold 10px sans-serif');
+
+    // Resistor zigzag below
+    ctx.strokeStyle = '#a86'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 12);
+    const zy = cy + 16;
+    ctx.lineTo(cx+5, zy); ctx.lineTo(cx-5, zy+6); ctx.lineTo(cx+5, zy+12);
+    ctx.lineTo(cx-5, zy+18); ctx.lineTo(cx, zy+22);
+    ctx.stroke();
+    label(cx + 14, zy + 14, '220Ω', '#886', 'left', '9px monospace');
+
+    // GND line below resistor
+    const gy = cy + 42;
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, gy); ctx.lineTo(cx, gy + 14); ctx.stroke();
+    // GND symbol (3 lines)
+    for (let i = 0; i < 3; i++) {
+      const gw = 10 - i * 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - gw, gy + 14 + i * 4);
+      ctx.lineTo(cx + gw, gy + 14 + i * 4);
+      ctx.stroke();
+    }
+
+    label(cx, cy - 20, name, '#ccc', 'center', '10px monospace');
+    label(cx, cy - 32, pin, '#ff6', 'center', 'bold 10px monospace');
+
+    return { x: cx, topY: cy - 12 };  // wire connection point
+  }
+
+  const led1 = drawLED(160, ledBaseY, 'FINE LED 1', '#44f', 'D6');
+  const led2 = drawLED(340, ledBaseY, 'LOCK LED', '#0c0', 'D5');
+  const led3 = drawLED(520, ledBaseY, 'FINE LED 2', '#44f', 'D7');
+
+  // LED wires to Arduino left pins
+  // D6 → Fine LED 1
+  wire([[lx, lpY(6)], [lx - 70, lpY(6)], [lx - 70, led1.topY - 40], [led1.x, led1.topY - 40], [led1.x, led1.topY]], '#44f');
+  // D5 → Lock LED
+  wire([[lx, lpY(5)], [lx - 60, lpY(5)], [lx - 60, led2.topY - 48], [led2.x, led2.topY - 48], [led2.x, led2.topY]], '#0c0');
+  // D7 → Fine LED 2
+  wire([[lx, lpY(7)], [lx - 80, lpY(7)], [lx - 80, led3.topY - 56], [led3.x, led3.topY - 56], [led3.x, led3.topY]], '#44f');
+
+  // ============ LOCK SWITCH (bottom right) ============
+  const swX = 740, swY = 500;
+  ctx.fillStyle = '#2a2a3a'; ctx.strokeStyle = '#a0a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(swX, swY - 18, 90, 36, 6); ctx.fill(); ctx.stroke();
+  // Toggle lever
+  ctx.fillStyle = '#666';
+  ctx.fillRect(swX + 50, swY - 10, 18, 20);
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.strokeRect(swX + 50, swY - 10, 18, 20);
+
+  dot(swX + 16, swY, 4, '#a0a');
+  dot(swX + 74, swY, 4, '#555');
+  label(swX + 45, swY + 32, 'LOCK SWITCH', '#ccc', 'center', '10px monospace');
+  label(swX + 16, swY + 16, 'D4', '#ff6', 'center', '9px monospace');
+  label(swX + 74, swY + 16, 'GND', '#666', 'center', '9px monospace');
+
+  // D4 wire
+  wire([[lx, lpY(4)], [lx - 90, lpY(4)], [lx - 90, swY], [swX + 16, swY]], '#a0a');
+  // GND from switch (just a symbol)
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(swX + 74, swY + 4); ctx.lineTo(swX + 74, swY + 24); ctx.stroke();
+  for (let i = 0; i < 3; i++) {
+    const gw = 10 - i * 3;
+    ctx.beginPath();
+    ctx.moveTo(swX + 74 - gw, swY + 24 + i * 4);
+    ctx.lineTo(swX + 74 + gw, swY + 24 + i * 4);
+    ctx.stroke();
+  }
+
+  // ============ LABELS on Arduino pins for clarity ============
+  label(rx + 10, rpY(1) + 4, '← J2 Y fine (A3)', '#dd0', 'left', '9px monospace');
+  label(rx + 10, rpY(2) + 4, '← J2 X coarse (A2)', '#f90', 'left', '9px monospace');
+  label(rx + 10, rpY(3) + 4, '← J1 Y fine (A1)', '#dd0', 'left', '9px monospace');
+  label(rx + 10, rpY(4) + 4, '← J1 X coarse (A0)', '#f90', 'left', '9px monospace');
+
+  // ============ LEGEND ============
+  const legY = 600;
+  label(40, legY, 'WIRE COLORS:', '#888', 'left', '11px monospace');
   const legend = [
-    ['#e33', 'Red = 5V Power'],
-    ['#222', 'Black = Ground'],
-    ['#f90', 'Orange = X-axis (Coarse)'],
-    ['#dd0', 'Yellow = Y-axis (Fine/Twist)'],
-    ['#0af', 'Blue = Button'],
+    ['#e33', 'Red = 5V (VCC)'],
+    ['#666', 'Gray = Ground (GND)'],
+    ['#f90', 'Orange = X-axis (Coarse L/R)'],
+    ['#dd0', 'Yellow = Y-axis (Fine U/D)'],
+    ['#0af', 'Cyan = Joystick Button'],
     ['#0c0', 'Green = Lock LED'],
     ['#44f', 'Blue = Fine LEDs'],
     ['#a0a', 'Purple = Lock Switch'],
   ];
-
   for (let i = 0; i < legend.length; i++) {
-    const lx = legX + (i < 4 ? 0 : 400);
-    const ly = legY + 20 + (i % 4) * 18;
+    const lx = 40 + (i < 4 ? 0 : 440);
+    const ly = legY + 18 + (i % 4) * 18;
     ctx.fillStyle = legend[i][0];
     ctx.fillRect(lx, ly - 8, 12, 12);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
     ctx.strokeRect(lx, ly - 8, 12, 12);
-    ctx.fillStyle = '#bbb';
-    ctx.fillText(legend[i][1], lx + 20, ly + 2);
+    label(lx + 18, ly + 2, legend[i][1], '#bbb');
   }
-}
 
-function drawJoystick(x, y, label, sublabel, color) {
-  // Body
-  ctx.fillStyle = '#2a2a3a';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(x, y, 140, 180, 10);
-  ctx.fill();
-  ctx.stroke();
-
-  // Stick circle
-  ctx.fillStyle = '#444';
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(x + 70, y - 10, 20, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Label
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(label, x + 70, y + 22);
-  ctx.fillStyle = '#888';
-  ctx.font = '10px monospace';
-  ctx.fillText(sublabel, x + 70, y + 36);
-
-  // Pin labels on the joystick
-  const pins = ['VCC', 'GND', 'VRx', 'VRy', 'SW'];
-  const colors = ['#e33', '#555', '#f90', '#dd0', '#0af'];
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'left';
-  for (let i = 0; i < pins.length; i++) {
-    const py = y + 50 + i * 26;
-    ctx.fillStyle = colors[i];
-    ctx.beginPath();
-    ctx.arc(x + 14, py, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ccc';
-    ctx.fillText(pins[i], x + 24, py + 4);
-  }
-}
-
-function drawLED(x, y, label, color, pin) {
-  // LED triangle
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.6;
-  ctx.beginPath();
-  ctx.moveTo(x - 10, y + 10);
-  ctx.lineTo(x + 10, y + 10);
-  ctx.lineTo(x, y - 10);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x - 10, y + 10);
-  ctx.lineTo(x + 10, y + 10);
-  ctx.lineTo(x, y - 10);
-  ctx.closePath();
-  ctx.stroke();
-
-  // Resistor
-  ctx.strokeStyle = '#a86';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 10);
-  for (let i = 0; i < 4; i++) {
-    ctx.lineTo(x + (i % 2 === 0 ? 6 : -6), y + 16 + i * 6);
-  }
-  ctx.lineTo(x, y + 44);
-  ctx.stroke();
-  ctx.fillStyle = '#888';
-  ctx.font = '8px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('220R', x + 20, y + 30);
-
-  // GND line
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 44);
-  ctx.lineTo(x, y + 56);
-  ctx.stroke();
-  ctx.fillStyle = '#555';
-  ctx.fillText('GND', x, y + 66);
-
-  // Label
-  ctx.fillStyle = '#ccc';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(label, x, y + 80);
-  ctx.fillStyle = '#ff6';
-  ctx.fillText('(' + pin + ')', x, y + 93);
-}
-
-function drawSwitch(x, y) {
-  // Switch body
-  ctx.fillStyle = '#2a2a3a';
-  ctx.strokeStyle = '#a0a';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(x - 25, y - 20, 100, 40, 6);
-  ctx.fill();
-  ctx.stroke();
-
-  // Toggle handle
-  ctx.fillStyle = '#666';
-  ctx.fillRect(x + 20, y - 12, 20, 24);
-  ctx.strokeStyle = '#888';
-  ctx.strokeRect(x + 20, y - 12, 20, 24);
-
-  // Labels
-  ctx.fillStyle = '#ccc';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('LOCK SWITCH', x + 25, y + 36);
-  ctx.fillStyle = '#ff6';
-  ctx.fillText('D4 → GND', x + 25, y + 50);
-
-  // Pin dots
-  ctx.fillStyle = '#a0a';
-  ctx.beginPath();
-  ctx.arc(x, y, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#555';
-  ctx.beginPath();
-  ctx.arc(x + 50, y, 4, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawWire(x1, y1, x2, y2, color, waypoints) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = 0.8;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  for (const wp of waypoints) {
-    ctx.lineTo(wp.x, wp.y);
-  }
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-}
-
-function drawWireLabel(x, y, text, color) {
-  ctx.fillStyle = color;
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(text, x, y + 4);
+  // ============ THUMBSTICK NOTE ============
+  label(W/2, H - 10, 'Thumbstick modules: VRx = left/right (coarse), VRy = up/down (fine). Button = click stick down.', '#666', 'center', '10px monospace');
 }
 
 draw();

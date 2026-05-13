@@ -22,11 +22,24 @@
 
 ## Production Readiness
 
-- [ ] **3D print controller enclosure** — Design housing for Pro Micro, 2x joysticks,
-  lock switch, recal button, LEDs.
+- [x] **Design controller enclosure** — Full component spec, top/back/bottom/side panel
+  layouts approved. See `docs/enclosure-component-spec.md` and layout HTML files.
+
+- [x] **3D print controller enclosure** — OpenSCAD model generated, STLs exported.
+  Test print in progress on Bambu Lab A1, 0.4mm nozzle.
+
+- [x] **Vent dust protection** — Eliminated vents entirely. Heat generation <1W,
+  sealed enclosure is fine. Cleaner look, no dust ingress in cement facility.
+
+- [ ] **Steel ballast plate** — ~170x85x3mm steel plate in bottom shell for weight
+  (~350g). Print recessed pocket to hold it. Prevents controller sliding during use.
+
+- [ ] **Upgraded rubber feet / perimeter grip strip** — Replace 13x13mm corner pads
+  with larger feet (20mm+) or continuous rubber strip around bottom perimeter.
+  Combined with steel plate for maximum grip.
 
 - [ ] **Move from breadboard to PCB/perfboard** — Eliminate breadboard crosstalk
-  and connection reliability issues.
+  and connection reliability issues. 50x70mm perfboard on hand.
 
 ## Integration
 

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Top Panel Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 30px 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 30px;
+  }
+  .layout-wrap {
+    display: flex;
+    gap: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  .canvas-card {
+    flex: 1;
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .canvas-card h2 {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7ec8e3;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  canvas { display: block; margin: 0 auto; cursor: default; }
+
+  .controls {
+    width: 320px;
+    flex-shrink: 0;
+  }
+  .control-card {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .control-card h3 {
+    font-size: 12px;
+    color: #7ec8e3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .slider-row {
+    margin-bottom: 14px;
+  }
+  .slider-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #bbb;
+    margin-bottom: 4px;
+  }
+  .slider-row label span { color: #ff6; font-family: monospace; }
+  input[type=range] {
+    width: 100%;
+    accent-color: #7ec8e3;
+  }
+  .dims {
+    font-size: 12px;
+    color: #bbb;
+    line-height: 1.8;
+  }
+  .dims strong { color: #ff6; font-family: monospace; }
+  .dims .label { color: #888; display: inline-block; width: 140px; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #bbb;
+  }
+  .toggle-row input[type=checkbox] { accent-color: #7ec8e3; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #bbb;
+    margin-bottom: 6px;
+  }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  .note {
+    font-size: 11px;
+    color: #666;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  select {
+    background: #0f1a33;
+    color: #e0e0e0;
+    border: 1px solid #2a3a5c;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Top Panel Layout</h1>
+<p class="subtitle">CV Axle Controller Enclosure — Interactive Layout Planner</p>
+
+<div class="layout-wrap">
+  <div class="canvas-card">
+    <h2>Top View (1:1 scale at 96 DPI)</h2>
+    <canvas id="panel" width="900" height="600"></canvas>
+    <p class="note">Dimensions in mm. Dashed lines = internal clearance zones. Grid = 10mm.</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-card">
+      <h3>Joystick Spacing</h3>
+      <div class="slider-row">
+        <label>Center-to-center <span id="v_spacing">90</span>mm</label>
+        <input type="range" id="spacing" min="60" max="140" value="90" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Y offset from center <span id="v_yoff">0</span>mm</label>
+        <input type="range" id="yoff" min="-20" max="20" value="0" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Enclosure Margins</h3>
+      <div class="slider-row">
+        <label>Side margin <span id="v_side">18</span>mm</label>
+        <input type="range" id="side" min="8" max="30" value="18" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Front margin <span id="v_front">20</span>mm</label>
+        <input type="range" id="front" min="10" max="40" value="20" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Back margin <span id="v_back">30</span>mm</label>
+        <input type="range" id="back" min="15" max="50" value="30" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Indicator Placement</h3>
+      <select id="ledLayout">
+        <option value="A">A: LEDs flanking center, toggle below</option>
+        <option value="B">B: All indicators in center column</option>
+        <option value="C" selected>C: Fine LEDs near joysticks, status center</option>
+      </select>
+      <div class="slider-row">
+        <label>Toggle Y offset <span id="v_toggleY">12</span>mm</label>
+        <input type="range" id="toggleY" min="-15" max="25" value="12" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Branding &amp; Labels</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="showLabels" checked>
+        <span>Show component labels</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showBrand" checked>
+        <span>Show branding zone</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showAccent" checked>
+        <span>Show accent lines</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showDims" checked>
+        <span>Show dimensions</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showGrid">
+        <span>Show 10mm grid</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showClearance" checked>
+        <span>Show clearance zones</span>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Computed Dimensions</h3>
+      <div class="dims" id="computedDims"></div>
+    </div>
+
+    <div class="control-card">
+      <h3>Legend</h3>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3a7abf"></div> Joystick flange (54mm OD)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#555"></div> Panel cutout (36mm)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#44f"></div> Fine mode LED (5mm blue)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#0c0"></div> Lock status LED (10mm RGB)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a0a"></div> Lock toggle switch (11.5mm)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,150,0,0.3)"></div> Flange clearance (54mm)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,255,100,0.15)"></div> Branding / label zone</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('panel');
+const ctx = canvas.getContext('2d');
+
+// Scale: 1mm = 3.78px at 96dpi, but let's use a clean scale
+const SCALE = 3.5; // px per mm — fits nicely in canvas
+
+function mm(v) { return v * SCALE; }
+
+function getVal(id) { return parseFloat(document.getElementById(id).value); }
+function isChecked(id) { return document.getElementById(id).checked; }
+
+// Component constants (mm)
+const FLANGE_OD = 54;
+const FLANGE_ID = 49.5;
+const PANEL_CUT = 36;
+const SCREW_PATTERN = 32; // adjacent screw spacing
+const SCREW_D = 2.5;
+const GRIP_D = 35;
+const LED_FINE = 5;
+const LED_LOCK = 10;
+const TOGGLE_HOLE = 11.5;
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  const spacing = getVal('spacing');
+  const yoff = getVal('yoff');
+  const sideMargin = getVal('side');
+  const frontMargin = getVal('front');
+  const backMargin = getVal('back');
+  const ledLayout = document.getElementById('ledLayout').value;
+  const toggleYoff = getVal('toggleY');
+
+  // Compute enclosure size
+  const encW = spacing + FLANGE_OD + sideMargin * 2;
+  const encD = FLANGE_OD + frontMargin + backMargin;
+
+  // Enclosure position on canvas (centered)
+  const ex = (W / SCALE - encW) / 2;
+  const ey = (H / SCALE - encD) / 2;
+
+  // Joystick centers (front=bottom, back=top — operator perspective)
+  const j1x = ex + sideMargin + FLANGE_OD / 2;
+  const j2x = j1x + spacing;
+  const jy = ey + backMargin + FLANGE_OD / 2 + yoff;
+
+  // Center point between joysticks
+  const cx = (j1x + j2x) / 2;
+  const cy = jy;
+
+  // Clear
+  ctx.fillStyle = '#0f1a33';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  if (isChecked('showGrid')) {
+    ctx.strokeStyle = '#1a2a44';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x += mm(10)) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += mm(10)) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  // --- ENCLOSURE OUTLINE ---
+  const cornerR = mm(8);
+  ctx.fillStyle = '#1a2a3a';
+  ctx.strokeStyle = '#4a6a8a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex), mm(ey), mm(encW), mm(encD), cornerR);
+  ctx.fill();
+  ctx.stroke();
+
+  // Subtle inner bevel
+  ctx.strokeStyle = '#2a3a5a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex) + 3, mm(ey) + 3, mm(encW) - 6, mm(encD) - 6, cornerR - 1);
+  ctx.stroke();
+
+  // --- ACCENT LINES ---
+  if (isChecked('showAccent')) {
+    ctx.save();
+    ctx.strokeStyle = '#3a5a7a';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+
+    // Horizontal accent line across the back (top of canvas)
+    const accentBackY = mm(ey + backMargin * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex) + cornerR, accentBackY);
+    ctx.lineTo(mm(ex + encW) - cornerR, accentBackY);
+    ctx.stroke();
+
+    // Horizontal accent line across the front (bottom of canvas)
+    const accentFrontY = mm(ey + encD - frontMargin * 0.35);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex) + cornerR, accentFrontY);
+    ctx.lineTo(mm(ex + encW) - cornerR, accentFrontY);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // --- BRANDING ZONE (front = bottom, nearest to operator) ---
+  if (isChecked('showBrand')) {
+    const brandW = spacing - FLANGE_OD * 0.6;
+    const brandH = 12;
+    const brandX = cx - brandW / 2;
+    const brandY = ey + encD - frontMargin * 0.15 - brandH;
+
+    ctx.fillStyle = 'rgba(255,255,100,0.06)';
+    ctx.strokeStyle = 'rgba(255,255,100,0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.roundRect(mm(brandX), mm(brandY), mm(brandW), mm(brandH), mm(2));
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `${mm(4)}px 'Segoe UI', system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '3px';
+    ctx.fillText('AXLE CONTROLLER', mm(cx), mm(brandY + brandH / 2 + 1.5));
+    ctx.letterSpacing = '0px';
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#665';
+      ctx.font = `${mm(2.2)}px monospace`;
+      ctx.fillText('branding / label zone', mm(cx), mm(brandY - 2));
+    }
+  }
+
+  // --- CLEARANCE ZONES ---
+  if (isChecked('showClearance')) {
+    ctx.setLineDash([4, 4]);
+    // Joystick 1 clearance (below-panel 50mm square)
+    ctx.strokeStyle = 'rgba(255,150,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mm(j1x - 25), mm(jy - 25), mm(50), mm(50));
+    // Joystick 2 clearance
+    ctx.strokeRect(mm(j2x - 25), mm(jy - 25), mm(50), mm(50));
+    ctx.setLineDash([]);
+  }
+
+  // --- JOYSTICK FLANGES ---
+  function drawJoystick(jx, jyc, label, num) {
+    // Flange outer
+    ctx.strokeStyle = '#3a7abf';
+    ctx.fillStyle = 'rgba(58,122,191,0.08)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(FLANGE_OD / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Flange inner
+    ctx.strokeStyle = '#2a5a8a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(FLANGE_ID / 2), 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Panel cutout
+    ctx.fillStyle = 'rgba(80,80,80,0.3)';
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(PANEL_CUT / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Grip (visible from top)
+    ctx.fillStyle = 'rgba(100,100,100,0.4)';
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(GRIP_D / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Grip center dot
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(3), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Grip crosshair
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(mm(jx - 6), mm(jyc));
+    ctx.lineTo(mm(jx + 6), mm(jyc));
+    ctx.moveTo(mm(jx), mm(jyc - 6));
+    ctx.lineTo(mm(jx), mm(jyc + 6));
+    ctx.stroke();
+
+    // Screw holes (32mm square pattern)
+    const half = SCREW_PATTERN / 2;
+    const screwPositions = [
+      [jx - half, jyc - half],
+      [jx + half, jyc - half],
+      [jx - half, jyc + half],
+      [jx + half, jyc + half],
+    ];
+    for (const [sx, sy] of screwPositions) {
+      ctx.fillStyle = '#0f1a33';
+      ctx.strokeStyle = '#ff6';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(mm(sx), mm(sy), mm(SCREW_D / 2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Travel arc indicator
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(GRIP_D / 2 + 4), -25 * Math.PI / 180, 25 * Math.PI / 180);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mm(jx), mm(jyc), mm(GRIP_D / 2 + 4), (180 - 25) * Math.PI / 180, (180 + 25) * Math.PI / 180);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Labels (below joystick = toward operator/front)
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#7ec8e3';
+      ctx.font = `bold ${mm(3)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`JOYSTICK ${num}`, mm(jx), mm(jyc + FLANGE_OD / 2 + 5));
+
+      ctx.fillStyle = '#666';
+      ctx.font = `${mm(2.2)}px monospace`;
+      ctx.fillText(label, mm(jx), mm(jyc + FLANGE_OD / 2 + 8.5));
+    }
+  }
+
+  drawJoystick(j1x, jy, 'Line 1 (Left)', 1);
+  drawJoystick(j2x, jy, 'Line 2 (Right)', 2);
+
+  // --- INDICATOR LEDs & TOGGLE ---
+  function drawLED(lx, ly, diameter, color, label, sublabel) {
+    // Glow
+    const grad = ctx.createRadialGradient(mm(lx), mm(ly), 0, mm(lx), mm(ly), mm(diameter));
+    grad.addColorStop(0, color.replace(')', ',0.6)').replace('rgb', 'rgba'));
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(mm(lx), mm(ly), mm(diameter), 0, Math.PI * 2);
+    ctx.fill();
+
+    // LED body
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(mm(lx), mm(ly), mm(diameter / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Mount hole ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(mm(lx), mm(ly), mm(diameter / 2 + 0.3), 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (isChecked('showLabels') && label) {
+      ctx.fillStyle = '#aaa';
+      ctx.font = `${mm(2.2)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, mm(lx), mm(ly - diameter / 2 - 3));
+      if (sublabel) {
+        ctx.fillStyle = '#666';
+        ctx.font = `${mm(1.8)}px monospace`;
+        ctx.fillText(sublabel, mm(lx), mm(ly - diameter / 2 - 0.8));
+      }
+    }
+  }
+
+  function drawToggle(tx, ty) {
+    // Mount hole
+    ctx.fillStyle = '#0f1a33';
+    ctx.strokeStyle = '#a0a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mm(tx), mm(ty), mm(TOGGLE_HOLE / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Toggle lever (pointing down/toward operator = unlocked)
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mm(tx), mm(ty));
+    ctx.lineTo(mm(tx), mm(ty + 8));
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    // Lever knob
+    ctx.fillStyle = '#aaa';
+    ctx.beginPath();
+    ctx.arc(mm(tx), mm(ty + 8), mm(1.5), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nut ring
+    ctx.strokeStyle = 'rgba(160,0,160,0.3)';
+    ctx.lineWidth = mm(1.5);
+    ctx.beginPath();
+    ctx.arc(mm(tx), mm(ty), mm(TOGGLE_HOLE / 2 + 1.5), 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#a0a';
+      ctx.font = `${mm(2.2)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('LOCK', mm(tx), mm(ty - TOGGLE_HOLE / 2 - 3));
+
+      // ON/OFF labels (ON = toward operator/down, OFF = toward back/up)
+      ctx.fillStyle = '#555';
+      ctx.font = `${mm(1.8)}px monospace`;
+      ctx.fillText('OFF', mm(tx), mm(ty - 12));
+      ctx.fillText('ON', mm(tx), mm(ty + TOGGLE_HOLE / 2 + 12));
+    }
+  }
+
+  // Place indicators based on layout
+  const gapBetween = spacing - FLANGE_OD; // clear gap between flanges
+
+  if (ledLayout === 'A') {
+    // Fine LEDs flanking center, toggle toward front of lock LED
+    drawLED(cx - 10, cy - 5, LED_LOCK, 'rgb(0,200,0)', 'STATUS', 'R/G');
+    drawLED(cx - gapBetween / 2 + 3, cy, LED_FINE, 'rgb(68,68,255)', 'FINE 1', 'D6');
+    drawLED(cx + gapBetween / 2 - 3, cy, LED_FINE, 'rgb(68,68,255)', 'FINE 2', 'D7');
+    drawToggle(cx + 10, cy + toggleYoff);
+  } else if (ledLayout === 'B') {
+    // All indicators in center column (lock toward back, toggle toward front)
+    drawLED(cx, cy - 12, LED_LOCK, 'rgb(0,200,0)', 'STATUS', 'R/G');
+    drawLED(cx - 6, cy - 2, LED_FINE, 'rgb(68,68,255)', 'FINE 1', 'D6');
+    drawLED(cx + 6, cy - 2, LED_FINE, 'rgb(68,68,255)', 'FINE 2', 'D7');
+    drawToggle(cx, cy + toggleYoff);
+  } else if (ledLayout === 'C') {
+    // Fine LEDs near their joysticks, lock LED + toggle in center
+    const fineLedOffset = FLANGE_OD / 2 + 6;
+    drawLED(j1x + fineLedOffset, jy, LED_FINE, 'rgb(68,68,255)', 'FINE', 'J1');
+    drawLED(j2x - fineLedOffset, jy, LED_FINE, 'rgb(68,68,255)', 'FINE', 'J2');
+    drawLED(cx, cy - 6, LED_LOCK, 'rgb(0,200,0)', 'STATUS', 'R/G');
+    drawToggle(cx, cy + toggleYoff);
+  }
+
+  // --- BACK PANEL INDICATORS (back = top of canvas) ---
+  // USB-C location marker
+  const usbY = ey + 3;
+  ctx.fillStyle = 'rgba(100,200,100,0.15)';
+  ctx.strokeStyle = '#4a8a4a';
+  ctx.lineWidth = 1;
+  const usbW = 12;
+  const usbH = 5;
+  ctx.beginPath();
+  ctx.roundRect(mm(cx - usbW / 2), mm(usbY - usbH / 2), mm(usbW), mm(usbH), mm(1));
+  ctx.fill();
+  ctx.stroke();
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#4a8a4a';
+    ctx.font = `${mm(2)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('USB-C', mm(cx), mm(usbY - 5));
+  }
+
+  // Recal pinhole
+  const recalX = cx + 20;
+  ctx.fillStyle = '#333';
+  ctx.strokeStyle = '#886';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(mm(recalX), mm(usbY), mm(1), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#886';
+    ctx.font = `${mm(1.8)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('RECAL', mm(recalX), mm(usbY - 4));
+    ctx.fillText('(pinhole)', mm(recalX), mm(usbY - 6.5));
+  }
+
+  // --- DIMENSION LINES ---
+  if (isChecked('showDims')) {
+    ctx.strokeStyle = 'rgba(255,255,100,0.5)';
+    ctx.fillStyle = 'rgba(255,255,100,0.8)';
+    ctx.lineWidth = 1;
+    ctx.font = `${mm(2.5)}px monospace`;
+    ctx.textAlign = 'center';
+
+    // Enclosure width
+    const dimY1 = ey - 8;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex), mm(dimY1));
+    ctx.lineTo(mm(ex + encW), mm(dimY1));
+    ctx.stroke();
+    // End ticks
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex), mm(dimY1 - 2)); ctx.lineTo(mm(ex), mm(dimY1 + 2)); ctx.stroke();
+    ctx.moveTo(mm(ex + encW), mm(dimY1 - 2)); ctx.lineTo(mm(ex + encW), mm(dimY1 + 2)); ctx.stroke();
+    ctx.fillText(`${encW.toFixed(0)}mm`, mm(ex + encW / 2), mm(dimY1 - 2));
+
+    // Enclosure depth
+    const dimX1 = ex - 8;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(dimX1), mm(ey));
+    ctx.lineTo(mm(dimX1), mm(ey + encD));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(dimX1 - 2), mm(ey)); ctx.lineTo(mm(dimX1 + 2), mm(ey)); ctx.stroke();
+    ctx.moveTo(mm(dimX1 - 2), mm(ey + encD)); ctx.lineTo(mm(dimX1 + 2), mm(ey + encD)); ctx.stroke();
+    ctx.save();
+    ctx.translate(mm(dimX1 - 3), mm(ey + encD / 2));
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`${encD.toFixed(0)}mm`, 0, 0);
+    ctx.restore();
+
+    // Joystick center-to-center
+    const dimY2 = jy + FLANGE_OD / 2 + 6;
+    ctx.strokeStyle = 'rgba(120,200,227,0.5)';
+    ctx.fillStyle = 'rgba(120,200,227,0.8)';
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(j1x), mm(dimY2));
+    ctx.lineTo(mm(j2x), mm(dimY2));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(j1x), mm(dimY2 - 2)); ctx.lineTo(mm(j1x), mm(dimY2 + 2)); ctx.stroke();
+    ctx.moveTo(mm(j2x), mm(dimY2 - 2)); ctx.lineTo(mm(j2x), mm(dimY2 + 2)); ctx.stroke();
+    ctx.fillText(`${spacing}mm c-c`, mm(cx), mm(dimY2 + 5));
+  }
+
+  // --- FRONT / BACK labels (front=bottom, back=top — operator perspective) ---
+  ctx.fillStyle = '#444';
+  ctx.font = `${mm(2.5)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('BACK (USB-C / recal)', mm(ex + encW / 2), mm(ey - 14));
+  ctx.fillText('FRONT (operator side)', mm(ex + encW / 2), mm(ey + encD + 10));
+
+  // --- RUBBER FEET indicators (bottom corners) ---
+  const footInset = 10;
+  const footR = 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 2]);
+  [[ex + footInset, ey + footInset],
+   [ex + encW - footInset, ey + footInset],
+   [ex + footInset, ey + encD - footInset],
+   [ex + encW - footInset, ey + encD - footInset]].forEach(([fx, fy]) => {
+    ctx.beginPath();
+    ctx.arc(mm(fx), mm(fy), mm(footR), 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // --- UPDATE COMPUTED DIMS ---
+  const gap = gapBetween;
+  document.getElementById('computedDims').innerHTML = `
+    <span class="label">Enclosure W:</span> <strong>${encW.toFixed(0)}mm</strong><br>
+    <span class="label">Enclosure D:</span> <strong>${encD.toFixed(0)}mm</strong><br>
+    <span class="label">Enclosure H:</span> <strong>~42mm</strong> (est.)<br>
+    <span class="label">Joystick C-C:</span> <strong>${spacing}mm</strong><br>
+    <span class="label">Gap between flanges:</span> <strong>${gap.toFixed(0)}mm</strong><br>
+    <span class="label">Flange clearance:</span> ${gap >= 10 ? '<strong style="color:#0c0">OK</strong>' : '<strong style="color:#f44">TOO TIGHT</strong>'} (need ~10mm min)<br>
+    <span class="label">Internal volume:</span> <strong>${(encW * encD * 35 / 1000).toFixed(0)} cm&sup3;</strong> (est.)<br>
+    <hr style="border-color:#2a3a5c; margin:6px 0">
+    <span class="label">Indicator gap:</span> <strong>${gap.toFixed(0)}mm</strong> wide<br>
+    <span class="label">Fits toggle (11.5):</span> ${gap >= 14 ? '<strong style="color:#0c0">YES</strong>' : '<strong style="color:#f44">NO</strong>'}<br>
+    <span class="label">Fits lock LED (10):</span> ${gap >= 12 ? '<strong style="color:#0c0">YES</strong>' : '<strong style="color:#f44">NO</strong>'}<br>
+  `;
+}
+
+// Bind all controls
+['spacing', 'yoff', 'side', 'front', 'back', 'toggleY'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    document.getElementById('v_' + id).textContent = el.value;
+    draw();
+  });
+});
+['ledLayout'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+['showLabels', 'showBrand', 'showAccent', 'showDims', 'showGrid', 'showClearance'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+
+draw();
+</script>
+
+</body>
+</html>

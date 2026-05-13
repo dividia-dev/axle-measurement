@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Back Panel Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 30px 20px;
+  }
+  h1 { text-align: center; font-size: 24px; font-weight: 300; letter-spacing: 2px; color: #fff; margin-bottom: 6px; }
+  .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 30px; }
+  .layout-wrap { display: flex; gap: 30px; max-width: 1400px; margin: 0 auto; align-items: flex-start; }
+  .canvas-card {
+    flex: 1; background: #16213e; border: 1px solid #2a3a5c; border-radius: 16px; padding: 24px;
+  }
+  .canvas-card h2 { font-size: 14px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: #7ec8e3; margin-bottom: 16px; text-align: center; }
+  canvas { display: block; margin: 0 auto; }
+  .controls { width: 320px; flex-shrink: 0; }
+  .control-card { background: #16213e; border: 1px solid #2a3a5c; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .control-card h3 { font-size: 12px; color: #7ec8e3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .slider-row { margin-bottom: 14px; }
+  .slider-row label { display: flex; justify-content: space-between; font-size: 12px; color: #bbb; margin-bottom: 4px; }
+  .slider-row label span { color: #ff6; font-family: monospace; }
+  input[type=range] { width: 100%; accent-color: #7ec8e3; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: #bbb; }
+  .toggle-row input[type=checkbox] { accent-color: #7ec8e3; }
+  .dims { font-size: 12px; color: #bbb; line-height: 1.8; }
+  .dims strong { color: #ff6; font-family: monospace; }
+  .dims .label { color: #888; display: inline-block; width: 150px; }
+  select { background: #0f1a33; color: #e0e0e0; border: 1px solid #2a3a5c; border-radius: 4px; padding: 4px 8px; font-size: 12px; width: 100%; margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #bbb; margin-bottom: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .note { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>Back Panel Layout</h1>
+<p class="subtitle">CV Axle Controller Enclosure — Rear View (looking at the back)</p>
+
+<div class="layout-wrap">
+  <div class="canvas-card">
+    <h2>Back Panel — Rear View</h2>
+    <canvas id="panel" width="900" height="500"></canvas>
+    <p class="note">Dimensions in mm. Viewing the back of the controller as if standing behind it.</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-card">
+      <h3>Enclosure (from top layout)</h3>
+      <div class="dims">
+        <span class="label">Width:</span> <strong>190mm</strong><br>
+        <span class="label">Height (external):</span> <strong>42mm</strong><br>
+        <span class="label">Top panel:</span> <strong>4mm</strong><br>
+        <span class="label">Bottom panel:</span> <strong>3mm</strong><br>
+        <span class="label">Internal cavity:</span> <strong>35mm</strong><br>
+        <span class="label">Corner radius:</span> <strong>8mm</strong>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>USB-C Placement</h3>
+      <div class="slider-row">
+        <label>Horizontal offset <span id="v_usbX">0</span>mm</label>
+        <input type="range" id="usbX" min="-40" max="40" value="0" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Vertical position <span id="v_usbZ">10</span>mm from bottom</label>
+        <input type="range" id="usbZ" min="6" max="30" value="10" step="1">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Recal Pinhole</h3>
+      <div class="slider-row">
+        <label>Horizontal offset <span id="v_recalX">30</span>mm from center</label>
+        <input type="range" id="recalX" min="10" max="80" value="30" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Vertical position <span id="v_recalZ">21</span>mm from bottom</label>
+        <input type="range" id="recalZ" min="8" max="35" value="21" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Pinhole diameter <span id="v_recalD">2</span>mm</label>
+        <input type="range" id="recalD" min="1.5" max="3" value="2" step="0.5">
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Ventilation</h3>
+      <select id="ventStyle">
+        <option value="slots">Horizontal slots</option>
+        <option value="hex" selected>Hex pattern</option>
+        <option value="dots">Dot grid</option>
+        <option value="angular">Angular slashes</option>
+      </select>
+      <div class="slider-row">
+        <label>Vent zone width <span id="v_ventW">40</span>mm</label>
+        <input type="range" id="ventW" min="20" max="80" value="40" step="2">
+      </div>
+      <div class="slider-row">
+        <label>Vent zone height <span id="v_ventH">20</span>mm</label>
+        <input type="range" id="ventH" min="10" max="30" value="20" step="2">
+      </div>
+      <select id="ventPlacement">
+        <option value="left">Left side</option>
+        <option value="right">Right side</option>
+        <option value="both" selected>Both sides (symmetric)</option>
+      </select>
+    </div>
+
+    <div class="control-card">
+      <h3>Labels &amp; Style</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="showLabels" checked>
+        <span>Show labels</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showDims" checked>
+        <span>Show dimensions</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showGrid">
+        <span>Show 5mm grid</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="showInternal" checked>
+        <span>Show internal components (ghost)</span>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <h3>Computed</h3>
+      <div class="dims" id="computedDims"></div>
+    </div>
+
+    <div class="control-card">
+      <h3>Legend</h3>
+      <div class="legend-item"><div class="legend-swatch" style="background:#4a8a4a"></div> USB-C port cutout</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#886"></div> Recal pinhole + label</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#5a7a9a"></div> Ventilation pattern</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,150,0,0.2)"></div> Internal components (ghost)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('panel');
+const ctx = canvas.getContext('2d');
+
+const SCALE = 4.0; // px per mm
+function mm(v) { return v * SCALE; }
+function getVal(id) { return parseFloat(document.getElementById(id).value); }
+function isChecked(id) { return document.getElementById(id).checked; }
+
+// Fixed enclosure dims from approved top layout
+const ENC_W = 190;
+const ENC_H = 42;    // external height
+const TOP_T = 4;     // top panel thickness
+const BOT_T = 3;     // bottom panel thickness
+const CORNER_R = 8;
+const INTERNAL_H = ENC_H - TOP_T - BOT_T; // 35mm
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  const usbXoff = getVal('usbX');
+  const usbZ = getVal('usbZ');
+  const recalXoff = getVal('recalX');
+  const recalZ = getVal('recalZ');
+  const recalD = getVal('recalD');
+  const ventStyle = document.getElementById('ventStyle').value;
+  const ventW = getVal('ventW');
+  const ventH = getVal('ventH');
+  const ventPlace = document.getElementById('ventPlacement').value;
+
+  // Enclosure position on canvas (centered)
+  const ex = (W / SCALE - ENC_W) / 2;
+  const ey = (H / SCALE - ENC_H) / 2;
+
+  // Center of back panel
+  const cx = ex + ENC_W / 2;
+  // Bottom of enclosure (internal reference)
+  const bottomY = ey + ENC_H;
+  const topY = ey;
+
+  // Clear
+  ctx.fillStyle = '#0f1a33';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  if (isChecked('showGrid')) {
+    ctx.strokeStyle = '#1a2a44';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x += mm(5)) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += mm(5)) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  // --- ENCLOSURE OUTLINE (back face) ---
+  // Back panel is a rectangle: ENC_W wide x ENC_H tall
+  // Top corners rounded, bottom corners rounded
+  ctx.fillStyle = '#1a2a3a';
+  ctx.strokeStyle = '#4a6a8a';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex), mm(ey), mm(ENC_W), mm(ENC_H), mm(CORNER_R));
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner bevel
+  ctx.strokeStyle = '#2a3a5a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(mm(ex) + 3, mm(ey) + 3, mm(ENC_W) - 6, mm(ENC_H) - 6, mm(CORNER_R) - 1);
+  ctx.stroke();
+
+  // --- TOP/BOTTOM PANEL LINES ---
+  // Top panel thickness line
+  ctx.strokeStyle = '#3a5a7a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(mm(ex + CORNER_R), mm(ey + TOP_T));
+  ctx.lineTo(mm(ex + ENC_W - CORNER_R), mm(ey + TOP_T));
+  ctx.stroke();
+
+  // Bottom panel thickness line
+  ctx.beginPath();
+  ctx.moveTo(mm(ex + CORNER_R), mm(bottomY - BOT_T));
+  ctx.lineTo(mm(ex + ENC_W - CORNER_R), mm(bottomY - BOT_T));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Panel labels
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#3a5a7a';
+    ctx.font = `${mm(2)}px monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('top panel', mm(ex + ENC_W - CORNER_R - 1), mm(ey + TOP_T - 0.5));
+    ctx.fillText('bottom panel', mm(ex + ENC_W - CORNER_R - 1), mm(bottomY - BOT_T - 0.5));
+  }
+
+  // --- INTERNAL COMPONENTS (ghost view) ---
+  if (isChecked('showInternal')) {
+    ctx.globalAlpha = 0.15;
+
+    // Perfboard 70x50mm (70mm along width, viewed from back shows 70mm wide x 8mm tall profile)
+    const pbW = 70, pbH = 8;
+    const pbX = cx - pbW / 2;
+    const pbY = bottomY - BOT_T - pbH;
+    ctx.fillStyle = '#f90';
+    ctx.fillRect(mm(pbX), mm(pbY), mm(pbW), mm(pbH));
+    ctx.strokeStyle = '#f90';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mm(pbX), mm(pbY), mm(pbW), mm(pbH));
+
+    // USB-C breakout board (against back wall)
+    const usbBrdW = 18, usbBrdH = 13;
+    const usbBrdX = cx + usbXoff - usbBrdW / 2;
+    const usbBrdY = bottomY - BOT_T - usbBrdH - 2; // sitting above bottom
+    ctx.fillStyle = '#e33';
+    ctx.fillRect(mm(usbBrdX), mm(usbBrdY), mm(usbBrdW), mm(usbBrdH));
+
+    // Joystick bases (left and right, visible from back)
+    const jBaseW = 40, jBaseH = 25;
+    // J1 on right when viewed from back (it's left from front)
+    const j1bx = cx + 50 - jBaseW / 2;
+    const j2bx = cx - 50 - jBaseW / 2;
+    ctx.fillStyle = '#3a7abf';
+    ctx.fillRect(mm(j1bx), mm(ey + TOP_T), mm(jBaseW), mm(jBaseH));
+    ctx.fillRect(mm(j2bx), mm(ey + TOP_T), mm(jBaseW), mm(jBaseH));
+
+    ctx.globalAlpha = 1.0;
+
+    // Ghost labels
+    if (isChecked('showLabels')) {
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#f90';
+      ctx.font = `${mm(2)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('perfboard + Pro Micro', mm(cx), mm(pbY + pbH / 2 + 1));
+      ctx.fillStyle = '#3a7abf';
+      ctx.fillText('J1 base', mm(j1bx + jBaseW / 2), mm(ey + TOP_T + jBaseH / 2 + 1));
+      ctx.fillText('J2 base', mm(j2bx + jBaseW / 2), mm(ey + TOP_T + jBaseH / 2 + 1));
+      ctx.globalAlpha = 1.0;
+    }
+  }
+
+  // --- USB-C PORT CUTOUT ---
+  const usbPortW = 10;  // cutout width (9mm port + 0.5mm tolerance each side)
+  const usbPortH = 4;   // cutout height (3.2mm port + tolerance)
+  const usbCX = cx + usbXoff;
+  const usbCY = bottomY - usbZ; // measured from bottom
+
+  // Cutout
+  ctx.fillStyle = '#0f1a33';
+  ctx.strokeStyle = '#4a8a4a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(mm(usbCX - usbPortW / 2), mm(usbCY - usbPortH / 2), mm(usbPortW), mm(usbPortH), mm(1));
+  ctx.fill();
+  ctx.stroke();
+
+  // USB-C port detail inside cutout
+  ctx.fillStyle = '#2a4a2a';
+  ctx.beginPath();
+  ctx.roundRect(mm(usbCX - 4.5), mm(usbCY - 1.6), mm(9), mm(3.2), mm(0.8));
+  ctx.fill();
+
+  // Label
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#4a8a4a';
+    ctx.font = `bold ${mm(2.5)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('USB-C', mm(usbCX), mm(usbCY - usbPortH / 2 - 2.5));
+
+    // Subtle engraved-look icon outline
+    ctx.strokeStyle = 'rgba(74,138,74,0.4)';
+    ctx.lineWidth = 0.5;
+    const iconY = usbCY - usbPortH / 2 - 6;
+    ctx.beginPath();
+    ctx.arc(mm(usbCX), mm(iconY), mm(1.5), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // --- RECAL PINHOLE ---
+  const recalCX = cx + recalXoff;
+  const recalCY = bottomY - recalZ;
+
+  // Pinhole
+  ctx.fillStyle = '#0f1a33';
+  ctx.strokeStyle = '#886';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(mm(recalCX), mm(recalCY), mm(recalD / 2), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Recessed ring around pinhole (visual detail)
+  ctx.strokeStyle = 'rgba(136,102,68,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(mm(recalCX), mm(recalCY), mm(recalD / 2 + 1.5), 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Label
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#886';
+    ctx.font = `${mm(2)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('RECAL', mm(recalCX), mm(recalCY - recalD / 2 - 4));
+
+    // Small arrow pointing to hole
+    ctx.strokeStyle = '#886';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(mm(recalCX), mm(recalCY - recalD / 2 - 1.5));
+    ctx.lineTo(mm(recalCX), mm(recalCY - recalD / 2 - 3));
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(mm(recalCX - 0.8), mm(recalCY - recalD / 2 - 2));
+    ctx.lineTo(mm(recalCX), mm(recalCY - recalD / 2 - 1.5));
+    ctx.lineTo(mm(recalCX + 0.8), mm(recalCY - recalD / 2 - 2));
+    ctx.stroke();
+  }
+
+  // --- VENTILATION ---
+  function drawVentZone(vx, vy, vw, vh) {
+    ctx.save();
+    // Clip to vent zone
+    ctx.beginPath();
+    ctx.roundRect(mm(vx), mm(vy), mm(vw), mm(vh), mm(3));
+    ctx.clip();
+
+    if (ventStyle === 'hex') {
+      const hexR = 2.2;
+      const hexSpacingX = hexR * 2.2;
+      const hexSpacingY = hexR * 1.9;
+      ctx.lineWidth = 1;
+      for (let row = 0; row * hexSpacingY < vh + hexR; row++) {
+        const offsetX = (row % 2) * (hexSpacingX / 2);
+        for (let col = 0; col * hexSpacingX < vw + hexR; col++) {
+          const hx = vx + col * hexSpacingX + offsetX + hexR;
+          const hy = vy + row * hexSpacingY + hexR;
+          // Hex shape
+          ctx.fillStyle = '#0f1a33';
+          ctx.strokeStyle = '#5a7a9a';
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = Math.PI / 6 + (i * Math.PI / 3);
+            const px = hx + hexR * Math.cos(angle);
+            const py = hy + hexR * Math.sin(angle);
+            if (i === 0) ctx.moveTo(mm(px), mm(py));
+            else ctx.lineTo(mm(px), mm(py));
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    } else if (ventStyle === 'slots') {
+      const slotH = 1.5;
+      const slotGap = 3;
+      const slotInset = 3;
+      ctx.lineWidth = 1;
+      for (let sy = vy + slotGap; sy + slotH < vy + vh; sy += slotGap + slotH) {
+        ctx.fillStyle = '#0f1a33';
+        ctx.strokeStyle = '#5a7a9a';
+        ctx.beginPath();
+        ctx.roundRect(mm(vx + slotInset), mm(sy), mm(vw - slotInset * 2), mm(slotH), mm(0.75));
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (ventStyle === 'dots') {
+      const dotR = 1.2;
+      const dotSpacing = 4;
+      ctx.lineWidth = 0.8;
+      for (let row = 0; vy + row * dotSpacing + dotR * 2 < vy + vh; row++) {
+        const offsetX = (row % 2) * (dotSpacing / 2);
+        for (let col = 0; vx + col * dotSpacing + dotR * 2 < vx + vw; col++) {
+          const dx = vx + col * dotSpacing + dotR + 1 + offsetX;
+          const dy = vy + row * dotSpacing + dotR + 1;
+          ctx.fillStyle = '#0f1a33';
+          ctx.strokeStyle = '#5a7a9a';
+          ctx.beginPath();
+          ctx.arc(mm(dx), mm(dy), mm(dotR), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    } else if (ventStyle === 'angular') {
+      const slashW = 1.2;
+      const slashGap = 3.5;
+      const angle = 30; // degrees
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#5a7a9a';
+      const tanA = Math.tan(angle * Math.PI / 180);
+      for (let sx = vx - vh; sx < vx + vw + vh; sx += slashGap) {
+        ctx.fillStyle = '#0f1a33';
+        ctx.beginPath();
+        const x1 = sx;
+        const y1 = vy + vh;
+        const x2 = sx + vh * tanA;
+        const y2 = vy;
+        // Draw as a thin parallelogram
+        ctx.moveTo(mm(x1), mm(y1));
+        ctx.lineTo(mm(x2), mm(y2));
+        ctx.lineTo(mm(x2 + slashW), mm(y2));
+        ctx.lineTo(mm(x1 + slashW), mm(y1));
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+
+    // Vent zone border
+    ctx.strokeStyle = 'rgba(90,122,154,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.roundRect(mm(vx), mm(vy), mm(vw), mm(vh), mm(3));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Position vent zones
+  const ventY = ey + TOP_T + 4; // below top panel line, with small margin
+  const ventActualH = Math.min(ventH, INTERNAL_H - 8); // don't exceed internal cavity
+
+  if (ventPlace === 'left' || ventPlace === 'both') {
+    const lvx = ex + CORNER_R + 4;
+    drawVentZone(lvx, ventY, ventW, ventActualH);
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#5a7a9a';
+      ctx.font = `${mm(1.6)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('VENT', mm(lvx + ventW / 2), mm(ventY + ventActualH + 3));
+    }
+  }
+  if (ventPlace === 'right' || ventPlace === 'both') {
+    const rvx = ex + ENC_W - CORNER_R - 4 - ventW;
+    drawVentZone(rvx, ventY, ventW, ventActualH);
+    if (isChecked('showLabels')) {
+      ctx.fillStyle = '#5a7a9a';
+      ctx.font = `${mm(1.6)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('VENT', mm(rvx + ventW / 2), mm(ventY + ventActualH + 3));
+    }
+  }
+
+  // --- DIMENSION LINES ---
+  if (isChecked('showDims')) {
+    ctx.strokeStyle = 'rgba(255,255,100,0.5)';
+    ctx.fillStyle = 'rgba(255,255,100,0.8)';
+    ctx.lineWidth = 1;
+    ctx.font = `${mm(2.2)}px monospace`;
+    ctx.textAlign = 'center';
+
+    // Width
+    const dimY1 = ey - 6;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex), mm(dimY1)); ctx.lineTo(mm(ex + ENC_W), mm(dimY1)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(ex), mm(dimY1 - 1.5)); ctx.lineTo(mm(ex), mm(dimY1 + 1.5)); ctx.stroke();
+    ctx.moveTo(mm(ex + ENC_W), mm(dimY1 - 1.5)); ctx.lineTo(mm(ex + ENC_W), mm(dimY1 + 1.5)); ctx.stroke();
+    ctx.fillText(`${ENC_W}mm`, mm(cx), mm(dimY1 - 2));
+
+    // Height
+    const dimX1 = ex - 6;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(mm(dimX1), mm(ey)); ctx.lineTo(mm(dimX1), mm(bottomY)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(dimX1 - 1.5), mm(ey)); ctx.lineTo(mm(dimX1 + 1.5), mm(ey)); ctx.stroke();
+    ctx.moveTo(mm(dimX1 - 1.5), mm(bottomY)); ctx.lineTo(mm(dimX1 + 1.5), mm(bottomY)); ctx.stroke();
+    ctx.save();
+    ctx.translate(mm(dimX1 - 2.5), mm(ey + ENC_H / 2));
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`${ENC_H}mm`, 0, 0);
+    ctx.restore();
+
+    // USB-C height from bottom
+    ctx.strokeStyle = 'rgba(74,138,74,0.5)';
+    ctx.fillStyle = 'rgba(74,138,74,0.8)';
+    ctx.setLineDash([2, 2]);
+    const usbDimX = usbCX + usbPortW / 2 + 4;
+    ctx.beginPath();
+    ctx.moveTo(mm(usbDimX), mm(usbCY)); ctx.lineTo(mm(usbDimX), mm(bottomY)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(mm(usbDimX - 1), mm(usbCY)); ctx.lineTo(mm(usbDimX + 1), mm(usbCY)); ctx.stroke();
+    ctx.moveTo(mm(usbDimX - 1), mm(bottomY)); ctx.lineTo(mm(usbDimX + 1), mm(bottomY)); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillText(`${usbZ}mm`, mm(usbDimX + 1.5), mm((usbCY + bottomY) / 2 + 1));
+    ctx.textAlign = 'center';
+  }
+
+  // --- DIVIDIA BRANDING (centered on back panel) ---
+  // Position between USB-C and the top panel line, centered
+  const brandY = ey + TOP_T + 3 + (INTERNAL_H * 0.35);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = `${mm(5)}px 'Segoe UI', system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '6px';
+  ctx.fillText('DIVIDIA', mm(cx), mm(brandY));
+  ctx.letterSpacing = '0px';
+
+  // Subtle underline accent
+  const brandTextW = 40;
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(mm(cx - brandTextW / 2), mm(brandY + 2));
+  ctx.lineTo(mm(cx + brandTextW / 2), mm(brandY + 2));
+  ctx.stroke();
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#665';
+    ctx.font = `${mm(1.6)}px monospace`;
+    ctx.fillText('engraved / debossed branding', mm(cx), mm(brandY + 5));
+  }
+
+  // --- TOP / BOTTOM labels ---
+  ctx.fillStyle = '#444';
+  ctx.font = `${mm(2.2)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('TOP (panel surface)', mm(cx), mm(ey - 10));
+  ctx.fillText('BOTTOM', mm(cx), mm(bottomY + 7));
+
+  // Left / Right labels (mirrored from front view)
+  ctx.save();
+  ctx.translate(mm(ex - 12), mm(ey + ENC_H / 2));
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('RIGHT (from front)', 0, 0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(mm(ex + ENC_W + 12), mm(ey + ENC_H / 2));
+  ctx.rotate(Math.PI / 2);
+  ctx.fillText('LEFT (from front)', 0, 0);
+  ctx.restore();
+
+  // --- PARTING LINE (where top meets bottom shell) ---
+  const partY = ey + ENC_H / 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(mm(ex + CORNER_R), mm(partY));
+  ctx.lineTo(mm(ex + ENC_W - CORNER_R), mm(partY));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (isChecked('showLabels')) {
+    ctx.fillStyle = '#333';
+    ctx.font = `${mm(1.6)}px monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('shell parting line', mm(ex + ENC_W - CORNER_R - 1), mm(partY - 1.5));
+  }
+
+  // --- COMPUTED DIMS ---
+  const usbFromBottom = usbZ;
+  const usbInInternal = usbZ >= BOT_T + 2 && usbZ <= ENC_H - TOP_T - 2;
+  const recalInInternal = recalZ >= BOT_T + 2 && recalZ <= ENC_H - TOP_T - 2;
+
+  document.getElementById('computedDims').innerHTML = `
+    <span class="label">USB-C center:</span> <strong>${usbFromBottom}mm</strong> from bottom<br>
+    <span class="label">USB-C in cavity:</span> ${usbInInternal ? '<strong style="color:#0c0">YES</strong>' : '<strong style="color:#f44">NO — outside internal</strong>'}<br>
+    <span class="label">Recal center:</span> <strong>${recalZ}mm</strong> from bottom<br>
+    <span class="label">Recal position:</span> <strong>${recalXoff}mm</strong> right of center<br>
+    <span class="label">Recal in cavity:</span> ${recalInInternal ? '<strong style="color:#0c0">YES</strong>' : '<strong style="color:#f44">NO — outside internal</strong>'}<br>
+    <span class="label">Vent style:</span> <strong>${ventStyle}</strong><br>
+    <span class="label">Vent zone:</span> <strong>${ventW}x${Math.min(ventH, INTERNAL_H - 8)}mm</strong> each<br>
+    <span class="label">Vent placement:</span> <strong>${ventPlace}</strong><br>
+  `;
+}
+
+// Bind controls
+['usbX', 'usbZ', 'recalX', 'recalZ', 'recalD', 'ventW', 'ventH'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    document.getElementById('v_' + id).textContent = el.value;
+    draw();
+  });
+});
+['ventStyle', 'ventPlacement'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+['showLabels', 'showDims', 'showGrid', 'showInternal'].forEach(id => {
+  document.getElementById(id).addEventListener('change', draw);
+});
+
+draw();
+</script>
+
+</body>
+</html>

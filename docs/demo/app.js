@@ -119,7 +119,9 @@ const state = {
 let controllerSettings = {
     keymap: {
         line1_left: 'a', line1_right: 'd',
+        line1_left_fine: 'q', line1_right_fine: 'e',
         line2_left: 'j', line2_right: 'l',
+        line2_left_fine: 'u', line2_right_fine: 'o',
         toggle_mode: 'f', save: ' ', reset: 'r'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
@@ -539,9 +541,14 @@ function onOverlayPointerMove(e) {
         const deltaPx = e.offsetX - dragState.startMouseX;
         const deltaNorm = deltaPx / rect.width;
         const ratio = state.fineMode ? FINE_DRAG_RATIO : 1.0;
-        const newNorm = Math.max(0, Math.min(1, dragState.startLineNorm + deltaNorm * ratio));
-        if (dragState.line === 1) state.line1_x = newNorm;
-        else state.line2_x = newNorm;
+        let newNorm = Math.max(0, Math.min(1, dragState.startLineNorm + deltaNorm * ratio));
+        // Prevent lines from crossing (minimum gap = handle diameter)
+        const minGap = rect.width > 0 ? (HANDLE_RADIUS * 2) / rect.width : 0.02;
+        if (dragState.line === 1) {
+            state.line1_x = Math.min(newNorm, state.line2_x - minGap);
+        } else {
+            state.line2_x = Math.max(newNorm, state.line1_x + minGap);
+        }
         drawOverlay();
         debouncedWeightCheck();
         e.preventDefault();
@@ -718,31 +725,20 @@ function drawLine(ctx, x, y1, y2, color) {
     ctx.stroke();
 }
 
+const HANDLE_RADIUS = 10;
+
 function drawDragHandle(ctx, x, y, color) {
-    const size = 8;
+    // Outer ring (black border)
     ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.moveTo(x, y - size - 1);
-    ctx.lineTo(x + size + 1, y);
-    ctx.lineTo(x, y + size + 1);
-    ctx.lineTo(x - size - 1, y);
-    ctx.closePath();
+    ctx.arc(x, y, HANDLE_RADIUS + 1.5, 0, Math.PI * 2);
     ctx.fill();
 
+    // Inner circle
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(x, y - size);
-    ctx.lineTo(x + size, y);
-    ctx.lineTo(x, y + size);
-    ctx.lineTo(x - size, y);
-    ctx.closePath();
+    ctx.arc(x, y, HANDLE_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\u25C0\u25B6', x, y);
 }
 
 function drawOverlay() {
@@ -838,15 +834,23 @@ function handleKeyDown(e) {
 
     if (!action) return;
 
-    const step = state.fineMode
-        ? controllerSettings.sensitivity.fine_step
-        : controllerSettings.sensitivity.coarse_step;
+    const coarseStep = controllerSettings.sensitivity.coarse_step;
+    const fineStep = controllerSettings.sensitivity.fine_step;
+    const step = state.fineMode ? fineStep : coarseStep;
+
+    // Minimum gap: handles can't touch (2x handle radius in normalized coords)
+    const rect = getVideoRect();
+    const minGap = rect.width > 0 ? (HANDLE_RADIUS * 2) / rect.width : 0.02;
 
     switch (action) {
-        case 'line1_left':  state.line1_x = Math.max(0, state.line1_x - step); break;
-        case 'line1_right': state.line1_x = Math.min(1, state.line1_x + step); break;
-        case 'line2_left':  state.line2_x = Math.max(0, state.line2_x - step); break;
-        case 'line2_right': state.line2_x = Math.min(1, state.line2_x + step); break;
+        case 'line1_left':       state.line1_x = Math.max(0, state.line1_x - step); break;
+        case 'line1_right':      state.line1_x = Math.min(state.line2_x - minGap, state.line1_x + step); break;
+        case 'line1_left_fine':  state.line1_x = Math.max(0, state.line1_x - fineStep); break;
+        case 'line1_right_fine': state.line1_x = Math.min(state.line2_x - minGap, state.line1_x + fineStep); break;
+        case 'line2_left':       state.line2_x = Math.max(state.line1_x + minGap, state.line2_x - step); break;
+        case 'line2_right':      state.line2_x = Math.min(1, state.line2_x + step); break;
+        case 'line2_left_fine':  state.line2_x = Math.max(state.line1_x + minGap, state.line2_x - fineStep); break;
+        case 'line2_right_fine': state.line2_x = Math.min(1, state.line2_x + fineStep); break;
         case 'toggle_mode': toggleMode(); break;
         case 'save':        e.preventDefault(); saveMeasurementAction(); break;
         case 'reset':       resetLines(); break;
@@ -1128,7 +1132,9 @@ async function clearDemoData() {
 const SETTINGS_DEFAULTS = {
     keymap: {
         line1_left: 'a', line1_right: 'd',
+        line1_left_fine: 'q', line1_right_fine: 'e',
         line2_left: 'j', line2_right: 'l',
+        line2_left_fine: 'u', line2_right_fine: 'o',
         toggle_mode: 'f', save: ' ', reset: 'r'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
@@ -1139,7 +1145,12 @@ let pendingSettings = null;
 function loadControllerSettings() {
     try {
         const saved = sessionStorage.getItem('axle_controller_settings');
-        if (saved) controllerSettings = JSON.parse(saved);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Merge saved with defaults so new keys (fine) get default values
+            controllerSettings.keymap = { ...SETTINGS_DEFAULTS.keymap, ...parsed.keymap };
+            controllerSettings.sensitivity = { ...SETTINGS_DEFAULTS.sensitivity, ...parsed.sensitivity };
+        }
     } catch { /* use defaults */ }
     buildKeyActionMap();
     updateKeyHints();
@@ -1270,7 +1281,9 @@ function cancelKeyCapture() {
 function getActionLabel(action) {
     const labels = {
         line1_left: 'Line 1 Left', line1_right: 'Line 1 Right',
+        line1_left_fine: 'Line 1 Left (Fine)', line1_right_fine: 'Line 1 Right (Fine)',
         line2_left: 'Line 2 Left', line2_right: 'Line 2 Right',
+        line2_left_fine: 'Line 2 Left (Fine)', line2_right_fine: 'Line 2 Right (Fine)',
         toggle_mode: 'Fine/Coarse Toggle', save: 'Save Measurement', reset: 'Reset Lines'
     };
     return labels[action] || action;
@@ -1315,10 +1328,14 @@ function handleControllerTest(key, isDown) {
     const settings = pendingSettings || controllerSettings;
     const normalizedKey = key.toLowerCase();
     const testMap = {
-        [settings.keymap.line1_left]:  { el: 'test-joy1-left', joy: 'joy1', name: 'Joy1 Left' },
-        [settings.keymap.line1_right]: { el: 'test-joy1-right', joy: 'joy1', name: 'Joy1 Right' },
-        [settings.keymap.line2_left]:  { el: 'test-joy2-left', joy: 'joy2', name: 'Joy2 Left' },
-        [settings.keymap.line2_right]: { el: 'test-joy2-right', joy: 'joy2', name: 'Joy2 Right' },
+        [settings.keymap.line1_left]:       { el: 'test-joy1-left', joy: 'joy1', name: 'Joy1 Left' },
+        [settings.keymap.line1_right]:      { el: 'test-joy1-right', joy: 'joy1', name: 'Joy1 Right' },
+        [settings.keymap.line1_left_fine]:  { el: 'test-joy1-fine-left', joy: 'joy1', name: 'Joy1 Fine Left' },
+        [settings.keymap.line1_right_fine]: { el: 'test-joy1-fine-right', joy: 'joy1', name: 'Joy1 Fine Right' },
+        [settings.keymap.line2_left]:       { el: 'test-joy2-left', joy: 'joy2', name: 'Joy2 Left' },
+        [settings.keymap.line2_right]:      { el: 'test-joy2-right', joy: 'joy2', name: 'Joy2 Right' },
+        [settings.keymap.line2_left_fine]:  { el: 'test-joy2-fine-left', joy: 'joy2', name: 'Joy2 Fine Left' },
+        [settings.keymap.line2_right_fine]: { el: 'test-joy2-fine-right', joy: 'joy2', name: 'Joy2 Fine Right' },
         [settings.keymap.toggle_mode]: { el: 'test-action-toggle', joy: null, name: 'Toggle' },
         [settings.keymap.save]:        { el: 'test-action-save', joy: null, name: 'Save' },
         [settings.keymap.reset]:       { el: 'test-action-reset', joy: null, name: 'Reset' },
@@ -1371,8 +1388,12 @@ function updateTestLabels() {
     const setLabel = (id, key) => { const el = $(id); if (el) el.textContent = formatKeyDisplay(key); };
     setLabel('test-joy1-left-label', settings.keymap.line1_left);
     setLabel('test-joy1-right-label', settings.keymap.line1_right);
+    setLabel('test-joy1-fine-left-label', settings.keymap.line1_left_fine);
+    setLabel('test-joy1-fine-right-label', settings.keymap.line1_right_fine);
     setLabel('test-joy2-left-label', settings.keymap.line2_left);
     setLabel('test-joy2-right-label', settings.keymap.line2_right);
+    setLabel('test-joy2-fine-left-label', settings.keymap.line2_left_fine);
+    setLabel('test-joy2-fine-right-label', settings.keymap.line2_right_fine);
     const setActionKey = (id, key) => {
         const el = $(id);
         if (el) { const keySpan = el.querySelector('.test-action-key'); if (keySpan) keySpan.textContent = formatKeyDisplay(key); }
@@ -1388,7 +1409,9 @@ function updateKeyHints() {
     const km = controllerSettings.keymap;
     hintsEl.innerHTML =
         `<div><kbd>${formatKeyDisplay(km.line1_left)}</kbd><kbd>${formatKeyDisplay(km.line1_right)}</kbd> Line 1</div>` +
+        `<div><kbd>${formatKeyDisplay(km.line1_left_fine)}</kbd><kbd>${formatKeyDisplay(km.line1_right_fine)}</kbd> Line 1 Fine</div>` +
         `<div><kbd>${formatKeyDisplay(km.line2_left)}</kbd><kbd>${formatKeyDisplay(km.line2_right)}</kbd> Line 2</div>` +
+        `<div><kbd>${formatKeyDisplay(km.line2_left_fine)}</kbd><kbd>${formatKeyDisplay(km.line2_right_fine)}</kbd> Line 2 Fine</div>` +
         `<div><kbd>${formatKeyDisplay(km.toggle_mode)}</kbd> Fine/Coarse</div>` +
         `<div><kbd>${formatKeyDisplay(km.save)}</kbd> Save</div>` +
         `<div><kbd>${formatKeyDisplay(km.reset)}</kbd> Reset</div>`;

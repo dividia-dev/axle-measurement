@@ -3,24 +3,23 @@
  * Arduino Pro Micro (ATmega32U4)
  *
  * USB HID keyboard emulation for CV axle measurement line control.
- * Two joysticks: X-axis = coarse movement, Y-axis/twist = fine movement.
+ * Two joysticks: X-axis = movement, button = toggle coarse/fine mode.
+ * Twist barrel disabled (unreliable for bidirectional fine control).
  *
- * Architecture: per-joystick state machine with commercial-grade input handling.
+ * Architecture: per-joystick with button-toggled fine mode.
  *
- * Input pipeline per axis:
- *   1. analogRead() raw sample
+ * Input pipeline:
+ *   1. analogRead() X-axis raw sample
  *   2. Exponential moving average (EMA) low-pass filter
  *   3. Deflection from calibrated center
- *   4. Dead zone check (with hysteresis on fine axis)
- *   5. State machine decides action
- *   6. Keystroke output with rate limiting
+ *   4. Dead zone check
+ *   5. Keystroke output (coarse or fine keys based on mode)
  *
- * State machine per joystick:
- *   IDLE       - no output, waiting for input beyond dead zone
- *   COARSE     - sending coarse keystrokes at proportional rate
- *   FINE       - ratchet mode: fires on increasing deflection, silent on decrease
- *               direction locked until return to dead zone
- *   SUPPRESSED - brief lockout after fine disengages (prevents crosstalk)
+ * Controls per joystick:
+ *   Push left/right - move measurement line (coarse or fine step)
+ *   Short button press - toggle between coarse and fine mode
+ *   Hold button 3s - auto-calibrate dead zone
+ *   LED on = fine mode active
  *
  * Hardware:
  *   Joystick 1: VRx=A0, VRy=A1, SW=D2
@@ -56,6 +55,7 @@
 #define LED_LOCK     5
 #define LED_FINE1    6
 #define LED_FINE2    7
+#define RECAL_BTN    8
 
 // ============================================================
 // EEPROM Layout
@@ -67,7 +67,7 @@
 #define EEPROM_DZ_ADDR        12    // 4 bytes: dead zones (J1c, J1f, J2c, J2f)
 #define EEPROM_CENTER_ADDR    16    // 8 bytes: centers (J1x, J1y, J2x, J2y) x 2 bytes each
 
-#define EEPROM_MAGIC_VALUE    0xB0  // Bump this to force factory reset on flash
+#define EEPROM_MAGIC_VALUE    0xB3  // Bump this to force factory reset on flash
 
 #define NUM_KEYS  10
 
@@ -105,25 +105,17 @@ char keys[NUM_KEYS];
 
 // Dead zone defaults (overwritten by auto-cal on every boot)
 #define DEFAULT_DZ_COARSE   150
-#define DEFAULT_DZ_FINE     30
 #define DEFAULT_CENTER      512
-
-// Fine axis hysteresis
-#define FINE_ENGAGE      30    // Deflection to activate fine mode
-#define FINE_DISENGAGE   12    // Deflection to deactivate (must be < ENGAGE)
 
 // Timing
 #define COARSE_REPEAT_FAST_MS   30    // Max speed at full deflection
 #define COARSE_REPEAT_SLOW_MS   200   // Min speed at dead zone edge
-#define FINE_MIN_INTERVAL_MS    300   // Minimum ms between fine keystrokes
-#define COARSE_SUPPRESS_MS      250   // Lockout after fine disengages
+#define FINE_REPEAT_MS          200   // Fixed repeat rate in fine mode
 #define BUTTON_DEBOUNCE_MS      200   // Button debounce
-#define CAL_HOLD_MS             3000  // Hold button to start calibration
 #define CAL_SAMPLE_MS           2000  // Duration of noise sampling
 #define CAL_SETTLE_MS           3000  // Pre-cal settle time
-#define DZ_MARGIN               25    // Added to measured noise peak
+#define DZ_COARSE_MARGIN        25    // Added to coarse noise peak
 #define DZ_COARSE_FLOOR         100   // Minimum coarse dead zone
-#define DZ_FINE_FLOOR            15   // Minimum fine dead zone
 
 // EMA filter: alpha = 1/EMA_DIVISOR. Higher = more smoothing.
 // Using fixed-point x256 for precision without floats.
@@ -132,13 +124,6 @@ char keys[NUM_KEYS];
 // ============================================================
 // Joystick State Machine
 // ============================================================
-
-enum JoyState {
-  JS_IDLE,
-  JS_COARSE,
-  JS_FINE,
-  JS_SUPPRESSED   // Brief lockout after fine disengages
-};
 
 struct Joystick {
   // Pin assignments
@@ -156,33 +141,20 @@ struct Joystick {
 
   // Calibration (per-axis center and dead zone)
   int16_t centerX;
-  int16_t centerY;
   int16_t dzCoarse;
-  int16_t dzFine;
 
   // EMA filter state (fixed-point x16 via shift)
   int32_t emaX;
-  int32_t emaY;
   bool emaInitialized;
 
-  // State machine
-  JoyState state;
-  unsigned long stateEnteredAt;
-
   // Timing
-  unsigned long lastCoarseKeystroke;
-  unsigned long lastFineKeystroke;
+  unsigned long lastKeystroke;
   unsigned long lastBtnPress;
-  unsigned long suppressUntil;
 
-  // Fine ratchet mode tracking
-  bool fineEngaged;
-  int8_t fineDirection;       // 0=none, +1=right, -1=left (locked until return to DZ)
-  int16_t finePeakDeflect;    // Highest abs deflection seen in current engagement
-  int16_t fineLastDeflect;    // Previous loop's deflection (to detect increasing)
+  // Fine mode: toggled by short button press
+  bool fineMode;
 
-  // Calibration hold detection
-  unsigned long btnHoldStart;
+  // Button state
   bool btnWasHeld;
 };
 
@@ -213,7 +185,8 @@ void saveDeadzones();
 void runStartupCal();
 void runManualCal(uint8_t joyIdx);
 void processJoystick(uint8_t idx);
-void checkCalHold(uint8_t idx);
+void handleButton(uint8_t idx);
+void checkRecalButton();
 void handleSerial();
 void processCommand(char *raw);
 void sendKey(char key);
@@ -229,6 +202,7 @@ void setup() {
   pinMode(JOY1_BTN, INPUT_PULLUP);
   pinMode(JOY2_BTN, INPUT_PULLUP);
   pinMode(LOCK_SWITCH, INPUT_PULLUP);
+  pinMode(RECAL_BTN, INPUT_PULLUP);
   pinMode(LED_LOCK, OUTPUT);
   pinMode(LED_FINE1, OUTPUT);
   pinMode(LED_FINE2, OUTPUT);
@@ -275,11 +249,14 @@ void loop() {
     return;
   }
 
-  // Check calibration hold on each joystick
-  checkCalHold(0);
-  checkCalHold(1);
+  // Check recal button (dedicated, calibrates both joysticks)
+  checkRecalButton();
 
-  // Process each joystick through the state machine
+  // Handle joystick buttons: short press = toggle fine/coarse
+  handleButton(0);
+  handleButton(1);
+
+  // Process each joystick
   processJoystick(0);
   processJoystick(1);
 }
@@ -301,23 +278,12 @@ void initJoystick(uint8_t idx, uint8_t px, uint8_t py, uint8_t pb, uint8_t pl,
   j.kRightFine = krf;
   j.kBtn = kb;
   j.centerX = DEFAULT_CENTER;
-  j.centerY = DEFAULT_CENTER;
   j.dzCoarse = DEFAULT_DZ_COARSE;
-  j.dzFine = DEFAULT_DZ_FINE;
   j.emaX = 0;
-  j.emaY = 0;
   j.emaInitialized = false;
-  j.state = JS_IDLE;
-  j.stateEnteredAt = 0;
-  j.lastCoarseKeystroke = 0;
-  j.lastFineKeystroke = 0;
+  j.lastKeystroke = 0;
   j.lastBtnPress = 0;
-  j.suppressUntil = 0;
-  j.fineEngaged = false;
-  j.fineDirection = 0;
-  j.finePeakDeflect = 0;
-  j.fineLastDeflect = 0;
-  j.btnHoldStart = 0;
+  j.fineMode = false;
   j.btnWasHeld = false;
 }
 
@@ -326,30 +292,18 @@ void initJoystick(uint8_t idx, uint8_t px, uint8_t py, uint8_t pb, uint8_t pl,
 // ============================================================
 
 // Returns filtered analog value (0-1023 range)
-int16_t readFiltered(uint8_t idx, bool isY) {
+int16_t readFiltered(uint8_t idx) {
   Joystick &j = joy[idx];
-  int16_t raw;
-  int32_t *ema;
-
-  if (isY) {
-    raw = analogRead(j.pinY);
-    ema = &j.emaY;
-  } else {
-    raw = analogRead(j.pinX);
-    ema = &j.emaX;
-  }
+  int16_t raw = analogRead(j.pinX);
 
   if (!j.emaInitialized) {
-    *ema = (int32_t)raw << EMA_SHIFT;
-    // Don't set emaInitialized here — both axes need init.
-    // We'll set it after both are read in processJoystick.
+    j.emaX = (int32_t)raw << EMA_SHIFT;
+    j.emaInitialized = true;
   } else {
-    // EMA: new = old + (raw - old/scale)
-    // With shift: ema = ema + raw - (ema >> SHIFT)
-    *ema = *ema - (*ema >> EMA_SHIFT) + raw;
+    j.emaX = j.emaX - (j.emaX >> EMA_SHIFT) + raw;
   }
 
-  return (int16_t)(*ema >> EMA_SHIFT);
+  return (int16_t)(j.emaX >> EMA_SHIFT);
 }
 
 // ============================================================
@@ -360,164 +314,39 @@ void processJoystick(uint8_t idx) {
   Joystick &j = joy[idx];
   unsigned long now = millis();
 
-  // --- Read and filter both axes ---
-  int16_t filtX = readFiltered(idx, false);
-  int16_t filtY = readFiltered(idx, true);
-  if (!j.emaInitialized) j.emaInitialized = true;
+  // --- Read and filter X axis only (Y/twist axis disabled) ---
+  int16_t filtX = readFiltered(idx);
 
   // --- Compute deflection from calibrated center ---
   int16_t deflectX = filtX - j.centerX;
-  int16_t deflectY = filtY - j.centerY;
   int16_t absDeflectX = abs(deflectX);
-  int16_t absDeflectY = abs(deflectY);
 
-  // --- Handle button press (short press only, not cal hold) ---
-  bool btnDown = (digitalRead(j.pinBtn) == LOW);
-  if (!btnDown && j.btnWasHeld && (now - j.lastBtnPress >= BUTTON_DEBOUNCE_MS)) {
-    // Button just released — fire keystroke only if it was a short press (not cal hold)
-    if (now - j.btnHoldStart < CAL_HOLD_MS) {
-      j.lastBtnPress = now;
-      sendKey(keys[j.kBtn]);
+  // --- Movement: send keystrokes based on X deflection ---
+  if (absDeflectX > j.dzCoarse) {
+    // Pick keys based on fine mode toggle
+    int16_t magnitude = absDeflectX;
+    if (magnitude > 512) magnitude = 512;
+
+    int repeatMs;
+    if (j.fineMode) {
+      repeatMs = FINE_REPEAT_MS;  // Fixed rate in fine mode
+    } else {
+      repeatMs = map(magnitude, j.dzCoarse, 512, COARSE_REPEAT_SLOW_MS, COARSE_REPEAT_FAST_MS);
+      if (repeatMs < COARSE_REPEAT_FAST_MS) repeatMs = COARSE_REPEAT_FAST_MS;
+      if (repeatMs > COARSE_REPEAT_SLOW_MS) repeatMs = COARSE_REPEAT_SLOW_MS;
+    }
+
+    if (now - j.lastKeystroke >= (unsigned long)repeatMs) {
+      char key;
+      if (j.fineMode) {
+        key = (deflectX > 0) ? keys[j.kRightFine] : keys[j.kLeftFine];
+      } else {
+        key = (deflectX > 0) ? keys[j.kRightCoarse] : keys[j.kLeftCoarse];
+      }
+      sendKey(key);
+      j.lastKeystroke = now;
     }
   }
-
-  // --- Fine axis hysteresis ---
-  bool finePastThreshold;
-  if (j.fineEngaged) {
-    finePastThreshold = (absDeflectY > FINE_DISENGAGE);
-  } else {
-    finePastThreshold = (absDeflectY > FINE_ENGAGE);
-  }
-
-  // --- State machine ---
-  switch (j.state) {
-
-    case JS_IDLE:
-      if (finePastThreshold) {
-        // Engage fine: lock direction, start ratchet tracking
-        j.state = JS_FINE;
-        j.stateEnteredAt = now;
-        j.fineEngaged = true;
-        j.fineDirection = (deflectY > 0) ? 1 : -1;
-        j.finePeakDeflect = absDeflectY;
-        j.fineLastDeflect = absDeflectY;
-        digitalWrite(j.pinLed, HIGH);
-
-        // Fire first keystroke immediately
-        if (now - j.lastFineKeystroke >= FINE_MIN_INTERVAL_MS) {
-          char key = (j.fineDirection > 0) ? keys[j.kRightFine] : keys[j.kLeftFine];
-          sendKey(key);
-          j.lastFineKeystroke = now;
-        }
-      }
-      else if (absDeflectX > j.dzCoarse && now >= j.suppressUntil) {
-        j.state = JS_COARSE;
-        j.stateEnteredAt = now;
-      }
-      break;
-
-    case JS_COARSE:
-      // Fine always takes priority over coarse
-      if (finePastThreshold) {
-        j.state = JS_FINE;
-        j.stateEnteredAt = now;
-        j.fineEngaged = true;
-        j.fineDirection = (deflectY > 0) ? 1 : -1;
-        j.finePeakDeflect = absDeflectY;
-        j.fineLastDeflect = absDeflectY;
-        digitalWrite(j.pinLed, HIGH);
-
-        if (now - j.lastFineKeystroke >= FINE_MIN_INTERVAL_MS) {
-          char key = (j.fineDirection > 0) ? keys[j.kRightFine] : keys[j.kLeftFine];
-          sendKey(key);
-          j.lastFineKeystroke = now;
-        }
-        break;
-      }
-
-      if (absDeflectX <= j.dzCoarse) {
-        j.state = JS_IDLE;
-        j.stateEnteredAt = now;
-        break;
-      }
-
-      // Coarse: proportional speed repeat
-      {
-        int16_t magnitude = absDeflectX;
-        if (magnitude > 512) magnitude = 512;
-        int repeatMs = map(magnitude, j.dzCoarse, 512, COARSE_REPEAT_SLOW_MS, COARSE_REPEAT_FAST_MS);
-        if (repeatMs < COARSE_REPEAT_FAST_MS) repeatMs = COARSE_REPEAT_FAST_MS;
-        if (repeatMs > COARSE_REPEAT_SLOW_MS) repeatMs = COARSE_REPEAT_SLOW_MS;
-
-        if (now - j.lastCoarseKeystroke >= (unsigned long)repeatMs) {
-          char key = (deflectX > 0) ? keys[j.kRightCoarse] : keys[j.kLeftCoarse];
-          sendKey(key);
-          j.lastCoarseKeystroke = now;
-        }
-      }
-      break;
-
-    case JS_FINE:
-      if (!finePastThreshold) {
-        // Returned to dead zone, disengage, enter suppression
-        j.fineEngaged = false;
-        j.fineDirection = 0;
-        j.finePeakDeflect = 0;
-        j.fineLastDeflect = 0;
-        j.state = JS_SUPPRESSED;
-        j.stateEnteredAt = now;
-        j.suppressUntil = now + COARSE_SUPPRESS_MS;
-        digitalWrite(j.pinLed, LOW);
-        break;
-      }
-
-      // Ratchet fine: fire keystroke only when deflection is INCREASING
-      // in the locked direction. Decreasing = do nothing. Must return
-      // to dead zone to change direction.
-      {
-        bool correctDirection = (j.fineDirection > 0) ? (deflectY > 0) : (deflectY < 0);
-
-        if (correctDirection && absDeflectY > j.fineLastDeflect) {
-          // Deflection increasing, fire keystroke (rate-limited)
-          if (now - j.lastFineKeystroke >= FINE_MIN_INTERVAL_MS) {
-            char key = (j.fineDirection > 0) ? keys[j.kRightFine] : keys[j.kLeftFine];
-            sendKey(key);
-            j.lastFineKeystroke = now;
-          }
-          if (absDeflectY > j.finePeakDeflect) {
-            j.finePeakDeflect = absDeflectY;
-          }
-        }
-        // Decreasing or wrong direction: silent, stay in FINE
-
-        j.fineLastDeflect = absDeflectY;
-      }
-      break;
-
-    case JS_SUPPRESSED:
-      if (now >= j.suppressUntil) {
-        j.state = JS_IDLE;
-        j.stateEnteredAt = now;
-      }
-      // Allow fine re-engagement during suppression
-      if (finePastThreshold) {
-        j.state = JS_FINE;
-        j.stateEnteredAt = now;
-        j.fineEngaged = true;
-        j.fineDirection = (deflectY > 0) ? 1 : -1;
-        j.finePeakDeflect = absDeflectY;
-        j.fineLastDeflect = absDeflectY;
-        digitalWrite(j.pinLed, HIGH);
-
-        if (now - j.lastFineKeystroke >= FINE_MIN_INTERVAL_MS) {
-          char key = (j.fineDirection > 0) ? keys[j.kRightFine] : keys[j.kLeftFine];
-          sendKey(key);
-          j.lastFineKeystroke = now;
-        }
-      }
-      break;
-  }
-
 }
 
 // ============================================================
@@ -548,53 +377,38 @@ void runStartupCal() {
   digitalWrite(LED_FINE1, LOW);
   digitalWrite(LED_FINE2, LOW);
 
-  // Sample both joysticks simultaneously
+  // Sample both joysticks (X axis only, twist/Y axis disabled)
   for (uint8_t idx = 0; idx < 2; idx++) {
     Joystick &j = joy[idx];
-    long sumX = 0, sumY = 0;
-    int16_t minX = 1023, maxX = 0, minY = 1023, maxY = 0;
+    long sumX = 0;
+    int16_t minX = 1023, maxX = 0;
     const int samples = 200;  // 2 seconds at 10ms interval
 
     for (int i = 0; i < samples; i++) {
       int16_t rx = analogRead(j.pinX);
-      int16_t ry = analogRead(j.pinY);
       sumX += rx;
-      sumY += ry;
       if (rx < minX) minX = rx;
       if (rx > maxX) maxX = rx;
-      if (ry < minY) minY = ry;
-      if (ry > maxY) maxY = ry;
       delay(10);
     }
 
     j.centerX = sumX / samples;
-    j.centerY = sumY / samples;
 
-    // Dead zone = measured noise peak + margin, with floor
     int16_t noiseX = max(abs(maxX - j.centerX), abs(minX - j.centerX));
-    int16_t noiseY = max(abs(maxY - j.centerY), abs(minY - j.centerY));
-    j.dzCoarse = max((int16_t)(noiseX + DZ_MARGIN), (int16_t)DZ_COARSE_FLOOR);
-    j.dzFine = max((int16_t)(noiseY + DZ_MARGIN), (int16_t)DZ_FINE_FLOOR);
+    j.dzCoarse = max((int16_t)(noiseX + DZ_COARSE_MARGIN), (int16_t)DZ_COARSE_FLOOR);
 
-    // Initialize EMA with center values
+    // Initialize EMA with center
     j.emaX = (int32_t)j.centerX << EMA_SHIFT;
-    j.emaY = (int32_t)j.centerY << EMA_SHIFT;
     j.emaInitialized = true;
 
     Serial.print(F("  J"));
     Serial.print(idx + 1);
     Serial.print(F(": cX="));
     Serial.print(j.centerX);
-    Serial.print(F(" cY="));
-    Serial.print(j.centerY);
     Serial.print(F(" noiseX="));
     Serial.print(noiseX);
-    Serial.print(F(" noiseY="));
-    Serial.print(noiseY);
     Serial.print(F(" dzC="));
-    Serial.print(j.dzCoarse);
-    Serial.print(F(" dzF="));
-    Serial.println(j.dzFine);
+    Serial.println(j.dzCoarse);
   }
 
   saveDeadzones();
@@ -605,22 +419,34 @@ void runStartupCal() {
 // Calibration: Manual (hold button 3s)
 // ============================================================
 
-void checkCalHold(uint8_t idx) {
+void handleButton(uint8_t idx) {
   Joystick &j = joy[idx];
   bool pressed = (digitalRead(j.pinBtn) == LOW);
   unsigned long now = millis();
 
-  if (pressed && !j.btnWasHeld) {
-    j.btnHoldStart = now;
-  } else if (pressed && j.btnWasHeld) {
-    if (now - j.btnHoldStart >= CAL_HOLD_MS) {
-      runManualCal(idx);
-      j.btnHoldStart = 0;
-      // Wait for button release
-      while (digitalRead(j.pinBtn) == LOW) delay(10);
-    }
+  if (!pressed && j.btnWasHeld && (now - j.lastBtnPress >= BUTTON_DEBOUNCE_MS)) {
+    // Button just released — toggle fine/coarse
+    j.lastBtnPress = now;
+    j.fineMode = !j.fineMode;
+    digitalWrite(j.pinLed, j.fineMode ? HIGH : LOW);
   }
+
   j.btnWasHeld = pressed;
+}
+
+void checkRecalButton() {
+  static bool recalWasPressed = false;
+  bool pressed = (digitalRead(RECAL_BTN) == LOW);
+
+  if (pressed && !recalWasPressed) {
+    // Button just pressed — run full recal (same as startup)
+    Serial.println(F("RECAL triggered"));
+    runStartupCal();
+    // Wait for button release
+    while (digitalRead(RECAL_BTN) == LOW) delay(10);
+  }
+
+  recalWasPressed = pressed;
 }
 
 void runManualCal(uint8_t joyIdx) {
@@ -637,36 +463,28 @@ void runManualCal(uint8_t joyIdx) {
   }
   delay(500);  // Let user release
 
-  long sumX = 0, sumY = 0;
-  int16_t minX = 1023, maxX = 0, minY = 1023, maxY = 0;
+  long sumX = 0;
+  int16_t minX = 1023, maxX = 0;
   int samples = 0;
 
   unsigned long start = millis();
   while (millis() - start < CAL_SAMPLE_MS) {
     int16_t rx = analogRead(j.pinX);
-    int16_t ry = analogRead(j.pinY);
     sumX += rx;
-    sumY += ry;
     samples++;
     if (rx < minX) minX = rx;
     if (rx > maxX) maxX = rx;
-    if (ry < minY) minY = ry;
-    if (ry > maxY) maxY = ry;
     digitalWrite(j.pinLed, (millis() / 80) % 2 ? HIGH : LOW);
     delay(5);
   }
 
   j.centerX = sumX / samples;
-  j.centerY = sumY / samples;
 
   int16_t noiseX = max(abs(maxX - j.centerX), abs(minX - j.centerX));
-  int16_t noiseY = max(abs(maxY - j.centerY), abs(minY - j.centerY));
-  j.dzCoarse = max((int16_t)(noiseX + DZ_MARGIN), (int16_t)DZ_COARSE_FLOOR);
-  j.dzFine = max((int16_t)(noiseY + DZ_MARGIN), (int16_t)DZ_FINE_FLOOR);
+  j.dzCoarse = max((int16_t)(noiseX + DZ_COARSE_MARGIN), (int16_t)DZ_COARSE_FLOOR);
 
   // Re-seed EMA with new center
   j.emaX = (int32_t)j.centerX << EMA_SHIFT;
-  j.emaY = (int32_t)j.centerY << EMA_SHIFT;
 
   saveDeadzones();
 
@@ -677,12 +495,8 @@ void runManualCal(uint8_t joyIdx) {
 
   Serial.print(F("  cX="));
   Serial.print(j.centerX);
-  Serial.print(F(" cY="));
-  Serial.print(j.centerY);
   Serial.print(F(" dzC="));
-  Serial.print(j.dzCoarse);
-  Serial.print(F(" dzF="));
-  Serial.println(j.dzFine);
+  Serial.println(j.dzCoarse);
   Serial.println(F("CAL DONE"));
 }
 
@@ -709,23 +523,14 @@ void loadSettings() {
   // Load dead zones (will be overwritten by auto-cal, but good fallback)
   for (uint8_t idx = 0; idx < 2; idx++) {
     Joystick &j = joy[idx];
-    uint8_t base = idx * 2;
-    j.dzCoarse = EEPROM.read(EEPROM_DZ_ADDR + base);
-    j.dzFine = EEPROM.read(EEPROM_DZ_ADDR + base + 1);
-
-    // Sanity check dead zones
+    j.dzCoarse = EEPROM.read(EEPROM_DZ_ADDR + idx);
     if (j.dzCoarse < 10 || j.dzCoarse > 250) j.dzCoarse = DEFAULT_DZ_COARSE;
-    if (j.dzFine < 10 || j.dzFine > 250) j.dzFine = DEFAULT_DZ_FINE;
 
-    // Load centers (2 bytes each, big-endian)
-    uint8_t cBase = idx * 4;
+    // Load center X (2 bytes, big-endian)
+    uint8_t cBase = idx * 2;
     j.centerX = (EEPROM.read(EEPROM_CENTER_ADDR + cBase) << 8) |
                  EEPROM.read(EEPROM_CENTER_ADDR + cBase + 1);
-    j.centerY = (EEPROM.read(EEPROM_CENTER_ADDR + cBase + 2) << 8) |
-                 EEPROM.read(EEPROM_CENTER_ADDR + cBase + 3);
-
     if (j.centerX < 0 || j.centerX > 1023) j.centerX = DEFAULT_CENTER;
-    if (j.centerY < 0 || j.centerY > 1023) j.centerY = DEFAULT_CENTER;
   }
 }
 
@@ -735,11 +540,10 @@ void saveDefaults() {
   for (uint8_t i = 0; i < NUM_KEYS; i++) {
     EEPROM.update(EEPROM_KEYS_ADDR + i, pgm_read_byte(&DEFAULT_KEYS[i]));
   }
-  for (uint8_t i = 0; i < 4; i++) {
-    EEPROM.update(EEPROM_DZ_ADDR + i,
-                  (i % 2 == 0) ? DEFAULT_DZ_COARSE : DEFAULT_DZ_FINE);
+  for (uint8_t i = 0; i < 2; i++) {
+    EEPROM.update(EEPROM_DZ_ADDR + i, DEFAULT_DZ_COARSE);
   }
-  for (uint8_t i = 0; i < 8; i++) {
+  for (uint8_t i = 0; i < 4; i++) {
     EEPROM.update(EEPROM_CENTER_ADDR + i,
                   (i % 2 == 0) ? highByte(DEFAULT_CENTER) : lowByte(DEFAULT_CENTER));
   }
@@ -755,15 +559,11 @@ void saveSettings() {
 void saveDeadzones() {
   for (uint8_t idx = 0; idx < 2; idx++) {
     Joystick &j = joy[idx];
-    uint8_t base = idx * 2;
-    EEPROM.update(EEPROM_DZ_ADDR + base, j.dzCoarse);
-    EEPROM.update(EEPROM_DZ_ADDR + base + 1, j.dzFine);
+    EEPROM.update(EEPROM_DZ_ADDR + idx, j.dzCoarse);
 
-    uint8_t cBase = idx * 4;
+    uint8_t cBase = idx * 2;
     EEPROM.update(EEPROM_CENTER_ADDR + cBase, highByte(j.centerX));
     EEPROM.update(EEPROM_CENTER_ADDR + cBase + 1, lowByte(j.centerX));
-    EEPROM.update(EEPROM_CENTER_ADDR + cBase + 2, highByte(j.centerY));
-    EEPROM.update(EEPROM_CENTER_ADDR + cBase + 3, lowByte(j.centerY));
   }
 }
 
@@ -834,6 +634,9 @@ void processCommand(char *raw) {
   else if (strncmp(cmd, "DZ ", 3) == 0) {
     handleSetDZ(cmd + 3);
   }
+  else if (strcmp(cmd, "CAL") == 0 || strcmp(cmd, "CALIBRATE") == 0) {
+    runStartupCal();
+  }
   else if (strcmp(cmd, "CAL 1") == 0 || strcmp(cmd, "CALIBRATE 1") == 0) {
     runManualCal(0);
   }
@@ -902,26 +705,23 @@ void handleSetKey(const char *args) {
 }
 
 void handleSetDZ(const char *args) {
-  int jn = 0, coarse = 0, fine = 0;
-  if (sscanf(args, "%d %d %d", &jn, &coarse, &fine) != 3 || (jn != 1 && jn != 2)) {
-    Serial.println(F("Usage: DZ <1|2> <coarse> <fine>"));
+  int jn = 0, coarse = 0;
+  if (sscanf(args, "%d %d", &jn, &coarse) != 2 || (jn != 1 && jn != 2)) {
+    Serial.println(F("Usage: DZ <1|2> <value>"));
     return;
   }
-  if (coarse < 10 || coarse > 250 || fine < 10 || fine > 250) {
+  if (coarse < 10 || coarse > 250) {
     Serial.println(F("Range: 10-250"));
     return;
   }
 
   Joystick &j = joy[jn - 1];
   j.dzCoarse = coarse;
-  j.dzFine = fine;
   saveDeadzones();
   Serial.print(F("J"));
   Serial.print(jn);
   Serial.print(F(" dzC="));
-  Serial.print(coarse);
-  Serial.print(F(" dzF="));
-  Serial.println(fine);
+  Serial.println(coarse);
 }
 
 // ============================================================
@@ -936,12 +736,13 @@ void printHelp() {
   Serial.println(F("SET <SLOT> <KEY>"));
   Serial.println(F("  J1LC J1RC J1LF J1RF J1B"));
   Serial.println(F("  J2LC J2RC J2LF J2RF J2B"));
-  Serial.println(F("DZ         - Show dead zones"));
-  Serial.println(F("DZ <1|2> C F - Set dead zones"));
-  Serial.println(F("CAL <1|2>  - Auto-calibrate"));
+  Serial.println(F("DZ           - Show dead zones"));
+  Serial.println(F("DZ <1|2> <V> - Set dead zone"));
+  Serial.println(F("CAL        - Calibrate both"));
+  Serial.println(F("CAL <1|2>  - Calibrate one"));
   Serial.println(F("RAW        - Analog readings"));
   Serial.println(F("DEFAULTS   - Factory reset"));
-  Serial.println(F("Hold btn 3s = auto-cal"));
+  Serial.println(F("Recal btn (D8) = calibrate both"));
 }
 
 void printStatus() {
@@ -960,12 +761,10 @@ void printDeadzones() {
     Serial.print(idx + 1);
     Serial.print(F(": dzC="));
     Serial.print(j.dzCoarse);
-    Serial.print(F(" dzF="));
-    Serial.print(j.dzFine);
     Serial.print(F(" cX="));
     Serial.print(j.centerX);
-    Serial.print(F(" cY="));
-    Serial.println(j.centerY);
+    Serial.print(F(" mode="));
+    Serial.println(j.fineMode ? F("FINE") : F("COARSE"));
   }
 }
 
@@ -1001,25 +800,18 @@ void printRaw() {
 }
 
 void printState() {
-  const char *stateNames[] = {"IDLE", "COARSE", "FINE", "SUPPRESSED"};
-  Serial.println(F("\nState Machine:"));
+  Serial.println(F("\nState:"));
   for (uint8_t idx = 0; idx < 2; idx++) {
     Joystick &j = joy[idx];
     int16_t filtX = j.emaX >> EMA_SHIFT;
-    int16_t filtY = j.emaY >> EMA_SHIFT;
     Serial.print(F("  J"));
     Serial.print(idx + 1);
-    Serial.print(F(": "));
-    Serial.print(stateNames[j.state]);
+    Serial.print(F(": mode="));
+    Serial.print(j.fineMode ? F("FINE") : F("COARSE"));
     Serial.print(F("  filtX="));
     Serial.print(filtX);
     Serial.print(F("("));
     Serial.print(filtX - j.centerX);
-    Serial.print(F(") filtY="));
-    Serial.print(filtY);
-    Serial.print(F("("));
-    Serial.print(filtY - j.centerY);
-    Serial.print(F(") fineEng="));
-    Serial.println(j.fineEngaged ? F("Y") : F("N"));
+    Serial.println(F(")"));
   }
 }

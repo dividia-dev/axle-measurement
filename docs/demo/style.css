@@ -983,11 +983,45 @@ body {
     filter: drop-shadow(0 0 6px rgba(0, 136, 255, 0.6));
 }
 
+.controller-arrow.fine-arrow {
+    fill: #2a2a3a;
+    stroke: #444;
+    stroke-width: 1;
+}
+
+.controller-arrow.fine-arrow.active {
+    fill: #6644cc;
+    stroke: #8866ff;
+    filter: drop-shadow(0 0 6px rgba(102, 68, 204, 0.6));
+}
+
 .test-key-label {
     fill: #666;
     font-size: 12px;
     font-family: 'Courier New', monospace;
     font-weight: 600;
+}
+
+.test-key-label.fine-label {
+    fill: #555;
+    font-size: 10px;
+}
+
+.test-fine-hint {
+    fill: #444;
+    font-size: 9px;
+    font-family: inherit;
+    font-style: italic;
+}
+
+.keymap-section-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 0 4px 0;
+    border-bottom: 1px solid #333;
+    margin-bottom: 4px;
 }
 
 .test-actions-row {

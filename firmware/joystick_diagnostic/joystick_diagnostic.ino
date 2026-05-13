@@ -1,26 +1,13 @@
 /*
- * Joystick Diagnostic - Identify axes and test wiring
+ * Joystick Diagnostic - Scan ALL analog pins
  *
- * Upload this first to verify your joystick wiring before
- * running the main controller firmware.
+ * Reads every analog-capable pin on the ATmega32U4 (Pro Micro)
+ * to help identify which physical pin maps to which analog channel.
  *
- * Open Serial Monitor at 115200 baud and move the joystick.
- * It prints raw analog values so you can identify:
- *   - Which pin is X (changes when you push left/right)
- *   - Which pin is Y (changes when you push up/down)
- *   - Center values (should be ~512)
- *   - Button press (if wired)
- *
- * Wiring (same as main firmware):
- *   Joystick 1: pot1 middle→A0, pot2 middle→A1, btn→D2
- *   Joystick 2: pot1 middle→A2, pot2 middle→A3, btn→D3
- *   All pot outer prongs: one side to 5V, other to GND
+ * Connect your pot's middle prong to any pin and turn it —
+ * the one that changes is your actual analog pin.
  */
 
-const int PIN_A0 = A0;
-const int PIN_A1 = A1;
-const int PIN_A2 = A2;
-const int PIN_A3 = A3;
 const int BTN1 = 2;
 const int BTN2 = 3;
 
@@ -29,34 +16,39 @@ void setup() {
   pinMode(BTN1, INPUT_PULLUP);
   pinMode(BTN2, INPUT_PULLUP);
 
-  Serial.println("=== Joystick Diagnostic ===");
-  Serial.println("Move each joystick and watch which values change.");
-  Serial.println("Format: A0 | A1 | A2 | A3 | BTN1 | BTN2");
-  Serial.println("Center should read ~512. Full range 0-1023.");
-  Serial.println("==========================================");
   delay(1000);
+  Serial.println("=== FULL PIN SCAN ===");
+  Serial.println("Turn pot - find which value changes");
+  Serial.println("====================================");
+  delay(500);
 }
 
 void loop() {
-  int a0 = analogRead(PIN_A0);
-  int a1 = analogRead(PIN_A1);
-  int a2 = analogRead(PIN_A2);
-  int a3 = analogRead(PIN_A3);
-  int b1 = digitalRead(BTN1);
-  int b2 = digitalRead(BTN2);
-
   Serial.print("A0:");
-  Serial.print(a0);
-  Serial.print("\t| A1:");
-  Serial.print(a1);
-  Serial.print("\t| A2:");
-  Serial.print(a2);
-  Serial.print("\t| A3:");
-  Serial.print(a3);
-  Serial.print("\t| BTN1:");
-  Serial.print(b1 == LOW ? "PRESSED" : "-");
-  Serial.print("\t| BTN2:");
-  Serial.println(b2 == LOW ? "PRESSED" : "-");
+  Serial.print(analogRead(A0));
+  Serial.print("  A1:");
+  Serial.print(analogRead(A1));
+  Serial.print("  A2:");
+  Serial.print(analogRead(A2));
+  Serial.print("  A3:");
+  Serial.print(analogRead(A3));
+  Serial.print("  D4:");
+  Serial.print(analogRead(4));
+  Serial.print("  D6:");
+  Serial.print(analogRead(6));
+  Serial.print("  D8:");
+  Serial.print(analogRead(8));
+  Serial.print("  D9:");
+  Serial.print(analogRead(9));
+  Serial.print("  D10:");
+  Serial.print(analogRead(10));
+  Serial.print("  D12:");
+  Serial.print(analogRead(12));
 
-  delay(200);  // Print ~5 times per second
+  Serial.print("  | B1:");
+  Serial.print(digitalRead(BTN1) == LOW ? "YES" : "-");
+  Serial.print(" B2:");
+  Serial.println(digitalRead(BTN2) == LOW ? "YES" : "-");
+
+  delay(300);
 }

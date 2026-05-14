@@ -7,10 +7,11 @@
 // Step (rabbet) joint for shell mating. 8x M3 screws for clamping.
 //
 // Usage:
-//   - Render top shell:    set PART = "top"
-//   - Render bottom shell: set PART = "bottom"
-//   - Preview assembled:   set PART = "assembly"
-//   - Export STL:          set PART to "top" or "bottom", then F6 → Export
+//   - Render top shell:       set PART = "top"
+//   - Render bottom shell:    set PART = "bottom"
+//   - Render recal plate:     set PART = "recal_plate"
+//   - Preview assembled:      set PART = "assembly"
+//   - Export STL:             set PART to desired part, then F6 → Export
 
 // ─── PART SELECTOR ───────────────────────────────────────────────
 PART = "assembly"; // "top", "bottom", or "assembly"
@@ -48,7 +49,7 @@ JOY_BASE_SQ  = 42;    // base housing clearance
 JOY_BASE_DEPTH = 25;  // below-panel depth
 
 // ─── TOGGLE SWITCH ───────────────────────────────────────────────
-TOGGLE_D     = 11.5 + TOL;  // mounting hole + tolerance
+TOGGLE_D     = 13 + TOL;    // mounting hole + tolerance [v2: was 11.5, +1.5mm]
 TOGGLE_Y_OFF = 14;    // mm below FINE LEDs (toward front)
 
 // ─── LEDs ────────────────────────────────────────────────────────
@@ -77,14 +78,15 @@ USBC_EXTEND  = 2;     // connector extends past PCB edge
 USBC_MOUNT_SPACING = 16;   // horizontal distance between mount holes [v2: was 12]
 USBC_MOUNT_HOLE_INSET = 3; // hole distance from board edges
 USBC_MOUNT_Y = ENC_D/2 - WALL - USBC_MOUNT_HOLE_INSET;  // 3mm from back wall interior
-USBC_STANDOFF_H = 4.5;     // [v2: was 2, calculated to center connector in cutout]
-USBC_STANDOFF_OD = 5;
-USBC_STANDOFF_ID = 3.2;    // M2.5 clearance [v2: was 2.2 for M2]
+USBC_STANDOFF_H = 3.5;     // [v3: was 4.5, lowered so board sits 1mm below port cutout]
+                            // Board top at Z=7.5 (3+3.5+1), cutout bottom at Z=8.35
+USBC_STANDOFF_OD = 5.5;    // [v3: was 5, wider so it won't fall through PCB holes]
+USBC_STANDOFF_ID = 2.2;    // [v3: was 3.2 clearance, now tap hole for self-tap into PLA]
 
 // Cable recess on outside of back panel [v2: new]
 USBC_RECESS_W = 14;   // recess width
 USBC_RECESS_H = 8;    // recess height
-USBC_RECESS_D = 6;    // recess depth into outside wall surface
+USBC_RECESS_D = 2.5;  // [v3: was 6, capped to stay within wall thickness]
 
 usbc_mount_positions = [
     [-USBC_MOUNT_SPACING/2, USBC_MOUNT_Y],
@@ -97,6 +99,20 @@ RECAL_X_OFF  = 40;    // mm right of center (viewed from back)
 RECAL_Y      = 22;    // mm from bottom of enclosure (Z=0)
 RECAL_RECESS_D = 8;   // target ring outer diameter [v2: new]
 RECAL_RECESS_DEPTH = 1.5; // target ring depth [v2: new]
+
+// ─── RECAL BUTTON MOUNT [v3: internal tactile switch bracket] ────
+// Standard 6x6mm tactile switch (common on Xbox controller boards).
+// Mounts on back wall interior, actuator faces wall aligned with pinhole.
+// Retention plate screws onto posts, sandwiching the button.
+RECAL_BTN_W      = 6;     // button body width
+RECAL_BTN_H      = 6;     // button body height
+RECAL_BTN_TOL    = 0.3;   // pocket tolerance per side
+RECAL_BTN_DEPTH  = 3.5;   // button body depth (tune to your switch)
+RECAL_POST_SPREAD = 14;   // vertical spacing between mount posts (center-to-center)
+RECAL_POST_OD    = 5;     // mount post outer diameter
+RECAL_POST_ID    = 1.8;   // M2 tap hole for retention plate screws
+RECAL_POST_LEN   = RECAL_BTN_DEPTH + 2; // post length = button depth + plate thickness
+RECAL_PLATE_T    = 2;     // retention plate thickness
 
 // ─── SEALED ENCLOSURE ────────────────────────────────────────────
 // No ventilation — heat generation <1W, dust protection for cement facility.
@@ -302,6 +318,30 @@ module top_shell() {
                 translate([rx - 1.5, -ENC_D/2 + WALL, rib_z])
                     cube([3, ENC_D/2 + (toggle_y - 12) - WALL, rib_h]);
             }
+
+            // ── RECAL BUTTON MOUNT [v3] ──
+            // Two screw posts on back wall interior, flanking the pinhole.
+            // Posts extend inward (-Y) from wall. Button sits between posts,
+            // retention plate screws on to sandwich it.
+            recal_wall_y = ENC_D/2 - WALL;  // interior surface of back wall
+            for (dz = [-RECAL_POST_SPREAD/2, RECAL_POST_SPREAD/2]) {
+                translate([RECAL_X_OFF, recal_wall_y, RECAL_Y + dz])
+                    rotate([90, 0, 0])
+                        difference() {
+                            cylinder(d=RECAL_POST_OD, h=RECAL_POST_LEN, $fn=20);
+                            translate([0, 0, -0.01])
+                                cylinder(d=RECAL_POST_ID, h=RECAL_POST_LEN + 0.02, $fn=16);
+                        }
+            }
+            // Button pocket: shallow rectangular cradle on wall interior
+            // Centers the button body over the pinhole
+            pocket_w = RECAL_BTN_W + 2*RECAL_BTN_TOL;
+            pocket_h = RECAL_BTN_H + 2*RECAL_BTN_TOL;
+            pocket_d = 1;  // 1mm shelf depth for button alignment
+            translate([RECAL_X_OFF - pocket_w/2,
+                       recal_wall_y - pocket_d,
+                       RECAL_Y - pocket_h/2])
+                cube([pocket_w, pocket_d + 0.01, pocket_h]);
         }
 
         // ── CUTOUTS IN TOP PANEL ──
@@ -394,10 +434,10 @@ module top_shell() {
         translate([RECAL_X_OFF, ENC_D/2 + 0.01, RECAL_Y])
             rotate([90, 0, 0])
                 cylinder(d=RECAL_RECESS_D, h=RECAL_RECESS_DEPTH + 0.01, $fn=32);
-        // Recal pinhole through remaining wall
-        translate([RECAL_X_OFF, ENC_D/2 - WALL - 0.01, RECAL_Y])
+        // Recal pinhole through wall + button pocket [v3: extended 1mm for pocket]
+        translate([RECAL_X_OFF, ENC_D/2 - WALL - 1 - 0.01, RECAL_Y])
             rotate([-90, 0, 0])
-                cylinder(d=RECAL_D, h=WALL + 0.02, $fn=16);
+                cylinder(d=RECAL_D, h=WALL + 1 + 0.02, $fn=16);
 
         // ── BACK PANEL LABELS (debossed from outside surface) ──
         // Back panel faces +Y. Text extruded in -Y direction (into wall).
@@ -576,6 +616,42 @@ module bottom_shell() {
     }
 }
 
+// ─── RECAL BUTTON RETENTION PLATE [v3] ──────────────────────────
+// Small plate that screws onto the mount posts, holding the tactile
+// switch against the back wall. Print separately.
+module recal_retention_plate() {
+    plate_w = RECAL_POST_OD + 4;  // width: post OD + margin
+    plate_h = RECAL_POST_SPREAD + RECAL_POST_OD + 2;  // spans both posts + margin
+    plate_d = RECAL_PLATE_T;
+
+    // Button pocket dimensions (with tolerance)
+    btn_w = RECAL_BTN_W + 2*RECAL_BTN_TOL;
+    btn_h = RECAL_BTN_H + 2*RECAL_BTN_TOL;
+    prong_h = RECAL_BTN_DEPTH + 1;  // prongs extend past button depth
+    prong_t = 1.2;  // prong wall thickness
+
+    union() {
+        difference() {
+            // Plate body
+            translate([-plate_w/2, -plate_h/2, 0])
+                cube([plate_w, plate_h, plate_d]);
+
+            // Screw holes (M2 clearance)
+            for (dy = [-RECAL_POST_SPREAD/2, RECAL_POST_SPREAD/2]) {
+                translate([0, dy, -0.01])
+                    cylinder(d=2.2, h=plate_d + 0.02, $fn=16);
+            }
+        }
+
+        // Retaining prongs — wrap around button on left and right sides
+        // (posts are above/below, prongs are left/right)
+        for (dx = [-(btn_w/2 + prong_t), btn_w/2]) {
+            translate([dx, -btn_h/2, plate_d - 0.01])
+                cube([prong_t, btn_h, prong_h + 0.01]);
+        }
+    }
+}
+
 // ─── ASSEMBLY / PART SELECTION ───────────────────────────────────
 
 if (PART == "top") {
@@ -587,6 +663,10 @@ if (PART == "top") {
 else if (PART == "bottom") {
     // Print as-is (bottom surface on bed)
     bottom_shell();
+}
+else if (PART == "recal_plate") {
+    // Print flat on bed
+    recal_retention_plate();
 }
 else if (PART == "assembly") {
     // Preview: both halves in assembled position
@@ -605,6 +685,12 @@ else if (PART == "assembly") {
     %translate([perf_cx - PERF_W/2, perf_cy - PERF_D/2,
                 BOT_T + STANDOFF_H])
         cube([PERF_W, PERF_D, 2]);
+
+    // Ghost recal button + retention plate
+    recal_wall_y = ENC_D/2 - WALL;
+    %translate([RECAL_X_OFF, recal_wall_y - RECAL_POST_LEN, RECAL_Y])
+        rotate([90, 0, 0])
+            recal_retention_plate();
 }
 
 // ─── RENDER SETTINGS ─────────────────────────────────────────────

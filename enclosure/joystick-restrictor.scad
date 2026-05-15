@@ -17,6 +17,13 @@
 // ─── PART SELECTOR ──────────────────────────────────────────────
 PART = "preview"; // "print" or "preview"
 
+// ─── VARIANT SELECTOR [v3] ──────────────────────────────────────
+// Two test variants to find optimal slot tightness:
+//   1 = 12mm slot (1mm narrower than original 13mm)
+//   2 = 11mm slot (2mm narrower than original 13mm)
+// Set VARIANT before export. Debossed number on plate for identification.
+VARIANT = 1;  // 1 or 2
+
 // ─── PRINT TUNING ───────────────────────────────────────────────
 NOZZLE       = 0.4;
 LAYER_HEIGHT = 0.2;
@@ -48,9 +55,10 @@ SCREW_RECESS_DEPTH = 1.2; // countersink depth from plate top
 
 // ─── RESTRICTOR SLOT ────────────────────────────────────────────
 // Vertical slot replaces the stock 19mm circular opening.
-// Width sized to match the X-axis gimbal carriage (13mm) so the
+// Width sized to match the X-axis gimbal carriage so the
 // carriage physically cannot move side-to-side.
-SLOT_W       = 13;    // slot width (X direction — blocks X travel)
+// [v3: parameterized by VARIANT for test prints]
+SLOT_W       = (VARIANT == 1) ? 12 : 11;  // 12mm (-1) or 11mm (-2) from original 13
 SLOT_L       = 25;    // slot length (Y direction — allows full Y travel)
                       // Sized to clear screw holes with 2mm margin
 
@@ -61,10 +69,13 @@ STOCK_HOLE_D = 19;    // original circular gate opening
 // Two ribs run parallel to the slot on the top (interior) surface.
 // They extend upward into the controller housing, creating a channel
 // that physically blocks the gimbal carriage from X-axis travel.
-RIB_H        = 3;     // rib height above plate top surface
+RIB_H        = 3;     // rib height above plate top surface [v3: 3mm validated]
 RIB_W        = 2.5;   // rib width (thickness in X direction)
 RIB_L        = 25;    // rib length (matches slot length in Y direction)
 RIB_GAP      = SLOT_W; // gap between ribs = slot width (ribs sit at slot edges)
+
+// ─── VARIANT LABEL [v3] ────────────────────────────────────────
+LABEL_DEPTH  = 0.6;   // deboss depth for variant number
 
 // ─── SPRING CLEARANCE NOTES ─────────────────────────────────────
 // Return springs: 17mm wide, extend 4mm from interior body wall.
@@ -152,6 +163,13 @@ module restrictor_plate() {
         translate([0, 0, -LIP_H - 0.01])
             linear_extrude(PLATE_T + LIP_H + 0.02)
                 slot_2d(SLOT_W, SLOT_L);
+
+        // ── VARIANT NUMBER [v3] ──
+        // Debossed in top-right corner of plate, away from slot and ribs
+        translate([PLATE_EXT/2 - 5, PLATE_EXT/2 - 5, PLATE_T - LABEL_DEPTH])
+            linear_extrude(LABEL_DEPTH + 0.01)
+                text(str(VARIANT), size=4, halign="center",
+                     valign="center", font="Liberation Sans:style=Bold");
 
         // ── SCREW HOLES ──
         for (pos = screw_positions) {

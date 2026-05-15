@@ -1,7 +1,7 @@
-// CV Axle Controller — Enclosure v2 (Two-Piece Shell)
-// Optimized for Bambu Lab A1, 0.4mm nozzle, PLA
+// CV Axle Controller — Enclosure v3
+// Optimized for Bambu Lab A1, 0.4mm nozzle, PETG/PACF
 // All dimensions in mm. Source: docs/enclosure-component-spec.md
-// Revision notes: enclosure/REVISION_V2.md
+// Revision notes: enclosure/REVISION_V3.md
 //
 // Design: Top shell = main body (tall). Bottom shell = shallow tray.
 // Step (rabbet) joint for shell mating. 8x M3 screws for clamping.
@@ -9,12 +9,11 @@
 // Usage:
 //   - Render top shell:       set PART = "top"
 //   - Render bottom shell:    set PART = "bottom"
-//   - Render recal plate:     set PART = "recal_plate"
 //   - Preview assembled:      set PART = "assembly"
 //   - Export STL:             set PART to desired part, then F6 → Export
 
 // ─── PART SELECTOR ───────────────────────────────────────────────
-PART = "assembly"; // "top", "bottom", or "assembly"
+PART = "assembly"; // "top", "bottom", "assembly"
 
 // ─── PRINT TUNING (Bambu Lab A1, 0.4mm nozzle) ──────────────────
 NOZZLE       = 0.4;
@@ -98,21 +97,22 @@ RECAL_D      = 2;     // pinhole diameter
 RECAL_X_OFF  = 40;    // mm right of center (viewed from back)
 RECAL_Y      = 22;    // mm from bottom of enclosure (Z=0)
 RECAL_RECESS_D = 8;   // target ring outer diameter [v2: new]
-RECAL_RECESS_DEPTH = 1.5; // target ring depth [v2: new]
+RECAL_RECESS_DEPTH = 2.0; // target ring depth [v3: was 1.5, deeper for crisp print]
 
-// ─── RECAL BUTTON MOUNT [v3: internal tactile switch bracket] ────
-// Standard 6x6mm tactile switch (common on Xbox controller boards).
-// Mounts on back wall interior, actuator faces wall aligned with pinhole.
-// Retention plate screws onto posts, sandwiching the button.
-RECAL_BTN_W      = 6;     // button body width
-RECAL_BTN_H      = 6;     // button body height
+// ─── RECAL BUTTON MOUNT [v3: snap-in cradle] ────────────────────
+// Standard 6x6mm tactile switch, 3mm body depth, 4mm actuator, 2mm extension.
+// Snap-in cradle on back wall interior: pocket seats button body flush,
+// flexible tabs (top/bottom) lock behind body, open sides for prong clearance.
+// Actuator faces wall, aligns with pinhole. Force from pinhole jab is self-seating.
+RECAL_BTN_W      = 6;     // button body width (X)
+RECAL_BTN_H      = 6;     // button body height (Z)
 RECAL_BTN_TOL    = 0.3;   // pocket tolerance per side
-RECAL_BTN_DEPTH  = 3.5;   // button body depth (tune to your switch)
-RECAL_POST_SPREAD = 14;   // vertical spacing between mount posts (center-to-center)
-RECAL_POST_OD    = 5;     // mount post outer diameter
-RECAL_POST_ID    = 1.8;   // M2 tap hole for retention plate screws
-RECAL_POST_LEN   = RECAL_BTN_DEPTH + 2; // post length = button depth + plate thickness
-RECAL_PLATE_T    = 2;     // retention plate thickness
+RECAL_BTN_DEPTH  = 3;     // button body depth (measured)
+RECAL_BTN_ACT_D  = 4;     // actuator diameter
+RECAL_BTN_ACT_EXT = 2;    // actuator extension beyond body
+RECAL_CRADLE_DEPTH = 4;   // pocket depth (body flush + actuator clearance)
+RECAL_SNAP_T     = 1.2;   // snap tab thickness
+RECAL_SNAP_LIP   = 0.8;   // snap tab lip overhang (locks behind button body)
 
 // ─── SEALED ENCLOSURE ────────────────────────────────────────────
 // No ventilation — heat generation <1W, dust protection for cement facility.
@@ -140,8 +140,8 @@ FOOT_DEPTH   = 0.8;   // recess depth in bottom shell
 FOOT_INSET   = 12;    // from corner
 
 // ─── BRANDING ────────────────────────────────────────────────────
-BRAND_DEPTH  = 0.6;   // engraving depth
-LABEL_DEPTH  = 0.6;   // label deboss depth
+BRAND_DEPTH  = 1.0;   // engraving depth [v3: was 0.6, deeper for cleaner print]
+LABEL_DEPTH  = 1.0;   // label deboss depth [v3: was 0.6, deeper for cleaner print]
 
 // ─── TOP EDGE FILLET ─────────────────────────────────────────────
 FILLET_R     = 1.5;   // radius of top edge fillet
@@ -210,10 +210,10 @@ lock_label_y = status_y + LED_RGB_D/2 + 4;  // ~19
 // "FINE" between blue LEDs at their Y position
 fine_label_y = fine_y;
 
-// FINE dash dimensions
-fine_dash_w = 1;       // dash width (Y dimension in deboss)
-fine_dash_len = 8;     // dash length extending toward each LED
-fine_dash_depth = 0.6;
+// FINE pointer triangles [v3: replaced dashes with directional pointers]
+fine_tri_base = 3;     // triangle base height (near text side)
+fine_tri_len  = 5;     // triangle length toward LED
+fine_tri_depth = 1.0;  // deboss depth (matches LABEL_DEPTH)
 
 // ─── Back panel label positions [v2] ─────────────────────────────
 // DIVIDIA TECHNOLOGIES centered vertically on back panel
@@ -244,7 +244,7 @@ module fillet_top_box(w, d, h, corner_r, fillet_r) {
         minkowski() {
             linear_extrude(0.01)
                 rounded_rect(w - 2*fillet_r, d - 2*fillet_r, max(1, corner_r - fillet_r));
-            sphere(r=fillet_r, $fn=24);
+            sphere(r=fillet_r, $fn=64);  // [v3: was 24, higher res eliminates junction ridge]
         }
 }
 
@@ -254,6 +254,14 @@ module fillet_top_box(w, d, h, corner_r, fillet_r) {
 module top_shell() {
     top_z = BOT_WALL_H - STEP_H;  // bottom of top shell outer walls
     top_inner_z = BOT_WALL_H;     // bottom of top shell inner step (extends lower)
+
+    // Recal cradle dimensions (shared between union and difference)
+    recal_wall_y = ENC_D/2 - WALL;
+    cradle_w = RECAL_BTN_W + 2*RECAL_BTN_TOL;
+    cradle_h = RECAL_BTN_H + 2*RECAL_BTN_TOL;
+    cradle_d = RECAL_CRADLE_DEPTH;
+    cradle_outer_w = cradle_w + 2*RECAL_SNAP_T;
+    cradle_outer_h = cradle_h + 2*RECAL_SNAP_T;
 
     difference() {
         union() {
@@ -319,29 +327,16 @@ module top_shell() {
                     cube([3, ENC_D/2 + (toggle_y - 12) - WALL, rib_h]);
             }
 
-            // ── RECAL BUTTON MOUNT [v3] ──
-            // Two screw posts on back wall interior, flanking the pinhole.
-            // Posts extend inward (-Y) from wall. Button sits between posts,
-            // retention plate screws on to sandwich it.
-            recal_wall_y = ENC_D/2 - WALL;  // interior surface of back wall
-            for (dz = [-RECAL_POST_SPREAD/2, RECAL_POST_SPREAD/2]) {
-                translate([RECAL_X_OFF, recal_wall_y, RECAL_Y + dz])
-                    rotate([90, 0, 0])
-                        difference() {
-                            cylinder(d=RECAL_POST_OD, h=RECAL_POST_LEN, $fn=20);
-                            translate([0, 0, -0.01])
-                                cylinder(d=RECAL_POST_ID, h=RECAL_POST_LEN + 0.02, $fn=16);
-                        }
-            }
-            // Button pocket: shallow rectangular cradle on wall interior
-            // Centers the button body over the pinhole
-            pocket_w = RECAL_BTN_W + 2*RECAL_BTN_TOL;
-            pocket_h = RECAL_BTN_H + 2*RECAL_BTN_TOL;
-            pocket_d = 1;  // 1mm shelf depth for button alignment
-            translate([RECAL_X_OFF - pocket_w/2,
-                       recal_wall_y - pocket_d,
-                       RECAL_Y - pocket_h/2])
-                cube([pocket_w, pocket_d + 0.01, pocket_h]);
+            // ── RECAL BUTTON MOUNT [v3: snap-in cradle] ──
+            // Pocket on back wall interior seats button body flush against wall.
+            // Snap tabs (top/bottom) flex outward during insertion, lock behind body.
+            // Open left/right sides for prong clearance and wiring access.
+            // Actuator pokes through wall into pinhole channel.
+            // Cradle body: solid block on wall, pocket subtracted in difference()
+            translate([RECAL_X_OFF - cradle_outer_w/2,
+                       recal_wall_y - cradle_d,
+                       RECAL_Y - cradle_outer_h/2])
+                cube([cradle_outer_w, cradle_d + 0.01, cradle_outer_h]);
         }
 
         // ── CUTOUTS IN TOP PANEL ──
@@ -406,17 +401,30 @@ module top_shell() {
                 text("FINE", size=4, halign="center",
                      valign="center", font="Liberation Sans:style=Bold");
 
-        // FINE connecting dashes — horizontal lines from text toward each LED [v2: new]
-        // Left dash: from FINE text leftward toward fine1_x LED
-        translate([fine1_x + LED_FINE_D/2 + 1, fine_label_y - fine_dash_w/2,
-                   ENC_H - fine_dash_depth])
-            cube([abs(fine1_x + LED_FINE_D/2 + 1) - 12, fine_dash_w,
-                  fine_dash_depth + 0.01]);
-        // Right dash: from FINE text rightward toward fine2_x LED
-        translate([12, fine_label_y - fine_dash_w/2,
-                   ENC_H - fine_dash_depth])
-            cube([fine2_x - LED_FINE_D/2 - 1 - 12, fine_dash_w,
-                  fine_dash_depth + 0.01]);
+        // FINE pointer triangles — point from text toward each LED [v3: replaced dashes]
+        // Left triangle: ▶ pointing toward left LED
+        // Center the triangle in the gap between text edge and LED edge
+        fine_text_half_w = 9;  // approximate half-width of "FINE" at size 4
+        fine_left_gap_center = (fine1_x + LED_FINE_D/2 + (-fine_text_half_w)) / 2;
+        fine_right_gap_center = (fine2_x - LED_FINE_D/2 + fine_text_half_w) / 2;
+
+        // Left pointer (◀ toward left LED at negative X)
+        translate([fine_left_gap_center, fine_label_y, ENC_H - fine_tri_depth])
+            linear_extrude(fine_tri_depth + 0.01)
+                polygon([
+                    [-fine_tri_len/2, 0],                 // tip (toward LED, -X)
+                    [ fine_tri_len/2,  fine_tri_base/2],  // base top
+                    [ fine_tri_len/2, -fine_tri_base/2]   // base bottom
+                ]);
+
+        // Right pointer (▶ toward right LED at positive X)
+        translate([fine_right_gap_center, fine_label_y, ENC_H - fine_tri_depth])
+            linear_extrude(fine_tri_depth + 0.01)
+                polygon([
+                    [ fine_tri_len/2, 0],                 // tip (toward LED, +X)
+                    [-fine_tri_len/2,  fine_tri_base/2],  // base top
+                    [-fine_tri_len/2, -fine_tri_base/2]   // base bottom
+                ]);
 
         // ── CUTOUTS IN BACK WALL ──
 
@@ -430,14 +438,43 @@ module top_shell() {
                    USBC_Y - USBC_RECESS_H/2])
             cube([USBC_RECESS_W, USBC_RECESS_D + 0.01, USBC_RECESS_H]);
 
+        // ── RECAL CRADLE POCKET CUTOUTS [v3] ──
+        // Strategy: cut the main pocket for button body, but leave snap lips
+        // at top and bottom by cutting in two zones (center + relief slots).
+        //
+        // Center pocket: full button cavity, slightly shorter in Z than cradle
+        // so the top/bottom snap_t material remains as tabs.
+        translate([RECAL_X_OFF - cradle_w/2,
+                   recal_wall_y - cradle_d - 0.01,
+                   RECAL_Y - cradle_h/2])
+            cube([cradle_w, cradle_d + 0.02, cradle_h]);
+
+        // Relief slots behind snap tabs: allow tabs to flex outward.
+        // Cut through the tab material except the lip at the pocket face.
+        // Top relief: behind the top snap tab
+        translate([RECAL_X_OFF - cradle_w/2,
+                   recal_wall_y - cradle_d - 0.01,
+                   RECAL_Y + cradle_h/2])
+            cube([cradle_w, cradle_d - RECAL_SNAP_LIP, RECAL_SNAP_T + 0.01]);
+        // Bottom relief: behind the bottom snap tab
+        translate([RECAL_X_OFF - cradle_w/2,
+                   recal_wall_y - cradle_d - 0.01,
+                   RECAL_Y - cradle_h/2 - RECAL_SNAP_T])
+            cube([cradle_w, cradle_d - RECAL_SNAP_LIP, RECAL_SNAP_T + 0.01]);
+
         // Recal — recessed target ring on outside of back panel [v2: new]
         translate([RECAL_X_OFF, ENC_D/2 + 0.01, RECAL_Y])
             rotate([90, 0, 0])
                 cylinder(d=RECAL_RECESS_D, h=RECAL_RECESS_DEPTH + 0.01, $fn=32);
-        // Recal pinhole through wall + button pocket [v3: extended 1mm for pocket]
-        translate([RECAL_X_OFF, ENC_D/2 - WALL - 1 - 0.01, RECAL_Y])
+        // Recal pinhole: 2mm through full wall (paperclip access from exterior)
+        translate([RECAL_X_OFF, ENC_D/2 - WALL - 0.01, RECAL_Y])
             rotate([-90, 0, 0])
-                cylinder(d=RECAL_D, h=WALL + 1 + 0.02, $fn=16);
+                cylinder(d=RECAL_D, h=WALL + 0.02, $fn=16);
+        // Actuator bore: wider channel from interior wall face into pocket
+        // Lets the 4mm actuator + 2mm extension pass through without binding
+        translate([RECAL_X_OFF, recal_wall_y - RECAL_BTN_ACT_EXT - 0.01, RECAL_Y])
+            rotate([-90, 0, 0])
+                cylinder(d=RECAL_BTN_ACT_D + TOL, h=RECAL_BTN_ACT_EXT + 0.02, $fn=16);
 
         // ── BACK PANEL LABELS (debossed from outside surface) ──
         // Back panel faces +Y. Text extruded in -Y direction (into wall).
@@ -450,7 +487,7 @@ module top_shell() {
                     mirror([1, 0, 0])
                         text("DIVIDIA", size=7, halign="center",
                              valign="center", font="Liberation Sans:style=Bold",
-                             spacing=1.3);
+                             spacing=1.4);  // [v3: was 1.3, wider to balance TECHNOLOGIES width]
 
         // "TECHNOLOGIES" below DIVIDIA [v2: new]
         translate([0, ENC_D/2 + 0.01, tech_z])
@@ -527,10 +564,10 @@ module bottom_shell() {
                     }
             }
 
-            // Screw bosses — all 8 positions [v2: was 4 corners + 4 pillars]
+            // Screw bosses — all 8 positions [v3: subtract STEP_H for shell overlap]
             for (pos = screw_positions) {
                 translate([pos[0], pos[1], BOT_T])
-                    cylinder(d=BOSS_OD, h=BOT_WALL_H - BOT_T, $fn=24);
+                    cylinder(d=BOSS_OD, h=BOT_WALL_H - BOT_T - STEP_H, $fn=24);
             }
         }
 
@@ -609,48 +646,11 @@ module bottom_shell() {
                     text("www.dividia.net", size=2.8, halign="center",
                          valign="center", font="Liberation Sans");
 
-        // S/N sticker recess — shallow rectangular pocket [v2: new]
-        // 25x10mm, centered below S/N text line, 0.3mm deep for flush sticker
-        translate([-12.5, -28, -0.01])
-            cube([25, 10, 0.3 + 0.01]);
+        // [v3: removed S/N sticker recess — caused slicer artifacts at 0.3mm depth]
     }
 }
 
-// ─── RECAL BUTTON RETENTION PLATE [v3] ──────────────────────────
-// Small plate that screws onto the mount posts, holding the tactile
-// switch against the back wall. Print separately.
-module recal_retention_plate() {
-    plate_w = RECAL_POST_OD + 4;  // width: post OD + margin
-    plate_h = RECAL_POST_SPREAD + RECAL_POST_OD + 2;  // spans both posts + margin
-    plate_d = RECAL_PLATE_T;
-
-    // Button pocket dimensions (with tolerance)
-    btn_w = RECAL_BTN_W + 2*RECAL_BTN_TOL;
-    btn_h = RECAL_BTN_H + 2*RECAL_BTN_TOL;
-    prong_h = RECAL_BTN_DEPTH + 1;  // prongs extend past button depth
-    prong_t = 1.2;  // prong wall thickness
-
-    union() {
-        difference() {
-            // Plate body
-            translate([-plate_w/2, -plate_h/2, 0])
-                cube([plate_w, plate_h, plate_d]);
-
-            // Screw holes (M2 clearance)
-            for (dy = [-RECAL_POST_SPREAD/2, RECAL_POST_SPREAD/2]) {
-                translate([0, dy, -0.01])
-                    cylinder(d=2.2, h=plate_d + 0.02, $fn=16);
-            }
-        }
-
-        // Retaining prongs — wrap around button on left and right sides
-        // (posts are above/below, prongs are left/right)
-        for (dx = [-(btn_w/2 + prong_t), btn_w/2]) {
-            translate([dx, -btn_h/2, plate_d - 0.01])
-                cube([prong_t, btn_h, prong_h + 0.01]);
-        }
-    }
-}
+// [v3: removed recal_retention_plate — replaced by snap-in cradle on wall]
 
 // ─── ASSEMBLY / PART SELECTION ───────────────────────────────────
 
@@ -663,10 +663,6 @@ if (PART == "top") {
 else if (PART == "bottom") {
     // Print as-is (bottom surface on bed)
     bottom_shell();
-}
-else if (PART == "recal_plate") {
-    // Print flat on bed
-    recal_retention_plate();
 }
 else if (PART == "assembly") {
     // Preview: both halves in assembled position
@@ -686,11 +682,12 @@ else if (PART == "assembly") {
                 BOT_T + STANDOFF_H])
         cube([PERF_W, PERF_D, 2]);
 
-    // Ghost recal button + retention plate
+    // Ghost recal button (6x6x3mm body in snap cradle)
     recal_wall_y = ENC_D/2 - WALL;
-    %translate([RECAL_X_OFF, recal_wall_y - RECAL_POST_LEN, RECAL_Y])
-        rotate([90, 0, 0])
-            recal_retention_plate();
+    %translate([RECAL_X_OFF - RECAL_BTN_W/2,
+                recal_wall_y - RECAL_BTN_DEPTH,
+                RECAL_Y - RECAL_BTN_H/2])
+        cube([RECAL_BTN_W, RECAL_BTN_DEPTH, RECAL_BTN_H]);
 }
 
 // ─── RENDER SETTINGS ─────────────────────────────────────────────

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Wago Wiring Plan</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#1a1a2e;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;padding:20px}
+  h1{text-align:center;font-size:22px;font-weight:300;letter-spacing:2px;color:#fff;margin-bottom:4px}
+  .sub{text-align:center;font-size:12px;color:#888;margin-bottom:20px}
+  .wrap{background:#0d1117;border:1px solid #2a3a5c;border-radius:12px;padding:20px;overflow-x:auto;margin:0 auto}
+  canvas{display:block;margin:0 auto;cursor:crosshair}
+  .info{background:#16213e;border:1px solid #2a3a5c;border-radius:8px;padding:10px 16px;
+        margin:12px auto;max-width:960px;min-height:36px;font-size:14px;text-align:center}
+  .filters{display:flex;gap:4px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+  .fb{padding:5px 14px;background:#16213e;border:2px solid #2a3a5c;color:#666;
+      border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s}
+  .fb:hover{border-color:#556;color:#aaa}
+  .fb.on{border-color:var(--c,#7ec8e3);color:var(--c,#7ec8e3);background:rgba(255,255,255,.04)}
+
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1400px;margin:16px auto 0}
+  @media(max-width:900px){.g2{grid-template-columns:1fr}}
+  .card{background:#16213e;border:1px solid #2a3a5c;border-radius:10px;padding:14px}
+  .card h3{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7ec8e3;margin-bottom:10px}
+  table.t{width:100%;border-collapse:collapse;font-size:12px}
+  table.t th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7ec8e3;
+             text-align:left;padding:4px 6px;border-bottom:1px solid #2a3a5c}
+  table.t td{padding:4px 6px;border-bottom:1px solid rgba(42,58,92,.25)}
+  table.t tr:hover{background:rgba(126,200,227,.04)}
+  .d{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:3px}
+  .sec{background:#16213e;border:1px solid #2a3a5c;border-radius:10px;padding:16px;
+       margin:16px auto 0;max-width:1400px}
+  .sec h2{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#7ec8e3;margin-bottom:8px}
+  .sec p,.sec li{font-size:12px;line-height:1.7;color:#bbb}
+  .sec ul{padding-left:18px;margin:6px 0}
+  .note{background:rgba(255,215,0,.08);border-left:3px solid #ffd700;padding:6px 12px;margin:8px 0;font-size:12px;color:#ddd}
+</style>
+</head>
+<body>
+
+<h1>CV Axle Controller — Wago Wiring Plan</h1>
+<p class="sub">Pro Micro socketed on perfboard &nbsp;·&nbsp; Pin wires soldered from underside &nbsp;·&nbsp; All connections via Wago 221 connectors</p>
+
+<div class="filters" id="FB"></div>
+<div class="wrap"><canvas id="C"></canvas></div>
+<div class="info" id="I">Hover over any element for details</div>
+
+<div class="g2">
+  <div class="card">
+    <h3>Shopping List — Wago 221 Connectors</h3>
+    <table class="t">
+      <thead><tr><th>Type</th><th>Qty</th><th>Used For</th></tr></thead>
+      <tbody>
+        <tr><td><strong>221-415</strong> (5-port)</td><td>2</td><td>GND bus A + B</td></tr>
+        <tr><td><strong>221-413</strong> (3-port)</td><td>1</td><td>VCC bus</td></tr>
+        <tr><td><strong>221-412</strong> (2-port)</td><td>12</td><td>Signal connections</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:#666">
+      Total: 15 Wagos &nbsp;·&nbsp; Also need: 2× 220Ω resistors with short wire tails soldered on
+    </div>
+  </div>
+  <div class="card">
+    <h3>All Connections</h3>
+    <table class="t" id="CT">
+      <thead><tr><th>Wago</th><th>Port 1 (from Pro Micro)</th><th>Port 2 (from component)</th><th>Signal</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>Build Steps</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <h3 style="font-size:11px;color:#7ec8e3;margin-bottom:6px">1. Pro Micro Prep</h3>
+      <ul>
+        <li>Solder 2× 12-pin female headers to perfboard at correct spacing</li>
+        <li>Flip board — solder a 4-5 inch wire to the underside of each USED pin</li>
+        <li>Used pins: D2, D3, D4, D5, D6, D7, D8, D9, A0, A2, VCC, GND (12 wires)</li>
+        <li>Strip ~8mm at free end of each wire for Wago insertion</li>
+        <li>Label each wire with its pin name (tape flag or heat-shrink)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:11px;color:#7ec8e3;margin-bottom:6px">2. Resistor Prep</h3>
+      <ul>
+        <li>Solder a short wire (~3 inches) to each lead of both 220Ω resistors</li>
+        <li>Heat-shrink the solder joints</li>
+        <li>Label: R1-in, R1-out, R2-in, R2-out</li>
+        <li>R1 is for Fine LED 1 (D6), R2 is for Fine LED 2 (D7)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:11px;color:#7ec8e3;margin-bottom:6px">3. Wago Assembly</h3>
+      <ul>
+        <li>Start with GND bus — connect GND-A and GND-B with a bridge wire</li>
+        <li>Add VCC bus (3-port — Pro Micro VCC + J1 VCC + J2 VCC)</li>
+        <li>Connect signal Wagos one at a time, testing each with a multimeter</li>
+        <li>Resistor Wagos: D6 → R1-in Wago, R1-out → FL1+ Wago</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:11px;color:#7ec8e3;margin-bottom:6px">4. Testing Order</h3>
+      <ul>
+        <li>Plug in Pro Micro via USB — verify 5V on VCC bus</li>
+        <li>Connect J1 only — test coarse movement</li>
+        <li>Add J1 button — test fine toggle</li>
+        <li>Repeat for J2</li>
+        <li>Add LEDs one at a time</li>
+        <li>Add lock toggle + recal last</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// LAYOUT DATA
+// ═══════════════════════════════════════════════════════════
+const CL={
+  j1:'#ff9800',j2:'#ce93d8',f1:'#42a5f5',f2:'#26c6da',
+  rg:'#ef5350',lk:'#fdd835',rc:'#a1887f',gn:'#66bb6a',
+  vc:'#ef5350',rs:'#8bc34a',sk:'#4a9eff',usb:'#4a9eff',
+  bg:'#0d1117',card:'#16213e',brd:'#2a3a5c'
+};
+
+// Wago definitions
+// type: 2/3/5 (port count), wires: array of {label, pin, color, from, group}
+const WAGOS=[
+  {id:'GND-A', type:5, label:'GND Bus A', color:CL.gn, group:'gnd', x:320, y:340,
+   wires:[
+     {label:'Pro Micro GND',from:'pm',pin:'GND',color:CL.gn},
+     {label:'J1 pot+btn GND',from:'j1',pin:'GND',color:'#333'},
+     {label:'J2 pot+btn GND',from:'j2',pin:'GND',color:'#333'},
+     {label:'Fine LED 1 (−)',from:'fl1',pin:'GND',color:'#333'},
+     {label:'→ Bridge to GND-B',from:'bridge',pin:'GND',color:CL.gn},
+   ]},
+  {id:'GND-B', type:5, label:'GND Bus B', color:CL.gn, group:'gnd', x:540, y:340,
+   wires:[
+     {label:'← Bridge from GND-A',from:'bridge',pin:'GND',color:CL.gn},
+     {label:'Fine LED 2 (−)',from:'fl2',pin:'GND',color:'#333'},
+     {label:'RGB cathode',from:'rgb',pin:'GND',color:'#333'},
+     {label:'Lock toggle GND',from:'lock',pin:'GND',color:'#333'},
+     {label:'Recal GND',from:'recal',pin:'GND',color:'#333'},
+   ]},
+  {id:'VCC', type:3, label:'VCC Bus', color:CL.vc, group:'vcc', x:160, y:340,
+   wires:[
+     {label:'Pro Micro VCC',from:'pm',pin:'VCC',color:CL.vc},
+     {label:'J1 pot VCC',from:'j1',pin:'VCC',color:CL.vc},
+     {label:'J2 pot VCC',from:'j2',pin:'VCC',color:CL.vc},
+   ]},
+  {id:'J1-SIG', type:2, label:'J1 Wiper', color:CL.j1, group:'j1', x:80, y:160,
+   wires:[
+     {label:'Pro Micro A0',from:'pm',pin:'A0',color:CL.j1},
+     {label:'J1 pot center pin',from:'j1',pin:'A0',color:CL.j1},
+   ]},
+  {id:'J1-BTN', type:2, label:'J1 Button', color:CL.j1, group:'j1', x:80, y:210,
+   wires:[
+     {label:'Pro Micro D2',from:'pm',pin:'D2',color:CL.j1},
+     {label:'J1 button signal',from:'j1',pin:'D2',color:CL.j1},
+   ]},
+  {id:'J2-SIG', type:2, label:'J2 Wiper', color:CL.j2, group:'j2', x:740, y:160,
+   wires:[
+     {label:'Pro Micro A2',from:'pm',pin:'A2',color:CL.j2},
+     {label:'J2 pot center pin',from:'j2',pin:'A2',color:CL.j2},
+   ]},
+  {id:'J2-BTN', type:2, label:'J2 Button', color:CL.j2, group:'j2', x:740, y:210,
+   wires:[
+     {label:'Pro Micro D3',from:'pm',pin:'D3',color:CL.j2},
+     {label:'J2 button signal',from:'j2',pin:'D3',color:CL.j2},
+   ]},
+  {id:'D6-R1', type:2, label:'D6 → R1 in', color:CL.f1, group:'fl1', x:170, y:160,
+   wires:[
+     {label:'Pro Micro D6',from:'pm',pin:'D6',color:CL.f1},
+     {label:'R1 220Ω lead A',from:'res',pin:'D6',color:CL.rs},
+   ]},
+  {id:'R1-FL1', type:2, label:'R1 out → FL1', color:CL.f1, group:'fl1', x:170, y:210,
+   wires:[
+     {label:'R1 220Ω lead B',from:'res',pin:'D6',color:CL.rs},
+     {label:'Fine LED 1 anode (+)',from:'fl1',pin:'D6',color:CL.f1},
+   ]},
+  {id:'D7-R2', type:2, label:'D7 → R2 in', color:CL.f2, group:'fl2', x:650, y:160,
+   wires:[
+     {label:'Pro Micro D7',from:'pm',pin:'D7',color:CL.f2},
+     {label:'R2 220Ω lead A',from:'res',pin:'D7',color:CL.rs},
+   ]},
+  {id:'R2-FL2', type:2, label:'R2 out → FL2', color:CL.f2, group:'fl2', x:650, y:210,
+   wires:[
+     {label:'R2 220Ω lead B',from:'res',pin:'D7',color:CL.rs},
+     {label:'Fine LED 2 anode (+)',from:'fl2',pin:'D7',color:CL.f2},
+   ]},
+  {id:'RGB-R', type:2, label:'RGB Red', color:CL.rg, group:'rgb', x:340, y:160,
+   wires:[
+     {label:'Pro Micro D5',from:'pm',pin:'D5',color:CL.rg},
+     {label:'RGB LED red leg',from:'rgb',pin:'D5',color:CL.rg},
+   ]},
+  {id:'RGB-G', type:2, label:'RGB Green', color:CL.rg, group:'rgb', x:340, y:210,
+   wires:[
+     {label:'Pro Micro D9',from:'pm',pin:'D9',color:CL.rg},
+     {label:'RGB LED green leg',from:'rgb',pin:'D9',color:CL.rg},
+   ]},
+  {id:'LOCK', type:2, label:'Lock Toggle', color:CL.lk, group:'lock', x:480, y:160,
+   wires:[
+     {label:'Pro Micro D4',from:'pm',pin:'D4',color:CL.lk},
+     {label:'Toggle terminal 1',from:'lock',pin:'D4',color:CL.lk},
+   ]},
+  {id:'RECAL', type:2, label:'Recal Button', color:CL.rc, group:'recal', x:480, y:210,
+   wires:[
+     {label:'Pro Micro D8',from:'pm',pin:'D8',color:CL.rc},
+     {label:'Tact switch signal',from:'recal',pin:'D8',color:CL.rc},
+   ]},
+];
+
+// Filter groups
+const FILT={
+  j1:  {lb:'Joystick 1',cl:CL.j1, ids:['J1-SIG','J1-BTN','VCC','GND-A']},
+  j2:  {lb:'Joystick 2',cl:CL.j2, ids:['J2-SIG','J2-BTN','VCC','GND-A']},
+  fl1: {lb:'Fine LED 1',cl:CL.f1, ids:['D6-R1','R1-FL1','GND-A']},
+  fl2: {lb:'Fine LED 2',cl:CL.f2, ids:['D7-R2','R2-FL2','GND-B']},
+  rgb: {lb:'RGB LED',   cl:CL.rg, ids:['RGB-R','RGB-G','GND-B']},
+  lock:{lb:'Lock Toggle',cl:CL.lk,ids:['LOCK','GND-B']},
+  recal:{lb:'Recal',    cl:CL.rc, ids:['RECAL','GND-B']},
+  gnd: {lb:'GND Bus',   cl:CL.gn, ids:['GND-A','GND-B']},
+  vcc: {lb:'VCC Bus',   cl:CL.vc, ids:['VCC']},
+};
+
+let filt=null;
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════════════════════════
+const W=840, H=420;
+const cv=document.getElementById('C');
+const cx=cv.getContext('2d');
+const dp=window.devicePixelRatio||1;
+cv.width=W*dp;cv.height=H*dp;
+cv.style.width=W+'px';cv.style.height=H+'px';
+cx.scale(dp,dp);
+
+// Pro Micro position (center top)
+const PM={x:W/2,y:56,w:160,h:44};
+
+function draw(){
+  cx.clearRect(0,0,W,H);
+
+  // Background
+  cx.fillStyle=CL.bg;
+  cx.fillRect(0,0,W,H);
+
+  // ── Pro Micro board
+  cx.fillStyle='#1b3a1b'; cx.strokeStyle=CL.sk; cx.lineWidth=2;
+  rr(PM.x-PM.w/2, PM.y-PM.h/2, PM.w, PM.h, 6, 1, 1);
+  cx.font='bold 11px system-ui'; cx.fillStyle=CL.sk; cx.textAlign='center';
+  cx.globalAlpha=0.7;
+  cx.fillText('PRO MICRO (socketed on perfboard)',PM.x,PM.y-4);
+  cx.font='9px system-ui';
+  cx.fillText('Wires soldered to underside of socket pins',PM.x,PM.y+10);
+  cx.globalAlpha=1;
+
+  // USB-C port
+  cx.fillStyle='#2a3a5c'; cx.strokeStyle='#556'; cx.lineWidth=1;
+  rr(PM.x-12,PM.y-PM.h/2-6,24,8,2,1,1);
+  cx.font='6px system-ui';cx.fillStyle='#888';cx.fillText('USB-C',PM.x,PM.y-PM.h/2-1);
+
+  // USB cable to breakout
+  const bbx=PM.x+120,bby=PM.y-PM.h/2-30;
+  const usbDim=filt&&filt!=='usb';
+  cx.globalAlpha=usbDim?0.1:0.8;
+  cx.fillStyle='#1a2a4a';cx.strokeStyle='#4a7aaa';cx.lineWidth=1.5;
+  rr(bbx-28,bby-10,56,20,4,1,1);
+  cx.font='bold 7px system-ui';cx.fillStyle='#4a7aaa';cx.textAlign='center';
+  cx.fillText('USB-C BREAKOUT',bbx,bby-1);
+  cx.font='6px system-ui';cx.fillText('(panel-mount)',bbx,bby+7);
+  cx.setLineDash([4,3]);cx.strokeStyle=CL.usb;cx.lineWidth=1.5;
+  cx.beginPath();cx.moveTo(PM.x+12,PM.y-PM.h/2-2);
+  cx.quadraticCurveTo(PM.x+60,PM.y-PM.h/2-25,bbx-28,bby);
+  cx.stroke();cx.setLineDash([]);
+  cx.globalAlpha=1;
+
+  // ── Pin labels along Pro Micro sides
+  const leftPins=['TXO','RXI','GND✕','GND✕','D2','D3','D4','D5','D6','D7','D8','D9'];
+  const rightPins=['RAW','GND★','RST','VCC','A3✦','A2','A1✦','A0','15','14','16','10'];
+  const usedLeft=[false,false,false,false,true,true,true,true,true,true,true,true];
+  const usedRight=[false,true,false,true,false,true,false,true,false,false,false,false];
+  const pinStartX=PM.x-PM.w/2+8;
+  const pinSpacing=12.5;
+
+  cx.font='bold 6px monospace';cx.textAlign='center';
+  for(let i=0;i<12;i++){
+    const px2=pinStartX+i*pinSpacing;
+    // Left row (top)
+    cx.fillStyle=leftPins[i].includes('✕')?CL.rg:(usedLeft[i]?'#aaa':'#444');
+    cx.fillText(leftPins[i],px2,PM.y-PM.h/2-2);
+    // Right row (bottom)
+    cx.fillStyle=rightPins[i].includes('✦')?'#ffd700':rightPins[i].includes('★')?CL.gn:(usedRight[i]?'#aaa':'#444');
+    cx.fillText(rightPins[i],px2,PM.y+PM.h/2+8);
+  }
+
+  // ── Draw wires from PM to Wagos, then draw Wagos
+  for(const w of WAGOS){
+    const inFilt=!filt||FILT[filt]?.ids.includes(w.id);
+    drawWago(w,inFilt);
+  }
+
+  // ── Bridge wire between GND-A and GND-B
+  const ga=WAGOS[0], gb=WAGOS[1];
+  const bridgeDim=filt&&filt!=='gnd'&&!FILT[filt]?.ids.includes('GND-A')&&!FILT[filt]?.ids.includes('GND-B');
+  cx.strokeStyle=CL.gn;cx.lineWidth=bridgeDim?1:2.5;cx.globalAlpha=bridgeDim?0.08:0.6;
+  cx.setLineDash([4,3]);
+  cx.beginPath();cx.moveTo(ga.x+wagoW(ga)/2,ga.y);cx.lineTo(gb.x-wagoW(gb)/2,gb.y);
+  cx.stroke();cx.setLineDash([]);
+  cx.globalAlpha=1;
+  // Bridge label
+  if(!bridgeDim){
+    cx.font='7px system-ui';cx.fillStyle=CL.gn;cx.textAlign='center';cx.globalAlpha=0.6;
+    cx.fillText('bridge wire',(ga.x+wagoW(ga)/2+gb.x-wagoW(gb)/2)/2,ga.y-8);
+    cx.globalAlpha=1;
+  }
+
+  // Title labels for zones
+  cx.font='bold 9px system-ui';cx.globalAlpha=0.25;cx.textAlign='center';
+  cx.fillStyle=CL.j1; cx.fillText('J1 ZONE',80,140);
+  cx.fillStyle=CL.j2; cx.fillText('J2 ZONE',740,140);
+  cx.fillStyle='#888'; cx.fillText('CENTER',410,140);
+  cx.fillStyle=CL.gn; cx.fillText('POWER BUS',350,310);
+  cx.globalAlpha=1;
+}
+
+function wagoW(w){return 10+w.type*14}
+function wagoH(){return 28}
+
+function drawWago(w,active){
+  const ww=wagoW(w), wh=wagoH();
+  const x=w.x-ww/2, y=w.y-wh/2;
+  const a=active?1:0.1;
+
+  // Wire from PM to Wago (for wires from PM)
+  for(const wire of w.wires){
+    if(wire.from==='pm'){
+      cx.strokeStyle=w.color;cx.lineWidth=active?2:0.5;cx.globalAlpha=active?0.4:0.05;
+      cx.beginPath();cx.moveTo(PM.x,PM.y+PM.h/2+10);
+      cx.quadraticCurveTo(PM.x,w.y-wh,w.x,w.y-wh/2);
+      cx.stroke();cx.globalAlpha=1;
+      break;
+    }
+  }
+
+  // Wago body
+  cx.globalAlpha=a;
+  cx.fillStyle='#ddd';cx.strokeStyle=w.color;cx.lineWidth=2;
+  rr(x,y,ww,wh,4,1,1);
+
+  // Lever tabs
+  for(let p=0;p<w.type;p++){
+    const lx=x+8+p*14, ly=y+2;
+    cx.fillStyle=w.color;
+    rr(lx,ly,10,6,1.5,1,0);
+  }
+
+  // Label
+  cx.font='bold 7px system-ui';cx.fillStyle='#111';cx.textAlign='center';
+  cx.fillText(w.id,w.x,w.y+3);
+  cx.font='6px system-ui';cx.fillStyle=w.color;
+  cx.fillText(w.label,w.x,w.y+wh/2+10);
+  // Port count
+  cx.fillStyle='#666';
+  cx.fillText(w.type+'-port',w.x,w.y+wh/2+18);
+
+  cx.globalAlpha=1;
+}
+
+function rr(x,y,w,h,r,f,s){
+  cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.arcTo(x+w,y,x+w,y+r,r);
+  cx.lineTo(x+w,y+h-r);cx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  cx.lineTo(x+r,y+h);cx.arcTo(x,y+h,x,y+h-r,r);
+  cx.lineTo(x,y+r);cx.arcTo(x,y,x+r,y,r);cx.closePath();
+  if(f)cx.fill();if(s)cx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOVER
+// ═══════════════════════════════════════════════════════════
+cv.addEventListener('mousemove',e=>{
+  const rc=cv.getBoundingClientRect();
+  const mx=e.clientX-rc.left,my=e.clientY-rc.top;
+  for(const w of WAGOS){
+    const ww=wagoW(w),wh=wagoH();
+    if(mx>=w.x-ww/2-4&&mx<=w.x+ww/2+4&&my>=w.y-wh/2-4&&my<=w.y+wh/2+4){
+      const ports=w.wires.map(p=>`<span style="color:${w.color}">${p.label}</span>`).join(' · ');
+      document.getElementById('I').innerHTML=
+        `<strong>${w.id}</strong> (${w.type}-port) — ${ports}`;
+      return;
+    }
+  }
+  if(mx>=PM.x-PM.w/2&&mx<=PM.x+PM.w/2&&my>=PM.y-PM.h/2&&my<=PM.y+PM.h/2){
+    document.getElementById('I').innerHTML='<strong>Pro Micro</strong> — Socketed in female headers on perfboard. 12 wires soldered from underside to Wagos.';
+    return;
+  }
+  document.getElementById('I').innerHTML='Hover over a Wago or the Pro Micro for details';
+});
+
+// ═══════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════
+function setFilt(k){
+  filt=filt===k?null:k;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f===filt));
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function init(){
+  // Filter buttons
+  const fb=document.getElementById('FB');
+  const ab=document.createElement('button');ab.className='fb';ab.textContent='Show All';
+  ab.onclick=()=>{filt=null;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));draw()};
+  fb.appendChild(ab);
+  for(const[k,f] of Object.entries(FILT)){
+    const b=document.createElement('button');b.className='fb';b.dataset.f=k;
+    b.textContent=f.lb;b.style.setProperty('--c',f.cl);b.onclick=()=>setFilt(k);
+    fb.appendChild(b);
+  }
+
+  // Connection table
+  const tb=document.querySelector('#CT tbody');
+  for(const w of WAGOS){
+    for(let i=0;i<w.wires.length;i++){
+      const wi=w.wires[i];
+      const tr=document.createElement('tr');
+      const wagoCell=i===0?`<td rowspan="${w.wires.length}"><span class="d" style="background:${w.color}"></span><strong>${w.id}</strong><br><span style="color:#666;font-size:10px">${w.type}-port</span></td>`:'';
+      tr.innerHTML=`${wagoCell}
+        <td>${wi.from==='pm'?'<strong style="color:'+CL.sk+'">'+wi.pin+'</strong>':''}</td>
+        <td>${wi.from!=='pm'&&wi.from!=='bridge'?wi.label:wi.from==='bridge'?'<em style="color:#666">'+wi.label+'</em>':''}</td>
+        <td>${wi.label}</td>`;
+      tb.appendChild(tr);
+    }
+  }
+
+  draw();
+}
+init();
+</script>
+</body>
+</html>

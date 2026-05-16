@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — Perfboard Layout</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#1a1a2e; color:#e0e0e0; font-family:'Segoe UI',system-ui,sans-serif; padding:16px; }
+  h1 { text-align:center; font-size:22px; font-weight:300; letter-spacing:2px; color:#fff; margin-bottom:4px; }
+  .sub { text-align:center; font-size:12px; color:#888; margin-bottom:16px; }
+  .tabs { display:flex; justify-content:center; gap:4px; margin-bottom:12px; }
+  .tab { padding:8px 24px; background:#16213e; border:2px solid #2a3a5c; color:#888;
+         border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; font-weight:600; letter-spacing:1px; }
+  .tab.active { background:#0d1117; border-color:#7ec8e3; color:#7ec8e3; border-bottom-color:#0d1117; }
+  .tab:hover { color:#bbb; border-color:#446; }
+  .filters { display:flex; gap:4px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .fbtn { padding:4px 12px; background:#16213e; border:2px solid #2a3a5c; color:#666;
+          border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s; }
+  .fbtn:hover { border-color:#556; color:#aaa; }
+  .fbtn.active { border-color:var(--fc,#7ec8e3); color:var(--fc,#7ec8e3); background:rgba(255,255,255,0.04); }
+  .board-wrap { background:#0d1117; border:2px solid #2a3a5c; border-radius:0 0 12px 12px;
+                padding:20px; overflow-x:auto; margin:0 auto; }
+  canvas { display:block; margin:0 auto; cursor:crosshair; }
+  .info { background:#16213e; border:1px solid #2a3a5c; border-radius:8px; padding:10px 16px;
+          margin:12px auto; max-width:960px; min-height:36px; font-size:14px; text-align:center; }
+  .info .p { color:#ffd700; font-weight:700; } .info .f { color:#7ec8e3; } .info .g { color:#888; }
+
+  .grid2 { display:grid; grid-template-columns:320px 1fr; gap:16px; max-width:1400px; margin:16px auto 0; }
+  @media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+  .card { background:#16213e; border:1px solid #2a3a5c; border-radius:10px; padding:14px; }
+  .card h3 { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#7ec8e3; margin-bottom:10px; }
+  .leg { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:3px; }
+  .sw { width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(255,255,255,0.1); }
+
+  table.t { width:100%; border-collapse:collapse; font-size:12px; }
+  table.t th { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#7ec8e3;
+               text-align:left; padding:4px 6px; border-bottom:1px solid #2a3a5c; }
+  table.t td { padding:4px 6px; border-bottom:1px solid rgba(42,58,92,0.25); }
+  table.t tr:hover { background:rgba(126,200,227,0.04); }
+  .d { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:3px; }
+
+  .sec { background:#16213e; border:1px solid #2a3a5c; border-radius:10px; padding:16px;
+         margin:16px auto 0; max-width:1400px; }
+  .sec h2 { font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#7ec8e3; margin-bottom:8px; }
+  .sec p,.sec li { font-size:12px; line-height:1.7; color:#bbb; }
+  .sec ul { padding-left:18px; margin:6px 0; }
+  .note { background:rgba(255,215,0,0.08); border-left:3px solid #ffd700; padding:6px 12px; margin:8px 0; font-size:12px; color:#ddd; }
+  .c2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:700px){.c2{grid-template-columns:1fr;}}
+  .c2 h4 { font-size:11px; color:#7ec8e3; margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px; }
+</style>
+</head>
+<body>
+
+<h1>CV Axle Controller — Perfboard Assembly</h1>
+<p class="sub">50 × 70 mm &nbsp;·&nbsp; 18 × 24 grid + 16 bus pads/side &nbsp;·&nbsp; Two views: what goes on top, what gets wired on bottom</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="setView('comp')">Component Side (Top)</div>
+  <div class="tab" onclick="setView('solder')">Solder Side (Bottom)</div>
+</div>
+<div class="filters" id="FB"></div>
+<div class="board-wrap"><canvas id="C"></canvas></div>
+<div class="info" id="I">Hover over any hole</div>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Legend</h3>
+    <div id="L"></div>
+    <div style="margin-top:10px;font-size:11px;color:#555;line-height:1.6;">
+      ● Large filled = occupied pad (solder here)<br>
+      ○ Small open = empty hole (available)<br>
+      Solder side: thick green = GND frame, red = VCC, colored = signal wires
+    </div>
+  </div>
+  <div class="card">
+    <h3>Solder-Side Connections — Every Wire on the Bottom</h3>
+    <table class="t" id="CT"><thead><tr>
+      <th>#</th><th>From</th><th>To</th><th>What</th><th>Type</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>External Wires — Components to Perfboard (Top Side)</h2>
+  <p style="margin-bottom:8px;">Wires from joysticks, LEDs, toggle, recal land on terminal pads on the component (top) side. Lengths include 75 mm service loop.</p>
+  <table class="t" id="ET"><thead><tr>
+    <th>Wire</th><th>From Component</th><th>To Pad</th><th>Pin</th><th>Len</th><th>Color</th>
+  </tr></thead><tbody></tbody></table>
+</div>
+
+<div class="sec">
+  <h2>How to Build This</h2>
+  <div class="c2">
+    <div>
+      <h4>Step 1 — Bus Rails (solder side)</h4>
+      <ul>
+        <li>Flip board over (solder side up).</li>
+        <li><strong>Right bus strip:</strong> solder a continuous bare wire across all 16 pads. This is your GND rail.</li>
+        <li><strong>Left bus strip:</strong> same thing — continuous bare wire across all 16 pads. Also GND.</li>
+        <li><strong>Front cross:</strong> bare wire along Row 1, from left bus to right bus. Solder at both ends and at C12/R1 (Lock GND tap).</li>
+        <li><strong>Back cross:</strong> bare wire along Row 18, from left bus to right bus. Solder at both ends, at C13/R18 (RGB GND tap), and C18/R18 (Recal GND tap).</li>
+        <li><strong>GND feed:</strong> short wire from C15/R15 (Pro Micro GND pin) to right bus strip.</li>
+        <li>You now have a GND frame around the entire perimeter. Every GND terminal is 1-2 holes from it.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Step 2 — VCC + Signal Wires (solder side)</h4>
+      <ul>
+        <li>Solder the two VCC wires (traces 13-14 in the table). Only J1 and J2 pot VCC need power.</li>
+        <li>Solder signal wires (traces 1-12). Each is a piece of insulated wire from one pad to another.</li>
+        <li>For bends: solder at the turn point, strip insulation only where wire touches the pad.</li>
+        <li>Where two wires cross, one passes over the other's pad — insulation prevents shorts.</li>
+      </ul>
+      <h4>Step 3 — Components (component side)</h4>
+      <ul>
+        <li>Flip board back (component side up).</li>
+        <li>Solder two 12-pin female headers at C9 and C15, rows 5-16.</li>
+        <li>Solder R1 (220Ω) leads into C7/R8 and C5/R8.</li>
+        <li>Solder R2 (220Ω) leads into C19/R7 and C21/R7.</li>
+        <li>Plug Pro Micro into sockets (USB toward back/R16).</li>
+        <li>Solder external wires from joysticks/LEDs/toggle to terminal pads.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>Clamshell Wire Management</h2>
+  <div class="c2">
+    <div>
+      <h4>What's Where</h4>
+      <ul>
+        <li><strong>Top shell:</strong> 2 joysticks, 3 LEDs, toggle switch (wires go down to perfboard)</li>
+        <li><strong>Bottom shell:</strong> Perfboard + Pro Micro, recal button, USB-C breakout</li>
+        <li>~16 wires cross the gap. Leave ~75 mm service loop.</li>
+        <li>USB-C: short cable from panel breakout to Pro Micro's own port.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Bundling</h4>
+      <ul>
+        <li><strong>J1 bundle (4 wires):</strong> drop through left gap between J1 base and center</li>
+        <li><strong>J2 bundle (4 wires):</strong> drop through right gap</li>
+        <li><strong>Center bundle (8 wires):</strong> LEDs + toggle, through center gap</li>
+        <li>Label each bundle with heat-shrink or tape: J1, J2, LED, LOCK</li>
+        <li>Strain relief: hot glue or cable tie at board edge before terminal pads</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// GEOMETRY
+// ═══════════════════════════════════════════════════════════
+const R=18,CO=24,BP=16,S=28,PR=8,DR=3.5,BG=16;
+const ML=52,MT=38,MR=52,MB=28;
+const blx=ML, grx0=ML+S+BG, grxN=grx0+(CO-1)*S, brx=grxN+BG+S;
+const W=brx+MR, HH=MT+(R-1)*S+MB;
+function hx(c){return view==='solder'?grx0+(CO-c)*S:grx0+(c-1)*S}
+function hy(r){return MT+(R-r)*S}// R1=front=bottom, R18=back=top
+function by(i){return MT+(R-(i+1))*S}// bus pad index 1-16
+
+// ═══════════════════════════════════════════════════════════
+// COLORS
+// ═══════════════════════════════════════════════════════════
+const CL={
+  brd:'#1a3a1a',bus:'#143014',emp:'#264026',
+  sk:'#4a9eff',j1:'#ff9800',j2:'#ce93d8',
+  f1:'#42a5f5',f2:'#26c6da',rg:'#ef5350',
+  lk:'#fdd835',rc:'#a1887f',gn:'#66bb6a',
+  vc:'#ef5350',rs:'#8bc34a',fr:'#ffd700',bd:'#ff4444'
+};
+
+// ═══════════════════════════════════════════════════════════
+// HOLE MAP
+// ═══════════════════════════════════════════════════════════
+const HM={};
+function ah(c,r,cl,lb,pn,fn,gr){HM[c+','+r]={cl,lb,pn,fn,gr}}
+
+// Pro Micro left socket C9
+const PL=9,PRI=15;
+ah(PL,16,CL.sk,'TXO','TXO','Serial TX (unused)','pm');
+ah(PL,15,CL.sk,'RXI','RXI','Serial RX (unused)','pm');
+ah(PL,14,CL.bd,'GND!','GND','BAD SOLDER — do NOT use','pm');
+ah(PL,13,CL.bd,'GND!','GND','BAD SOLDER — do NOT use','pm');
+ah(PL,12,CL.j1,'D2','D2','J1 button signal → trace #2','j1');
+ah(PL,11,CL.j2,'D3','D3','J2 button signal → trace #4','j2');
+ah(PL,10,CL.lk,'D4','D4','Lock toggle → trace #11','ct');
+ah(PL,9,CL.rg,'D5','D5','RGB LED red → trace #9','ld');
+ah(PL,8,CL.f1,'D6','D6','Fine LED 1 → R1 → trace #5','ld');
+ah(PL,7,CL.f2,'D7','D7','Fine LED 2 → R2 → trace #7','ld');
+ah(PL,6,CL.rc,'D8','D8','Recal button → trace #12','ct');
+ah(PL,5,CL.rg,'D9','D9','RGB LED green → trace #10','ld');
+
+// Pro Micro right socket C15
+ah(PRI,16,CL.sk,'RAW','RAW','Raw voltage (unused)','pm');
+ah(PRI,15,CL.gn,'GND','GND','MASTER GND ★ only good one → trace #15','pw');
+ah(PRI,14,CL.sk,'RST','RST','Reset (unused)','pm');
+ah(PRI,13,CL.vc,'VCC','VCC','5V power out → traces #13,#14','pw');
+ah(PRI,12,CL.fr,'A3✦','A3','FREED (was J2 Y-twist)','pm');
+ah(PRI,11,CL.j2,'A2','A2','J2 X-pot wiper → trace #3','j2');
+ah(PRI,10,CL.fr,'A1✦','A1','FREED (was J1 Y-twist)','pm');
+ah(PRI,9,CL.j1,'A0','A0','J1 X-pot wiper → trace #1','j1');
+ah(PRI,8,CL.sk,'15','15','Available','pm');
+ah(PRI,7,CL.sk,'14','14','Available','pm');
+ah(PRI,6,CL.sk,'16','16','Available','pm');
+ah(PRI,5,CL.sk,'10','10','Available','pm');
+
+// Terminal pads — J1 (left C3)
+ah(3,9,CL.j1,'J1_SG','A0','J1 pot wiper wire lands here','j1');
+ah(3,10,CL.vc,'J1_VC','VCC','J1 pot VCC wire lands here','pw');
+ah(3,11,CL.gn,'J1_GD','GND','J1 pot+button GND wire (shared)','pw');
+ah(3,12,CL.j1,'J1_BT','D2','J1 button wire lands here','j1');
+
+// Terminal pads — J2 (right C22)
+ah(22,9,CL.j2,'J2_SG','A2','J2 pot wiper wire lands here','j2');
+ah(22,10,CL.vc,'J2_VC','VCC','J2 pot VCC wire lands here','pw');
+ah(22,11,CL.gn,'J2_GD','GND','J2 pot+button GND wire (shared)','pw');
+ah(22,12,CL.j2,'J2_BT','D3','J2 button wire lands here','j2');
+
+// Fine LED terminals
+ah(3,7,CL.f1,'FL1+','D6','Fine LED 1 anode wire lands here','ld');
+ah(3,8,CL.gn,'FL1-','GND','Fine LED 1 cathode → GND rail','pw');
+ah(22,7,CL.f2,'FL2+','D7','Fine LED 2 anode wire lands here','ld');
+ah(22,8,CL.gn,'FL2-','GND','Fine LED 2 cathode → GND rail','pw');
+
+// RGB LED terminals (back center)
+ah(11,17,CL.rg,'RGB_R','D5','RGB red anode wire lands here','ld');
+ah(12,17,CL.rg,'RGB_G','D9','RGB green anode wire lands here','ld');
+ah(13,17,CL.gn,'RGB-','GND','RGB common cathode → GND frame','pw');
+
+// Lock toggle terminals (front center)
+ah(11,2,CL.lk,'LOCK','D4','Lock toggle wire 1 lands here','ct');
+ah(12,2,CL.gn,'LK_G','GND','Lock toggle wire 2 → GND frame','pw');
+
+// Recal terminals (back right)
+ah(17,17,CL.rc,'RCAL','D8','Recal switch wire 1 lands here','ct');
+ah(18,17,CL.gn,'RC_G','GND','Recal switch wire 2 → GND frame','pw');
+
+// Resistor leads
+ah(7,8,CL.rs,'R1▸','D6','R1 220Ω lead A (from D6 via trace #5)','ld');
+ah(5,8,CL.rs,'◂R1','D6','R1 220Ω lead B (to FL1+ via trace #6)','ld');
+ah(19,7,CL.rs,'R2▸','D7','R2 220Ω lead A (from D7 via trace #7)','ld');
+ah(21,7,CL.rs,'◂R2','D7','R2 220Ω lead B (to FL2+ via trace #8)','ld');
+
+// ═══════════════════════════════════════════════════════════
+// SOLDER-SIDE TRACES (wires on bottom)
+// ═══════════════════════════════════════════════════════════
+const TR=[
+  // Signal traces
+  {id:1,  lb:'A0 → J1 wiper',      cl:CL.j1, gr:'j1', path:[[PRI,9],[3,9]]},
+  {id:2,  lb:'D2 → J1 button',     cl:CL.j1, gr:'j1', path:[[PL,12],[3,12]]},
+  {id:3,  lb:'A2 → J2 wiper',      cl:CL.j2, gr:'j2', path:[[PRI,11],[17,11],[17,9],[22,9]]},
+  {id:4,  lb:'D3 → J2 button',     cl:CL.j2, gr:'j2', path:[[PL,11],[8,11],[8,4],[22,4],[22,12]]},
+  {id:5,  lb:'D6 → R1 in',         cl:CL.f1, gr:'ld', path:[[PL,8],[7,8]]},
+  {id:6,  lb:'R1 out → FL1+',      cl:CL.f1, gr:'ld', path:[[5,8],[5,7],[3,7]]},
+  {id:7,  lb:'D7 → R2 in',         cl:CL.f2, gr:'ld', path:[[PL,7],[19,7]]},
+  {id:8,  lb:'R2 out → FL2+',      cl:CL.f2, gr:'ld', path:[[21,7],[22,7]]},
+  {id:9,  lb:'D5 → RGB red',       cl:CL.rg, gr:'ld', path:[[PL,9],[7,9],[7,17],[11,17]]},
+  {id:10, lb:'D9 → RGB green',     cl:CL.rg, gr:'ld', path:[[PL,5],[6,5],[6,17],[12,17]]},
+  {id:11, lb:'D4 → Lock toggle',   cl:CL.lk, gr:'ct', path:[[PL,10],[7,10],[7,2],[11,2]]},
+  {id:12, lb:'D8 → Recal',         cl:CL.rc, gr:'ct', path:[[PL,6],[5,6],[5,17],[17,17]]},
+  // VCC
+  {id:13, lb:'VCC → J1 pot VCC',   cl:CL.vc, gr:'pw', path:[[PRI,13],[14,13],[14,10],[3,10]]},
+  {id:14, lb:'VCC → J2 pot VCC',   cl:CL.vc, gr:'pw', path:[[PRI,13],[18,13],[18,10],[22,10]]},
+  // GND frame
+  {id:15, lb:'GND pin → right bus', cl:CL.gn, gr:'gf', path:[[PRI,15],[25,15]], bus:true},
+  {id:16, lb:'Right bus rail',      cl:CL.gn, gr:'gf', path:[[25,2],[25,17]], bus:true, note:'Continuous bare wire on all 16 pads'},
+  {id:17, lb:'Left bus rail',       cl:CL.gn, gr:'gf', path:[[0,2],[0,17]], bus:true, note:'Continuous bare wire on all 16 pads'},
+  {id:18, lb:'Front GND cross',    cl:CL.gn, gr:'gf', path:[[0,1],[12,1],[24,1],[25,1]], bus:true, note:'Along row 1, left bus to right bus'},
+  {id:19, lb:'Back GND cross',     cl:CL.gn, gr:'gf', path:[[0,18],[13,18],[18,18],[24,18],[25,18]], bus:true, note:'Along row 18'},
+  // GND taps (short jumpers from terminals to nearest GND frame point)
+  {id:20, lb:'J1 GND → left bus',   cl:CL.gn, gr:'gf', path:[[3,11],[0,11]], bus:true},
+  {id:21, lb:'FL1 GND → left bus',  cl:CL.gn, gr:'gf', path:[[3,8],[0,8]], bus:true},
+  {id:22, lb:'J2 GND → right bus',  cl:CL.gn, gr:'gf', path:[[22,11],[25,11]], bus:true},
+  {id:23, lb:'FL2 GND → right bus', cl:CL.gn, gr:'gf', path:[[22,8],[25,8]], bus:true},
+  {id:24, lb:'Lock GND → front',    cl:CL.gn, gr:'gf', path:[[12,2],[12,1]]},
+  {id:25, lb:'RGB GND → back',      cl:CL.gn, gr:'gf', path:[[13,17],[13,18]]},
+  {id:26, lb:'Recal GND → back',    cl:CL.gn, gr:'gf', path:[[18,17],[18,18]]},
+];
+
+// ═══════════════════════════════════════════════════════════
+// EXTERNAL WIRES
+// ═══════════════════════════════════════════════════════════
+const EW=[
+  {w:'J1 Pot Wiper',f:'J1 X-pot center pin',t:'J1_SG (C3/R9)',p:'A0',l:'100mm',c:'#ff9800',n:'Orange'},
+  {w:'J1 Pot VCC',f:'J1 X-pot right outer',t:'J1_VC (C3/R10)',p:'VCC',l:'100mm',c:'#ef5350',n:'Red'},
+  {w:'J1 GND',f:'J1 pot left + btn GND',t:'J1_GD (C3/R11)',p:'GND',l:'100mm',c:'#333',n:'Black'},
+  {w:'J1 Button',f:'J1 button signal leg',t:'J1_BT (C3/R12)',p:'D2',l:'100mm',c:'#ffeb3b',n:'Yellow'},
+  {w:'J2 Pot Wiper',f:'J2 X-pot center pin',t:'J2_SG (C22/R9)',p:'A2',l:'100mm',c:'#ce93d8',n:'Purple'},
+  {w:'J2 Pot VCC',f:'J2 X-pot right outer',t:'J2_VC (C22/R10)',p:'VCC',l:'100mm',c:'#ef5350',n:'Red'},
+  {w:'J2 GND',f:'J2 pot left + btn GND',t:'J2_GD (C22/R11)',p:'GND',l:'100mm',c:'#333',n:'Black'},
+  {w:'J2 Button',f:'J2 button signal leg',t:'J2_BT (C22/R12)',p:'D3',l:'100mm',c:'#ffeb3b',n:'Yellow'},
+  {w:'Fine LED 1 (+)',f:'Blue LED anode (long)',t:'FL1+ (C3/R7)',p:'D6',l:'80mm',c:'#42a5f5',n:'Blue'},
+  {w:'Fine LED 1 (−)',f:'Blue LED cathode',t:'FL1- (C3/R8)',p:'GND',l:'80mm',c:'#333',n:'Black'},
+  {w:'Fine LED 2 (+)',f:'Blue LED anode (long)',t:'FL2+ (C22/R7)',p:'D7',l:'80mm',c:'#26c6da',n:'Cyan'},
+  {w:'Fine LED 2 (−)',f:'Blue LED cathode',t:'FL2- (C22/R8)',p:'GND',l:'80mm',c:'#333',n:'Black'},
+  {w:'RGB Red',f:'RGB red leg',t:'RGB_R (C11/R17)',p:'D5',l:'80mm',c:'#ef5350',n:'Red'},
+  {w:'RGB Green',f:'RGB green leg',t:'RGB_G (C12/R17)',p:'D9',l:'80mm',c:'#66bb6a',n:'Green'},
+  {w:'RGB GND',f:'RGB cathode (longest)',t:'RGB- (C13/R17)',p:'GND',l:'80mm',c:'#333',n:'Black'},
+  {w:'Lock A',f:'Toggle terminal 1',t:'LOCK (C11/R2)',p:'D4',l:'80mm',c:'#fdd835',n:'Yellow'},
+  {w:'Lock B',f:'Toggle terminal 2',t:'LK_G (C12/R2)',p:'GND',l:'80mm',c:'#333',n:'Black'},
+  {w:'Recal Sig',f:'Tact switch leg 1',t:'RCAL (C17/R17)',p:'D8',l:'60mm',c:'#a1887f',n:'Brown'},
+  {w:'Recal GND',f:'Tact switch leg 2',t:'RC_G (C18/R17)',p:'GND',l:'60mm',c:'#333',n:'Black'},
+  {w:'USB-C Cable',f:'Panel breakout board',t:'Pro Micro USB-C port',p:'D+/D−',l:'75mm',c:'#4a9eff',n:'USB-C to USB-C cable'},
+];
+
+// Legend
+const LG=[
+  ['Pro Micro Socket',CL.sk],['Joystick 1',CL.j1],['Joystick 2',CL.j2],
+  ['Fine LED 1',CL.f1],['Fine LED 2',CL.f2],['RGB LED',CL.rg],
+  ['Lock Toggle',CL.lk],['Recal Button',CL.rc],['GND Frame',CL.gn],
+  ['VCC Power',CL.vc],['Resistor 220Ω',CL.rs],['USB-C Cable','#4a9eff'],
+  ['Freed Pin',CL.fr],['Bad Pin',CL.bd],
+];
+
+// ═══════════════════════════════════════════════════════════
+// CIRCUIT FILTERS — isolate one component's full path
+// ═══════════════════════════════════════════════════════════
+const FILT={
+  j1:  {lb:'Joystick 1',  cl:CL.j1, tr:[1,2,13,20]},
+  j2:  {lb:'Joystick 2',  cl:CL.j2, tr:[3,4,14,22]},
+  fl1: {lb:'Fine LED 1',  cl:CL.f1, tr:[5,6,21]},
+  fl2: {lb:'Fine LED 2',  cl:CL.f2, tr:[7,8,23]},
+  rgb: {lb:'RGB LED',     cl:CL.rg, tr:[9,10,25]},
+  lck: {lb:'Lock Toggle', cl:CL.lk, tr:[11,24]},
+  rcl: {lb:'Recal',       cl:CL.rc, tr:[12,26]},
+  gnd: {lb:'GND Frame',   cl:CL.gn, tr:[15,16,17,18,19,20,21,22,23,24,25,26]},
+  vcc: {lb:'VCC Power',   cl:CL.vc, tr:[13,14]},
+  usb: {lb:'USB-C Cable', cl:'#4a9eff', tr:[]},
+};
+let filt=null; // active filter key or null
+
+function filtPads(){
+  // Collect all pad coords touched by the active filter's traces
+  if(!filt) return null;
+  const s=new Set();
+  const ids=FILT[filt].tr;
+  for(const t of TR){
+    if(ids.includes(t.id)){
+      for(const p of t.path){
+        if(p[0]>0&&p[0]<25) s.add(p[0]+','+p[1]);
+      }
+    }
+  }
+  return s;
+}
+
+function setFilt(key){
+  if(filt===key){filt=null;} else {filt=key;}
+  document.querySelectorAll('.fbtn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.fk===filt);
+  });
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATE + CANVAS
+// ═══════════════════════════════════════════════════════════
+let view='comp';
+const cv=document.getElementById('C');
+const cx=cv.getContext('2d');
+const dp=window.devicePixelRatio||1;
+cv.width=W*dp; cv.height=HH*dp;
+cv.style.width=W+'px'; cv.style.height=HH+'px';
+cx.scale(dp,dp);
+
+// Coordinate for bus columns (virtual col 0 = left bus, col 25 = right bus)
+// In solder view, bus strips swap sides (board is flipped)
+function px(c){
+  if(c===0) return view==='solder'?brx:blx;
+  if(c===25) return view==='solder'?blx:brx;
+  return hx(c);
+}
+// Bus position helpers for backgrounds/labels (view-aware)
+function lbp(){return view==='solder'?brx:blx}
+function rbp(){return view==='solder'?blx:brx}
+
+function setView(v){
+  view=v;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',
+    (v==='comp'&&t.textContent.includes('Component'))||(v==='solder'&&t.textContent.includes('Solder'))));
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════════
+function draw(){
+  cx.clearRect(0,0,W,HH);
+
+  // Board fill
+  cx.fillStyle=CL.brd;
+  rr(grx0-14,MT-14,(CO-1)*S+28,(R-1)*S+28,5,1,0);
+  // Bus strips (positions swap in solder view)
+  cx.fillStyle=CL.bus;
+  rr(lbp()-9,MT-14,18,(R-1)*S+28,3,1,0);
+  rr(rbp()-9,MT-14,18,(R-1)*S+28,3,1,0);
+
+  // Orientation — LEFT/RIGHT swap in solder view (board is flipped)
+  const sol=view==='solder';
+  cx.font='bold 10px system-ui'; cx.fillStyle='#3a6a3a'; cx.textAlign='center';
+  cx.fillText('◂ BACK (USB-C / Recal)',grx0+(CO-1)*S/2,MT-22);
+  cx.fillText('FRONT (Operator) ▸',grx0+(CO-1)*S/2,MT+(R-1)*S+20);
+  cx.save(); cx.translate(grx0-34,MT+(R-1)*S/2); cx.rotate(-Math.PI/2);
+  cx.fillText(sol?'RIGHT (J2)':'LEFT (J1)',0,0); cx.restore();
+  cx.save(); cx.translate(grxN+34,MT+(R-1)*S/2); cx.rotate(Math.PI/2);
+  cx.fillText(sol?'LEFT (J1)':'RIGHT (J2)',0,0); cx.restore();
+
+  // Col labels — numbers follow the columns (mirrored in solder view)
+  cx.font='bold 9px monospace'; cx.fillStyle='#3a5a3a'; cx.textAlign='center';
+  for(let c=1;c<=CO;c++) cx.fillText(c,hx(c),MT-4);
+  cx.textAlign='right';
+  for(let r=1;r<=R;r++) cx.fillText(r,grx0-10,hy(r)+3);
+  cx.textAlign='center';
+  cx.fillText('B',lbp(),MT-4); cx.fillText('B',rbp(),MT-4);
+
+  if(view==='solder') drawSolder();
+
+  // Compute active filter pads
+  const fp=filtPads();
+
+  // ALL holes
+  for(let r=1;r<=R;r++){
+    for(let c=1;c<=CO;c++){
+      const x=hx(c),y=hy(r),k=c+','+r,h=HM[k];
+      if(h){
+        // Filled pad — check filter
+        const inFilt=!fp||fp.has(k);
+        const baseA=view==='solder'?0.35:1;
+        cx.globalAlpha=inFilt?baseA:(view==='solder'?0.08:0.12);
+        cx.beginPath(); cx.arc(x,y,PR,0,Math.PI*2);
+        cx.fillStyle=h.cl; cx.fill();
+        cx.strokeStyle='rgba(255,255,255,0.25)'; cx.lineWidth=1; cx.stroke();
+        // Label
+        cx.font='bold 6.5px monospace'; cx.fillStyle='#000'; cx.textAlign='center';
+        const lb=h.lb.length<=5?h.lb:h.lb.substring(0,5);
+        cx.fillText(lb,x,y+2);
+        cx.globalAlpha=1;
+      } else {
+        // Empty dot
+        cx.beginPath(); cx.arc(x,y,DR,0,Math.PI*2);
+        cx.fillStyle=CL.emp; cx.globalAlpha=fp?0.15:1; cx.fill(); cx.globalAlpha=1;
+      }
+    }
+  }
+
+  // Bus pads (positions swap in solder view)
+  for(let i=1;i<=BP;i++){
+    const y=by(i);
+    // Left bus position
+    cx.beginPath(); cx.arc(lbp(),y,DR+0.5,0,Math.PI*2);
+    cx.fillStyle=view==='solder'?CL.gn:CL.emp;
+    cx.globalAlpha=view==='solder'?0.5:0.4; cx.fill(); cx.globalAlpha=1;
+    // Right bus position
+    cx.beginPath(); cx.arc(rbp(),y,DR+0.5,0,Math.PI*2);
+    cx.fillStyle=view==='solder'?CL.gn:CL.emp;
+    cx.globalAlpha=view==='solder'?0.5:0.4; cx.fill(); cx.globalAlpha=1;
+  }
+
+  // Bus rail labels (solder view)
+  if(view==='solder'){
+    cx.font='bold 8px system-ui'; cx.fillStyle=CL.gn; cx.globalAlpha=0.7;
+    cx.save(); cx.translate(lbp()-14,MT+(R-1)*S/2); cx.rotate(-Math.PI/2);
+    cx.textAlign='center'; cx.fillText('GND RAIL',0,0); cx.restore();
+    cx.save(); cx.translate(rbp()+14,MT+(R-1)*S/2); cx.rotate(Math.PI/2);
+    cx.textAlign='center'; cx.fillText('GND RAIL',0,0); cx.restore();
+    cx.globalAlpha=1;
+  }
+
+  // Pro Micro outline
+  const x1=hx(PL)-8,x2=hx(PRI)+8,y1=hy(16)-10,y2=hy(5)+10;
+  cx.strokeStyle=CL.sk; cx.globalAlpha=0.3; cx.lineWidth=1.5;
+  cx.setLineDash([5,3]); rr(x1,y1,x2-x1,y2-y1,4,0,1); cx.setLineDash([]);
+  cx.globalAlpha=1;
+  // USB
+  const uw=22,uh=7;
+  cx.fillStyle='#2a3a5c'; cx.strokeStyle='#556'; cx.lineWidth=1;
+  rr((x1+x2)/2-uw/2,y1-3,uw,uh,2,1,1);
+  cx.font='7px system-ui'; cx.fillStyle='#888'; cx.textAlign='center';
+  cx.fillText('USB-C',(x1+x2)/2,y1+1);
+  // PM label
+  cx.font='10px system-ui'; cx.fillStyle='rgba(74,158,255,0.3)';
+  cx.fillText('PRO MICRO',(x1+x2)/2,(y1+y2)/2-2);
+  cx.font='8px system-ui'; cx.fillText('(socketed)',(x1+x2)/2,(y1+y2)/2+10);
+
+  // Resistor bodies (component side only)
+  if(view==='comp') drawResistors();
+
+  // USB-C breakout board (wall-mounted, above the perfboard back edge)
+  drawUSBBreakout(x1,x2,y1);
+
+  // View label
+  cx.font='bold 14px system-ui';
+  cx.fillStyle=view==='comp'?'rgba(74,158,255,0.25)':'rgba(102,187,106,0.25)';
+  cx.textAlign='right';
+  cx.fillText(view==='comp'?'COMPONENT SIDE (TOP)':'SOLDER SIDE (BOTTOM)',W-20,HH-8);
+  if(view==='solder'){
+    cx.font='9px system-ui'; cx.fillStyle='rgba(255,255,255,0.15)';
+    cx.fillText('Mirrored left↔right — matches what you see when you flip the board over',W-20,HH+2);
+  }
+}
+
+function drawSolder(){
+  const activeIds=filt?FILT[filt].tr:null;
+  const isGndFilt=filt==='gnd';
+
+  for(const t of TR){
+    const pts=t.path;
+    const isBus=!!t.bus;
+    const inFilt=!activeIds||activeIds.includes(t.id);
+    // When filtering a component, show GND frame as faint context
+    const isContext=activeIds&&!inFilt&&isBus&&!isGndFilt;
+
+    cx.strokeStyle=t.cl;
+    if(inFilt){
+      cx.lineWidth=isBus?5:3;
+      cx.globalAlpha=isBus?0.75:0.7;
+    } else if(isContext){
+      cx.lineWidth=2;
+      cx.globalAlpha=0.12;
+    } else {
+      cx.lineWidth=1;
+      cx.globalAlpha=0.05;
+    }
+    cx.lineCap='round'; cx.lineJoin='round';
+    cx.beginPath();
+    cx.moveTo(px(pts[0][0]),hy(pts[0][1]));
+    for(let i=1;i<pts.length;i++) cx.lineTo(px(pts[i][0]),hy(pts[i][1]));
+    cx.stroke();
+    cx.globalAlpha=1;
+
+    // Solder points at bends/endpoints
+    for(const p of pts){
+      if(p[0]===0||p[0]===25) continue;
+      cx.beginPath(); cx.arc(px(p[0]),hy(p[1]),inFilt?4:2,0,Math.PI*2);
+      cx.fillStyle=t.cl; cx.globalAlpha=inFilt?0.7:0.06; cx.fill(); cx.globalAlpha=1;
+    }
+
+    // Trace ID number (only for visible traces)
+    const showNum=inFilt&&(t.id<=14||t.id>=18);
+    if(showNum){
+      const mi=Math.floor(pts.length/2);
+      const mx2=(px(pts[Math.max(0,mi-1)][0])+px(pts[mi][0]))/2;
+      const my2=(hy(pts[Math.max(0,mi-1)][1])+hy(pts[mi][1]))/2;
+      cx.beginPath(); cx.arc(mx2,my2,9,0,Math.PI*2);
+      cx.fillStyle=t.cl; cx.globalAlpha=0.9; cx.fill();
+      cx.globalAlpha=1;
+      cx.font='bold 8px monospace'; cx.fillStyle='#000'; cx.textAlign='center';
+      cx.fillText(t.id,mx2,my2+2.5);
+    }
+  }
+}
+
+function drawResistors(){
+  const res=[
+    {c1:7,r1:8,c2:5,r2:8,lb:'R1 220Ω'},
+    {c1:19,r1:7,c2:21,r2:7,lb:'R2 220Ω'},
+  ];
+  for(const r of res){
+    const x1=hx(r.c1),y1=hy(r.r1),x2=hx(r.c2),y2=hy(r.r2);
+    const cx2=(x1+x2)/2,cy2=(y1+y2)/2;
+    const len=Math.hypot(x2-x1,y2-y1);
+    const a=Math.atan2(y2-y1,x2-x1);
+    cx.save(); cx.translate(cx2,cy2); cx.rotate(a);
+    cx.fillStyle='#5d4e37'; cx.strokeStyle=CL.rs; cx.lineWidth=1;
+    rr(-len/2+5,-6,len-10,12,3,1,1);
+    const bn=['#ef5350','#ef5350','#8d6e63','#ffd700','#795548'];
+    for(let b=0;b<5;b++){cx.fillStyle=bn[b]; cx.globalAlpha=0.75; cx.fillRect(-10+b*5,-5,3,10);}
+    cx.globalAlpha=1;
+    cx.strokeStyle='#999'; cx.lineWidth=1; cx.beginPath();
+    cx.moveTo(-len/2,0); cx.lineTo(-len/2+5,0);
+    cx.moveTo(len/2-5,0); cx.lineTo(len/2,0); cx.stroke();
+    cx.restore();
+    cx.font='8px system-ui'; cx.fillStyle=CL.rs; cx.textAlign='center';
+    cx.fillText(r.lb,cx2,cy2-10);
+  }
+}
+
+function drawUSBBreakout(pmx1,pmx2,pmy1){
+  const usbFilt=filt==='usb';
+  const dimmed=filt&&!usbFilt;
+  const alpha=dimmed?0.1:1;
+
+  // Breakout board rectangle (mounted on back wall, above perfboard)
+  const bw=56, bh=26;
+  const bx=(pmx1+pmx2)/2 - bw/2;
+  const boardBack=hy(R)-14; // top of perfboard background
+  const byy=boardBack-bh-12;
+
+  cx.globalAlpha=alpha;
+  cx.fillStyle='#1a2a4a'; cx.strokeStyle='#4a7aaa'; cx.lineWidth=1.5;
+  rr(bx,byy,bw,bh,4,1,1);
+
+  // USB-C port opening on back wall
+  const pw=18,ph=6;
+  cx.fillStyle='#333'; cx.strokeStyle='#666'; cx.lineWidth=1;
+  rr(bx+bw/2-pw/2,byy-2,pw,ph,2,1,1);
+
+  // Label
+  cx.font='bold 8px system-ui'; cx.fillStyle='#4a7aaa'; cx.textAlign='center';
+  cx.fillText('USB-C BREAKOUT',bx+bw/2,byy+11);
+  cx.font='7px system-ui'; cx.fillStyle='#4a7aaa';
+  cx.fillText('(panel-mount)',bx+bw/2,byy+20);
+
+  // Mounting standoff dots
+  cx.fillStyle='#666';
+  cx.beginPath(); cx.arc(bx+6,byy+bh/2,2.5,0,Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc(bx+bw-6,byy+bh/2,2.5,0,Math.PI*2); cx.fill();
+
+  // Cable from breakout to Pro Micro USB-C port
+  const cableStartX=bx+bw/2, cableStartY=byy+bh;
+  const cableEndX=(pmx1+pmx2)/2, cableEndY=pmy1-3; // PM USB port
+
+  cx.strokeStyle=usbFilt?'#4a9eff':'#4a7aaa';
+  cx.lineWidth=usbFilt?3:2;
+  cx.globalAlpha=dimmed?0.08:(usbFilt?0.9:0.45);
+  cx.setLineDash([6,4]);
+  cx.beginPath();
+  cx.moveTo(cableStartX,cableStartY);
+  // Curved cable path
+  const midY=(cableStartY+cableEndY)/2;
+  cx.bezierCurveTo(cableStartX-20,midY,cableEndX+20,midY,cableEndX,cableEndY);
+  cx.stroke();
+  cx.setLineDash([]);
+
+  // Cable label
+  if(!dimmed){
+    const lx=cableStartX-30, ly=midY;
+    cx.font='bold 7px system-ui'; cx.fillStyle=usbFilt?'#4a9eff':'#4a7aaa';
+    cx.globalAlpha=usbFilt?1:0.6; cx.textAlign='right';
+    cx.fillText('USB-C cable',lx,ly-3);
+    cx.fillText('(~75mm)',lx,ly+6);
+  }
+
+  cx.globalAlpha=1;
+}
+
+function rr(x,y,w,h,r,f,s){
+  cx.beginPath();
+  cx.moveTo(x+r,y); cx.lineTo(x+w-r,y); cx.arcTo(x+w,y,x+w,y+r,r);
+  cx.lineTo(x+w,y+h-r); cx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  cx.lineTo(x+r,y+h); cx.arcTo(x,y+h,x,y+h-r,r);
+  cx.lineTo(x,y+r); cx.arcTo(x,y,x+r,y,r); cx.closePath();
+  if(f)cx.fill(); if(s)cx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOVER
+// ═══════════════════════════════════════════════════════════
+cv.addEventListener('mousemove',e=>{
+  const rc=cv.getBoundingClientRect();
+  const mx=e.clientX-rc.left, my=e.clientY-rc.top;
+  for(let r=1;r<=R;r++){
+    for(let c=1;c<=CO;c++){
+      if(Math.abs(mx-hx(c))<S/2 && Math.abs(my-hy(r))<S/2){
+        const h=HM[c+','+r];
+        const bar=document.getElementById('I');
+        if(h) bar.innerHTML=`<strong>C${c}/R${r}</strong> &nbsp;<span class="p">${h.pn}</span> &nbsp;<span class="f">${h.lb}</span> &nbsp;<span class="g">${h.fn}</span>`;
+        else bar.innerHTML=`<strong>C${c}/R${r}</strong> &nbsp;<span class="g">Empty hole</span>`;
+        return;
+      }
+    }
+  }
+});
+cv.addEventListener('mouseleave',()=>{document.getElementById('I').innerHTML='Hover over any hole';});
+
+// ═══════════════════════════════════════════════════════════
+// BUILD TABLES + LEGEND
+// ═══════════════════════════════════════════════════════════
+function init(){
+  // Filter buttons
+  const fb=document.getElementById('FB');
+  const allBtn=document.createElement('button');
+  allBtn.className='fbtn'; allBtn.textContent='Show All';
+  allBtn.onclick=()=>{filt=null; document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active')); draw();};
+  fb.appendChild(allBtn);
+  for(const[k,f] of Object.entries(FILT)){
+    const b=document.createElement('button');
+    b.className='fbtn'; b.dataset.fk=k; b.textContent=f.lb;
+    b.style.setProperty('--fc',f.cl);
+    b.onclick=()=>setFilt(k);
+    fb.appendChild(b);
+  }
+
+  // Legend
+  const le=document.getElementById('L');
+  for(const[l,c] of LG) le.innerHTML+=`<div class="leg"><span class="sw" style="background:${c}"></span>${l}</div>`;
+
+  // Connection table
+  const tb=document.querySelector('#CT tbody');
+  for(const t of TR){
+    const p=t.path, f=p[0], to=p[p.length-1];
+    const fk=f[0]+','+f[1], tk=to[0]+','+to[1];
+    const fh=HM[fk], th=HM[tk];
+    const fl=f[0]===0?'Left bus':f[0]===25?'Right bus':(fh?fh.lb:'C'+f[0]+'/R'+f[1]);
+    const tl=to[0]===0?'Left bus':to[0]===25?'Right bus':(th?th.lb:'C'+to[0]+'/R'+to[1]);
+    const fc=f[0]>0&&f[0]<25?'C'+f[0]+'/R'+f[1]:'bus';
+    const tc=to[0]>0&&to[0]<25?'C'+to[0]+'/R'+to[1]:'bus';
+    const tp=t.bus?'GND frame':p.length<=2?'Straight wire':'Wire + bends';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="d" style="background:${t.cl}"></span><strong>${t.id}</strong></td>
+      <td>${fl} <span style="color:#555">(${fc})</span></td>
+      <td>${tl} <span style="color:#555">(${tc})</span></td>
+      <td>${t.lb}</td><td style="color:#666">${tp}</td>`;
+    tb.appendChild(tr);
+  }
+
+  // External wire table
+  const tb2=document.querySelector('#ET tbody');
+  for(const w of EW){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>${w.w}</strong></td><td>${w.f}</td>
+      <td style="font-family:monospace;font-size:11px">${w.t}</td>
+      <td style="color:#ffd700">${w.p}</td><td>${w.l}</td>
+      <td><span class="d" style="background:${w.c};${w.c==='#333'?'border:1px solid #666':''}"></span>${w.n}</td>`;
+    tb2.appendChild(tr);
+  }
+
+  draw();
+}
+init();
+</script>
+</body>
+</html>

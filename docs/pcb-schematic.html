@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Axle Controller — PCB Schematic</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#fafafa;color:#222;font-family:'Segoe UI',system-ui,sans-serif;padding:20px}
+  h1{text-align:center;font-size:22px;font-weight:400;margin-bottom:4px}
+  .sub{text-align:center;font-size:12px;color:#888;margin-bottom:16px}
+  .wrap{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;overflow-x:auto;margin:0 auto}
+  canvas{display:block;margin:0 auto}
+  .info{background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:8px 16px;
+        margin:12px auto;max-width:1060px;font-size:13px;text-align:center;color:#666}
+  .note{background:#fff8e1;border-left:3px solid #ffc107;padding:8px 12px;margin:12px auto;
+        max-width:1060px;font-size:12px;color:#555}
+</style>
+</head>
+<body>
+
+<h1>CV Axle Controller — Circuit Schematic</h1>
+<p class="sub">Reference for PCB design &nbsp;·&nbsp; Use in EasyEDA or KiCad &nbsp;·&nbsp; All connections shown</p>
+
+<div class="wrap"><canvas id="C"></canvas></div>
+<div class="info" id="I">Complete circuit — Pro Micro + 7 connectors + 2 resistors. Print this page for reference.</div>
+<div class="note"><strong>Key:</strong> Thick lines = power (VCC red, GND green). Thin colored lines = signals.
+Dashed green lines = GND via ground plane (no trace needed, just via to bottom layer).
+Dashed blue = USB cable (not on PCB). JST-XH connectors shown as boxes with pin dots.</div>
+
+<script>
+const W=1040, H=740;
+const cv=document.getElementById('C');
+const ctx=cv.getContext('2d');
+const dp=window.devicePixelRatio||1;
+cv.width=W*dp;cv.height=H*dp;
+cv.style.width=W+'px';cv.style.height=H+'px';
+ctx.scale(dp,dp);
+
+// Colors
+const GND='#4caf50', VCC='#e53935', BLU='#2196f3', PUR='#9c27b0';
+const ORG='#ff9800', RED='#e53935', YEL='#f9a825', BRN='#795548', CYN='#00acc1';
+const PM_BG='#e3f2fd', PM_STROKE='#1565c0';
+
+// ═══════════════════════════════════════════════════════════
+// LAYOUT POSITIONS
+// ═══════════════════════════════════════════════════════════
+// Pro Micro — center of diagram
+const PM = {x:370, y:200, w:280, h:290};
+const pmCX = PM.x + PM.w/2;
+
+// Left pin y-positions (relative to PM.y)
+const LPY = [70,88,106,124, 142,160,178,196,214,232,250,268];
+// Right pin y-positions (same spacing)
+const RPY = [70,88,106,124, 142,160,178,196,214,232,250,268];
+
+// Connectors
+const J1  = {x:40,  y:360, side:'L'};  // Joystick 1 — left
+const J2  = {x:890, y:360, side:'R'};  // Joystick 2 — right
+const J3  = {x:40,  y:540, side:'L'};  // Fine LED 1 — left
+const J4  = {x:890, y:540, side:'L'};  // Fine LED 2 — right
+const J5  = {x:40,  y:140, side:'L'};  // RGB LED — upper left
+const J6  = {x:440, y:600, side:'L'};  // Lock toggle — bottom center
+const J7  = {x:700, y:140, side:'L'};  // Recal — upper right
+
+// ═══════════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════════
+function draw(){
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  // ── Title block
+  ctx.strokeStyle='#ddd';ctx.lineWidth=1;
+  ctx.strokeRect(W-210,H-55,200,48);
+  ctx.font='bold 11px system-ui';ctx.fillStyle='#333';ctx.textAlign='left';
+  ctx.fillText('CV AXLE CONTROLLER v1.0',W-200,H-36);
+  ctx.font='9px system-ui';ctx.fillStyle='#888';
+  ctx.fillText('PCB Schematic',W-200,H-24);
+  ctx.fillText('DIVIDIA TECHNOLOGIES',W-200,H-12);
+
+  // ══════════════════════════════════════════
+  // POWER BUSES — draw first so signals go on top
+  // ══════════════════════════════════════════
+
+  // GND bus bar at bottom
+  ctx.strokeStyle=GND;ctx.lineWidth=4;ctx.globalAlpha=0.7;
+  ctx.beginPath();ctx.moveTo(30,680);ctx.lineTo(W-30,680);ctx.stroke();
+  ctx.globalAlpha=1;
+  ctx.font='bold 10px system-ui';ctx.fillStyle=GND;ctx.textAlign='center';
+  ctx.fillText('GND BUS — ground plane on PCB bottom layer (all GND pins via-stitched)',W/2,700);
+
+  // VCC bus line
+  ctx.strokeStyle=VCC;ctx.lineWidth=2.5;ctx.globalAlpha=0.5;
+  // Horizontal from VCC pin, branching left and right
+  const vccY = PM.y + RPY[3]; // VCC pin row
+  ctx.beginPath();ctx.moveTo(PM.x+PM.w+4, vccY);ctx.lineTo(PM.x+PM.w+50, vccY);ctx.stroke();
+  // Right branch down to J2
+  ctx.beginPath();ctx.moveTo(PM.x+PM.w+50, vccY);ctx.lineTo(PM.x+PM.w+50, 280);
+  ctx.lineTo(890, 280);ctx.lineTo(890, J2.y+8+13);ctx.stroke();
+  // Left branch down to J1
+  ctx.beginPath();ctx.moveTo(PM.x+PM.w+50, vccY);ctx.lineTo(PM.x+PM.w+50, 270);
+  ctx.lineTo(160, 270);ctx.lineTo(160, J1.y+8+13);ctx.lineTo(40, J1.y+8+13);ctx.stroke();
+  ctx.globalAlpha=1;
+  // VCC label
+  ctx.font='bold 9px system-ui';ctx.fillStyle=VCC;ctx.textAlign='left';
+  ctx.fillText('VCC (5V)',PM.x+PM.w+55, vccY+4);
+
+  // GND drops from each connector + PM
+  const gndDrops = [
+    {x:40,  y:J1.y+8+26},  // J1 pin 3
+    {x:890, y:J2.y+8+26},  // J2 pin 3
+    {x:40,  y:J3.y+8+13},  // J3 pin 2
+    {x:890, y:J4.y+8+13},  // J4 pin 2
+    {x:40,  y:J5.y+8+26},  // J5 pin 3
+    {x:440, y:J6.y+8+13},  // J6 pin 2
+    {x:700, y:J7.y+8+13},  // J7 pin 2
+    {x:PM.x+PM.w+20, y:PM.y+RPY[1]}, // PM GND pin
+  ];
+  for(const d of gndDrops){
+    ctx.strokeStyle=GND;ctx.lineWidth=1.5;ctx.globalAlpha=0.4;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x,680);ctx.stroke();
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+    gndSym(d.x,674);
+  }
+  // GND label on PM
+  ctx.font='bold 9px system-ui';ctx.fillStyle=GND;ctx.textAlign='left';
+  ctx.fillText('GND ★ master',PM.x+PM.w+10, PM.y+RPY[1]+4);
+
+  // ══════════════════════════════════════════
+  // PRO MICRO
+  // ══════════════════════════════════════════
+  ctx.fillStyle=PM_BG;ctx.strokeStyle=PM_STROKE;ctx.lineWidth=2;
+  rr(PM.x,PM.y,PM.w,PM.h,8,1,1);
+
+  // USB port
+  ctx.fillStyle='#e0e0e0';ctx.strokeStyle='#999';ctx.lineWidth=1;
+  rr(pmCX-20,PM.y-8,40,12,3,1,1);
+  ctx.font='8px system-ui';ctx.fillStyle='#999';ctx.textAlign='center';
+  ctx.fillText('USB-C',pmCX,PM.y-1);
+
+  // PM title
+  ctx.font='bold 14px system-ui';ctx.fillStyle=PM_STROKE;ctx.textAlign='center';
+  ctx.fillText('ARDUINO PRO MICRO',pmCX,PM.y+22);
+  ctx.font='10px system-ui';ctx.fillStyle='#64b5f6';
+  ctx.fillText('ATmega32U4 — USB HID Keyboard',pmCX,PM.y+36);
+  ctx.font='9px system-ui';
+  ctx.fillText('(socketed in 2×12 female headers)',pmCX,PM.y+48);
+
+  // Left pins
+  const leftPins = [
+    {n:'TXO', used:false},
+    {n:'RXI', used:false},
+    {n:'GND', used:false, bad:true},
+    {n:'GND', used:false, bad:true},
+    {n:'D2',  used:true, sig:'J1 BTN',    clr:ORG},
+    {n:'D3',  used:true, sig:'J2 BTN',    clr:PUR},
+    {n:'D4',  used:true, sig:'LOCK',      clr:YEL},
+    {n:'D5',  used:true, sig:'RGB RED',   clr:RED},
+    {n:'D6',  used:true, sig:'→ R1 → FL1',clr:BLU},
+    {n:'D7',  used:true, sig:'→ R2 → FL2',clr:CYN},
+    {n:'D8',  used:true, sig:'RECAL',     clr:BRN},
+    {n:'D9',  used:true, sig:'RGB GRN',   clr:'#4caf50'},
+  ];
+  const rightPins = [
+    {n:'RAW', used:false},
+    {n:'GND', used:true, sig:'MASTER GND', clr:GND},
+    {n:'RST', used:false},
+    {n:'VCC', used:true, sig:'5V OUT',     clr:VCC},
+    {n:'A3',  used:false, freed:true},
+    {n:'A2',  used:true,  sig:'J2 POT',   clr:PUR},
+    {n:'A1',  used:false, freed:true},
+    {n:'A0',  used:true,  sig:'J1 POT',   clr:ORG},
+    {n:'15',  used:false},
+    {n:'14',  used:false},
+    {n:'16',  used:false},
+    {n:'10',  used:false},
+  ];
+
+  ctx.font='bold 9px monospace';
+  for(let i=0;i<12;i++){
+    const lp=leftPins[i], rp=rightPins[i];
+    const ly=PM.y+LPY[i], ry=PM.y+RPY[i];
+
+    // Left pin dot
+    ctx.beginPath();ctx.arc(PM.x,ly,4,0,Math.PI*2);
+    ctx.fillStyle=lp.bad?'#f44336':(lp.used?lp.clr:'#ccc');ctx.fill();
+    // Left pin name (inside box)
+    ctx.textAlign='left';ctx.fillStyle=lp.bad?'#f44336':(lp.used?'#333':'#bbb');
+    ctx.font='bold 9px monospace';ctx.fillText(lp.n,PM.x+10,ly+3);
+    // Left signal label (outside box)
+    if(lp.used){
+      ctx.textAlign='right';ctx.font='8px system-ui';ctx.fillStyle=lp.clr;
+      ctx.fillText(lp.sig,PM.x-12,ly+3);
+    }
+    if(lp.bad){
+      ctx.textAlign='right';ctx.font='8px system-ui';ctx.fillStyle='#f44336';
+      ctx.fillText('✕ BAD — NC',PM.x-12,ly+3);
+    }
+
+    // Right pin dot
+    ctx.beginPath();ctx.arc(PM.x+PM.w,ry,4,0,Math.PI*2);
+    ctx.fillStyle=rp.freed?'#ffc107':(rp.used?rp.clr:'#ccc');ctx.fill();
+    // Right pin name (inside box)
+    ctx.textAlign='right';ctx.fillStyle=rp.freed?'#ffc107':(rp.used?'#333':'#bbb');
+    ctx.font='bold 9px monospace';ctx.fillText(rp.n,PM.x+PM.w-10,ry+3);
+    // Right signal label (outside box)
+    if(rp.used && rp.sig!=='MASTER GND' && rp.sig!=='5V OUT'){
+      ctx.textAlign='left';ctx.font='8px system-ui';ctx.fillStyle=rp.clr;
+      ctx.fillText(rp.sig,PM.x+PM.w+12,ry+3);
+    }
+    if(rp.freed){
+      ctx.textAlign='left';ctx.font='8px system-ui';ctx.fillStyle='#ffc107';
+      ctx.fillText('FREED',PM.x+PM.w+12,ry+3);
+    }
+  }
+
+  // ══════════════════════════════════════════
+  // CONNECTORS
+  // ══════════════════════════════════════════
+
+  // J1 — Joystick 1 (left)
+  drawConn(J1.x,J1.y,'J1','JOYSTICK 1','4-pin JST-XH',[
+    {n:'SIG', clr:ORG},{n:'VCC', clr:VCC},{n:'GND', clr:GND},{n:'BTN', clr:ORG}
+  ]);
+  // J2 — Joystick 2 (right)
+  drawConn(J2.x,J2.y,'J2','JOYSTICK 2','4-pin JST-XH',[
+    {n:'SIG', clr:PUR},{n:'VCC', clr:VCC},{n:'GND', clr:GND},{n:'BTN', clr:PUR}
+  ]);
+  // J3 — Fine LED 1 (left)
+  drawConn(J3.x,J3.y,'J3','FINE LED 1','2-pin JST-XH',[
+    {n:'LED+', clr:BLU},{n:'LED−', clr:GND}
+  ]);
+  // J4 — Fine LED 2 (right)
+  drawConn(J4.x,J4.y,'J4','FINE LED 2','2-pin JST-XH',[
+    {n:'LED+', clr:CYN},{n:'LED−', clr:GND}
+  ]);
+  // J5 — RGB LED (upper left)
+  drawConn(J5.x,J5.y,'J5','RGB LED','3-pin JST-XH',[
+    {n:'RED', clr:RED},{n:'GRN', clr:'#4caf50'},{n:'GND', clr:GND}
+  ]);
+  // J6 — Lock Toggle (bottom center)
+  drawConn(J6.x,J6.y,'J6','LOCK TOGGLE','2-pin JST-XH',[
+    {n:'SIG', clr:YEL},{n:'GND', clr:GND}
+  ]);
+  // J7 — Recal Button (upper right)
+  drawConn(J7.x,J7.y,'J7','RECAL BUTTON','2-pin JST-XH',[
+    {n:'SIG', clr:BRN},{n:'GND', clr:GND}
+  ]);
+
+  // ══════════════════════════════════════════
+  // RESISTORS
+  // ══════════════════════════════════════════
+  const r1x=200, r1y=PM.y+LPY[8]; // D6 row
+  const r2x=770, r2y=PM.y+LPY[9]; // D7 row
+  drawResistor(r1x,r1y,'R1','220Ω',BLU);
+  drawResistor(r2x,r2y,'R2','220Ω',CYN);
+
+  // ══════════════════════════════════════════
+  // SIGNAL WIRES
+  // ══════════════════════════════════════════
+
+  // A0 → J1 SIG: right side pin, go right then down-left to J1
+  sigWire(PM.x+PM.w, PM.y+RPY[7], [
+    PM.x+PM.w+40, PM.y+RPY[7],
+    PM.x+PM.w+40, 300,
+    160, 300,
+    160, J1.y+8,
+    J1.x+90, J1.y+8
+  ], ORG);
+
+  // D2 → J1 BTN: left side pin, go left then down to J1
+  sigWire(PM.x, PM.y+LPY[4], [
+    240, PM.y+LPY[4],
+    240, J1.y+8+39,
+    J1.x+90, J1.y+8+39
+  ], ORG);
+
+  // A2 → J2 SIG: right side pin, go right then down to J2
+  sigWire(PM.x+PM.w, PM.y+RPY[5], [
+    PM.x+PM.w+30, PM.y+RPY[5],
+    PM.x+PM.w+30, 290,
+    920, 290,
+    920, J2.y+8,
+    J2.x+90, J2.y+8
+  ], PUR);
+
+  // D3 → J2 BTN: left side pin, go left then right-around to J2
+  sigWire(PM.x, PM.y+LPY[5], [
+    230, PM.y+LPY[5],
+    230, 490,
+    930, 490,
+    930, J2.y+8+39,
+    J2.x+90, J2.y+8+39
+  ], PUR);
+
+  // D6 → R1: left side pin to R1 input
+  sigWire(PM.x, PM.y+LPY[8], [r1x-5, r1y], BLU);
+  // R1 output → J3 LED+
+  sigWire(r1x+40, r1y, [
+    r1x+50, r1y,
+    r1x+50, J3.y+8,
+    J3.x+90, J3.y+8
+  ], BLU);
+
+  // D7 → R2: left side pin, go right to R2
+  sigWire(PM.x, PM.y+LPY[9], [
+    220, PM.y+LPY[9],
+    220, PM.y+LPY[9]+15,
+    r2x-30, PM.y+LPY[9]+15,
+    r2x-30, r2y,
+    r2x-5, r2y
+  ], CYN);
+  // R2 output → J4 LED+
+  sigWire(r2x+40, r2y, [
+    r2x+50, r2y,
+    r2x+50, J4.y+8,
+    J4.x+90, J4.y+8
+  ], CYN);
+
+  // D5 → J5 RGB RED: left side pin, go left up to J5
+  sigWire(PM.x, PM.y+LPY[7], [
+    210, PM.y+LPY[7],
+    210, J5.y+8,
+    J5.x+90, J5.y+8
+  ], RED);
+
+  // D9 → J5 RGB GRN: left side pin, go left up to J5
+  sigWire(PM.x, PM.y+LPY[11], [
+    195, PM.y+LPY[11],
+    195, J5.y+8+13,
+    J5.x+90, J5.y+8+13
+  ], '#4caf50');
+
+  // D4 → J6 LOCK: left side pin, go down to J6
+  sigWire(PM.x, PM.y+LPY[6], [
+    260, PM.y+LPY[6],
+    260, J6.y+8,
+    J6.x+90, J6.y+8
+  ], YEL);
+
+  // D8 → J7 RECAL: left side pin, go left then up-right to J7
+  sigWire(PM.x, PM.y+LPY[10], [
+    180, PM.y+LPY[10],
+    180, J7.y+8,
+    J7.x+90, J7.y+8
+  ], BRN);
+
+  // ══════════════════════════════════════════
+  // USB CABLE (not on PCB)
+  // ══════════════════════════════════════════
+  const bbx=PM.x+PM.w+100, bby=PM.y-20;
+  ctx.strokeStyle=PM_STROKE;ctx.lineWidth=1.5;ctx.globalAlpha=0.35;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(pmCX+20,PM.y-8);
+  ctx.quadraticCurveTo(pmCX+100,PM.y-45,bbx-10,bby+10);
+  ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  // Breakout box
+  ctx.fillStyle='#e3f2fd';ctx.strokeStyle=PM_STROKE;ctx.lineWidth=1;
+  rr(bbx-35,bby-4,100,28,4,1,1);
+  ctx.font='bold 8px system-ui';ctx.fillStyle=PM_STROKE;ctx.textAlign='center';
+  ctx.fillText('USB-C BREAKOUT',bbx+15,bby+7);
+  ctx.font='7px system-ui';ctx.fillText('(panel mount)',bbx+15,bby+18);
+  ctx.font='7px system-ui';ctx.fillStyle='#999';ctx.textAlign='left';
+  ctx.fillText('USB-C cable — not on PCB',bbx-35,bby-10);
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function drawConn(x,y,id,name,type,pins){
+  const w=90, h=13*pins.length+10;
+  ctx.fillStyle='#fff';ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+  rr(x,y,w,h,4,1,1);
+  // ID label above
+  ctx.font='bold 9px system-ui';ctx.fillStyle='#333';ctx.textAlign='center';
+  ctx.fillText(id,x+w/2,y-5);
+  // Name + type below
+  ctx.font='7px system-ui';ctx.fillStyle='#666';
+  ctx.fillText(name,x+w/2,y+h+10);
+  ctx.fillText(type,x+w/2,y+h+20);
+  // Pin dots + labels
+  for(let i=0;i<pins.length;i++){
+    const py=y+8+i*13;
+    // Dot on left edge
+    ctx.beginPath();ctx.arc(x,py,3.5,0,Math.PI*2);ctx.fillStyle=pins[i].clr;ctx.fill();
+    // Dot on right edge (both sides for clarity)
+    ctx.beginPath();ctx.arc(x+w,py,3.5,0,Math.PI*2);ctx.fillStyle=pins[i].clr;ctx.fill();
+    // Label inside
+    ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.fillStyle=pins[i].clr;
+    ctx.fillText(pins[i].n,x+w/2,py+3);
+  }
+}
+
+function drawResistor(x,y,id,val,clr){
+  // Body
+  ctx.fillStyle='#f5f5f5';ctx.strokeStyle=clr;ctx.lineWidth=1.5;
+  rr(x,y-7,40,14,3,1,1);
+  // Label
+  ctx.font='bold 7px system-ui';ctx.fillStyle=clr;ctx.textAlign='center';
+  ctx.fillText(id+' '+val,x+20,y+2);
+  // Leads
+  ctx.strokeStyle='#aaa';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x-5,y);ctx.lineTo(x,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+40,y);ctx.lineTo(x+45,y);ctx.stroke();
+}
+
+function sigWire(startX, startY, points, color){
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(startX,startY);
+  for(let i=0;i<points.length;i+=2){
+    ctx.lineTo(points[i],points[i+1]);
+  }
+  ctx.stroke();
+}
+
+function gndSym(x,y){
+  ctx.strokeStyle=GND;ctx.lineWidth=1.5;ctx.globalAlpha=0.7;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+5);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-6,y+5);ctx.lineTo(x+6,y+5);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-4,y+8);ctx.lineTo(x+4,y+8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-2,y+11);ctx.lineTo(x+2,y+11);ctx.stroke();
+  ctx.globalAlpha=1;
+}
+
+function rr(x,y,w,h,r,f,s){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+  if(f)ctx.fill();if(s)ctx.stroke();
+}
+
+draw();
+</script>
+</body>
+</html>

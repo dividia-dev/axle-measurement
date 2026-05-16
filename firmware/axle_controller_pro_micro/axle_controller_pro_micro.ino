@@ -25,7 +25,7 @@
  *   Joystick 1: VRx=A0, VRy=A1, SW=D2
  *   Joystick 2: VRx=A2, VRy=A3, SW=D3
  *   Lock switch: D4 (toggle to GND)
- *   Lock LED:    D5 (green)
+ *   Lock LED:    D5 (red/locked), D9 (green/unlocked)
  *   Fine LED 1:  D6 (blue)
  *   Fine LED 2:  D7 (blue)
  *
@@ -52,7 +52,8 @@
 #define JOY2_BTN    3
 
 #define LOCK_SWITCH  4
-#define LED_LOCK     5
+#define LED_LOCK_RED   5
+#define LED_LOCK_GRN   9
 #define LED_FINE1    6
 #define LED_FINE2    7
 #define RECAL_BTN    8
@@ -203,7 +204,8 @@ void setup() {
   pinMode(JOY2_BTN, INPUT_PULLUP);
   pinMode(LOCK_SWITCH, INPUT_PULLUP);
   pinMode(RECAL_BTN, INPUT_PULLUP);
-  pinMode(LED_LOCK, OUTPUT);
+  pinMode(LED_LOCK_RED, OUTPUT);
+  pinMode(LED_LOCK_GRN, OUTPUT);
   pinMode(LED_FINE1, OUTPUT);
   pinMode(LED_FINE2, OUTPUT);
 
@@ -224,8 +226,8 @@ void setup() {
 
   // Startup indicator: blink lock LED 3x
   for (uint8_t i = 0; i < 3; i++) {
-    digitalWrite(LED_LOCK, HIGH); delay(100);
-    digitalWrite(LED_LOCK, LOW);  delay(100);
+    digitalWrite(LED_LOCK_GRN, HIGH); delay(100);
+    digitalWrite(LED_LOCK_GRN, LOW);  delay(100);
   }
 
   Serial.println(F("AXLE_CONTROLLER_READY v2.0"));
@@ -240,8 +242,9 @@ void loop() {
   handleSerial();
 
   // Lock switch
-  locked = (digitalRead(LOCK_SWITCH) == LOW);
-  digitalWrite(LED_LOCK, locked ? LOW : HIGH);
+  locked = (digitalRead(LOCK_SWITCH) == HIGH);  // inverted: switch mounted upside down
+  digitalWrite(LED_LOCK_RED, locked ? HIGH : LOW);
+  digitalWrite(LED_LOCK_GRN, locked ? LOW : HIGH);
 
   if (locked) {
     digitalWrite(LED_FINE1, LOW);

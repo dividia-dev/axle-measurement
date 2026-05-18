@@ -39,6 +39,10 @@ let controllerSettings = {
 // Reverse map: key → action (rebuilt when settings change)
 let keyActionMap = new Map();
 
+// Live video (WSPlayer) state
+let wsPlayer = null;
+let nvrAuth = null; // { token, devices, cameras, host, port, secure }
+
 function buildKeyActionMap() {
     keyActionMap.clear();
     for (const [action, key] of Object.entries(controllerSettings.keymap)) {
@@ -525,15 +529,212 @@ function debouncedWeightCheck() {
 }
 
 // === Video ===
+function getVideoSourceConfig() {
+    try {
+        return JSON.parse(localStorage.getItem('axle_video_source')) || { type: 'test' };
+    } catch { return { type: 'test' }; }
+}
+
+function saveVideoSourceConfig(cfg) {
+    localStorage.setItem('axle_video_source', JSON.stringify(cfg));
+}
+
 function initVideo() {
-    // In dev mode, load the test video
-    // In production, this would connect to go2rtc via WebRTC
+    // Always start with test video — NVR requires login each session
     if (!video.src && !video.srcObject) {
         video.src = 'test-video.mp4';
         video.onerror = () => {
             console.log('No test video found. Run: npm run download-test-video');
         };
     }
+}
+
+async function loginNVR() {
+    const connType = $('nvr-conn-type').value;
+    const apiUrl = $('nvr-api-url').value.trim();
+    const username = $('nvr-username').value.trim();
+    const password = $('nvr-password').value;
+    const statusEl = $('nvr-status');
+
+    if (!apiUrl || !username || !password) {
+        statusEl.innerHTML = '<span style="color:#c62828">URL, username, and password required</span>';
+        return;
+    }
+
+    statusEl.textContent = 'Authenticating...';
+    $('btn-nvr-login').disabled = true;
+
+    try {
+        if (connType === 'cloud') {
+            await loginCloud(apiUrl, username, password, statusEl);
+        } else {
+            await loginLocal(apiUrl, username, password, statusEl);
+        }
+    } catch (err) {
+        statusEl.innerHTML = '<span style="color:#c62828">' + err.message + '</span>';
+    } finally {
+        $('btn-nvr-login').disabled = false;
+    }
+}
+
+async function loginCloud(apiUrl, username, password, statusEl) {
+    const res = await fetch('/api/nvr/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiUrl, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Auth failed (${res.status})`);
+
+    const apiHost = apiUrl.replace(/^https?:\/\//, '');
+    const wsProto = apiUrl.startsWith('https') ? 'wss' : 'ws';
+    nvrAuth = {
+        mode: 'cloud', token: data.token,
+        devices: data.devices || [], cameras: data.cameras || [],
+        apiUrl, apiHost, wsProto
+    };
+
+    saveVideoSourceConfig({ type: 'nvr', connType: 'cloud', apiUrl, username });
+    populateCameraDropdown();
+}
+
+async function loginLocal(nvrUrl, username, password, statusEl) {
+    const res = await fetch('/api/nvr/auth-local', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nvrUrl, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Auth failed (${res.status})`);
+
+    const nvrHost = nvrUrl.replace(/^https?:\/\//, '');
+    const wsProto = nvrUrl.startsWith('https') ? 'wss' : 'ws';
+    nvrAuth = {
+        mode: 'local', session: data.session, serial: data.serial,
+        cameras: data.cameras || [],
+        nvrUrl, nvrHost, wsProto
+    };
+
+    saveVideoSourceConfig({ type: 'nvr', connType: 'local', apiUrl: nvrUrl, username });
+    populateCameraDropdown();
+}
+
+function populateCameraDropdown() {
+    const camSelect = $('nvr-camera-select');
+    camSelect.innerHTML = '';
+
+    if (nvrAuth.mode === 'cloud') {
+        const uniqueCams = [];
+        const seen = new Set();
+        for (const cam of nvrAuth.cameras) {
+            const key = `${cam.sDeviceID}-${cam.bCamera}`;
+            if (!seen.has(key)) { seen.add(key); uniqueCams.push(cam); }
+        }
+        for (const cam of uniqueCams) {
+            const dev = (nvrAuth.devices || []).find(d => d.sDeviceID === cam.sDeviceID);
+            const devName = dev ? dev.sName : cam.sDeviceID;
+            const label = `${devName} — Cam ${cam.bCamera}${cam.sName ? ' (' + cam.sName + ')' : ''}`;
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify({ deviceId: cam.sDeviceID, camera: cam.bCamera });
+            opt.textContent = label;
+            camSelect.appendChild(opt);
+        }
+    } else {
+        const cams = Array.isArray(nvrAuth.cameras) ? nvrAuth.cameras : [];
+        for (let i = 0; i < cams.length; i++) {
+            const cam = cams[i];
+            const camNum = cam.bCamera || cam.bCameraNum || (i + 1);
+            const label = cam.sName || `Camera ${camNum}`;
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify({ camera: camNum });
+            opt.textContent = label;
+            camSelect.appendChild(opt);
+        }
+    }
+
+    const statusEl = $('nvr-status');
+    const count = camSelect.options.length;
+    $('nvr-camera-select-group').hidden = false;
+    $('btn-nvr-login').hidden = true;
+    $('btn-nvr-disconnect').hidden = false;
+    statusEl.innerHTML = `<span style="color:#4caf50">Logged in — ${count} camera(s)</span>`;
+
+    if (count > 0) connectNVRCamera();
+    camSelect.onchange = connectNVRCamera;
+    $('nvr-profile').onchange = connectNVRCamera;
+}
+
+function connectNVRCamera() {
+    if (!nvrAuth) return;
+    disconnectNVRStream();
+
+    const selected = JSON.parse($('nvr-camera-select').value);
+    const profile = parseInt($('nvr-profile').value) || 2;
+    const statusEl = $('nvr-status');
+
+    video.style.display = 'none';
+
+    let wrap = $('ws-player-wrap');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'ws-player-wrap';
+        $('video-container').insertBefore(wrap, overlay);
+    }
+    wrap.innerHTML = '';
+
+    let wsUrl;
+    if (nvrAuth.mode === 'cloud') {
+        wsUrl = `${nvrAuth.wsProto}://${nvrAuth.apiHost}/${selected.deviceId}-cam${selected.camera}-pro${profile}?token=${encodeURIComponent(nvrAuth.token)}`;
+    } else {
+        wsUrl = `${nvrAuth.wsProto}://${nvrAuth.nvrHost}/ws/cam${selected.camera}-pro${profile}?sess=${nvrAuth.session}`;
+    }
+
+    wsPlayer = WSPlayer.create(wrap, {
+        url: wsUrl,
+        camera: [selected.camera, `Camera ${selected.camera}`],
+        noOverlay: ['cam_name'],
+        autoReconnect: true,
+        onConnect: () => {
+            if (statusEl) statusEl.textContent = 'Connected, buffering...';
+        },
+        onFirstFrame: () => {
+            if (statusEl) statusEl.innerHTML = '<span style="color:#4caf50">Streaming</span>';
+            resizeOverlay();
+        },
+        onDisconnect: () => {
+            if (statusEl) statusEl.innerHTML = '<span style="color:#c62828">Disconnected</span>';
+        },
+        onError: (err) => {
+            if (statusEl) statusEl.innerHTML = '<span style="color:#c62828">Error: ' + (err.message || err) + '</span>';
+        },
+        onReconnecting: () => {
+            if (statusEl) statusEl.textContent = 'Reconnecting...';
+        }
+    });
+}
+
+function disconnectNVRStream() {
+    if (wsPlayer) {
+        wsPlayer.stop();
+        wsPlayer = null;
+    }
+    const wrap = $('ws-player-wrap');
+    if (wrap) wrap.innerHTML = '';
+}
+
+function disconnectNVR() {
+    disconnectNVRStream();
+    nvrAuth = null;
+
+    video.style.display = '';
+
+    $('btn-nvr-login').hidden = false;
+    $('btn-nvr-login').disabled = false;
+    $('btn-nvr-disconnect').hidden = true;
+    $('nvr-camera-select-group').hidden = true;
+
+    const statusEl = $('nvr-status');
+    if (statusEl) statusEl.textContent = '';
 }
 
 function connectWebRTC(streamName) {
@@ -564,9 +765,16 @@ function getVideoRect() {
     const cw = container.clientWidth;
     const ch = container.clientHeight;
 
-    // If video has natural dimensions, calculate letterbox/pillarbox
-    const vw = video.videoWidth || cw;
-    const vh = video.videoHeight || ch;
+    // Get native video dimensions from either <video> or WSPlayer canvas
+    let vw, vh;
+    if (wsPlayer) {
+        const wsCanvas = $('ws-player-wrap')?.querySelector('canvas');
+        vw = (wsCanvas && wsCanvas.width) || cw;
+        vh = (wsCanvas && wsCanvas.height) || ch;
+    } else {
+        vw = video.videoWidth || cw;
+        vh = video.videoHeight || ch;
+    }
 
     const containerRatio = cw / ch;
     const videoRatio = vw / vh;
@@ -789,12 +997,25 @@ function captureScreenshot() {
     // with measurement lines drawn on top (no handles)
     const rect = getVideoRect();
     const composite = document.createElement('canvas');
-    composite.width = video.videoWidth || rect.width;
-    composite.height = video.videoHeight || rect.height;
+
+    // Get source dimensions and drawable element from either <video> or WSPlayer
+    let srcEl, srcW, srcH;
+    if (wsPlayer) {
+        srcEl = $('ws-player-wrap')?.querySelector('canvas');
+        srcW = (srcEl && srcEl.width) || rect.width;
+        srcH = (srcEl && srcEl.height) || rect.height;
+    } else {
+        srcEl = video;
+        srcW = video.videoWidth || rect.width;
+        srcH = video.videoHeight || rect.height;
+    }
+
+    composite.width = srcW;
+    composite.height = srcH;
     const ctx = composite.getContext('2d');
 
     // Draw the video frame
-    ctx.drawImage(video, 0, 0, composite.width, composite.height);
+    if (srcEl) ctx.drawImage(srcEl, 0, 0, composite.width, composite.height);
 
     // Draw lines (no handles) — scale normalized positions to video resolution
     const l1x = state.line1_x * composite.width;
@@ -1330,6 +1551,44 @@ $('slider-coarse').addEventListener('input', (e) => {
 });
 $('slider-fine').addEventListener('input', (e) => {
     $('val-fine').textContent = parseFloat(e.target.value).toFixed(4);
+});
+
+// Video source controls
+$('video-source-type').addEventListener('change', (e) => {
+    $('nvr-settings').hidden = (e.target.value !== 'nvr');
+});
+
+$('nvr-conn-type').addEventListener('change', (e) => {
+    const isCloud = e.target.value === 'cloud';
+    $('nvr-url-label').textContent = isCloud ? 'Cloud API' : 'NVR Address';
+    $('nvr-api-url').value = isCloud ? 'https://api.cloud.dividia.net' : 'https://';
+    $('nvr-api-url').placeholder = isCloud ? 'https://api.cloud.dividia.net' : 'https://192.168.0.22';
+    $('nvr-username').placeholder = isCloud ? 'email@example.com' : 'admin';
+});
+
+$('btn-nvr-login').addEventListener('click', loginNVR);
+
+$('btn-nvr-disconnect').addEventListener('click', () => {
+    disconnectNVR();
+    saveVideoSourceConfig({ type: 'test' });
+    video.src = 'test-video.mp4';
+});
+
+// Populate video source fields from saved config on settings open
+$('btn-settings').addEventListener('click', () => {
+    const cfg = getVideoSourceConfig();
+    $('video-source-type').value = cfg.type || 'test';
+    $('nvr-settings').hidden = (cfg.type !== 'nvr');
+    if (cfg.type === 'nvr') {
+        $('nvr-conn-type').value = cfg.connType || 'cloud';
+        $('nvr-api-url').value = cfg.apiUrl || 'https://api.cloud.dividia.net';
+        $('nvr-username').value = cfg.username || '';
+        const isCloud = (cfg.connType || 'cloud') === 'cloud';
+        $('nvr-url-label').textContent = isCloud ? 'Cloud API' : 'NVR Address';
+    }
+    $('btn-nvr-login').hidden = !!nvrAuth;
+    $('btn-nvr-disconnect').hidden = !nvrAuth;
+    $('nvr-camera-select-group').hidden = !nvrAuth;
 });
 
 // Mode toggle button click

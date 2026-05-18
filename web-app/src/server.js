@@ -15,6 +15,9 @@ function createApp() {
     app.use(cookieParser());
     app.use(express.static(path.join(__dirname, '..', 'public')));
 
+    // Serve the demo at /demo (so it can use the /api/nvr/auth proxy)
+    app.use('/demo', express.static(path.join(__dirname, '..', '..', 'docs', 'demo')));
+
     app.use('/api', routes);
 
     // Serve index.html for all non-API routes (SPA-style)

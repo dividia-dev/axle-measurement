@@ -191,4 +191,128 @@ router.post('/weight-check', requireAuth, (req, res) => {
     res.json({ analysis: result });
 });
 
+// --- Dividia Cloud API Proxy (avoids CORS for browser → cloud auth) ---
+
+router.post('/nvr/auth', async (req, res) => {
+    const { apiUrl, username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const base = (apiUrl || 'https://api.cloud.dividia.net').replace(/\/+$/, '');
+    const url = `${base}/ve/auth`;
+
+    try {
+        const https = require('https');
+        const http = require('http');
+        const data = await new Promise((resolve, reject) => {
+            const payload = JSON.stringify({ username, password });
+            const parsed = new URL(url);
+            const isSecure = parsed.protocol === 'https:';
+            const opts = {
+                hostname: parsed.hostname,
+                port: parsed.port || (isSecure ? 443 : 80),
+                path: parsed.pathname,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
+                },
+                rejectUnauthorized: false
+            };
+            const transport = isSecure ? https : http;
+            const apiReq = transport.request(opts, (apiRes) => {
+                let body = '';
+                apiRes.on('data', chunk => body += chunk);
+                apiRes.on('end', () => {
+                    try {
+                        const json = JSON.parse(body);
+                        if (apiRes.statusCode >= 400) {
+                            reject({ status: apiRes.statusCode, data: json });
+                        } else {
+                            resolve(json);
+                        }
+                    } catch {
+                        reject(new Error('Unexpected response from API (not JSON)'));
+                    }
+                });
+            });
+            apiReq.on('error', reject);
+            apiReq.write(payload);
+            apiReq.end();
+        });
+        res.json(data);
+    } catch (err) {
+        if (err.status && err.data) {
+            return res.status(err.status).json(err.data);
+        }
+        res.status(502).json({ error: 'Cannot reach API: ' + (err.message || err) });
+    }
+});
+
+// --- Local NVR JSON-RPC auth proxy ---
+
+router.post('/nvr/auth-local', async (req, res) => {
+    const { nvrUrl, username, password } = req.body;
+    if (!nvrUrl || !username || !password) {
+        return res.status(400).json({ error: 'nvrUrl, username, and password required' });
+    }
+
+    const base = nvrUrl.replace(/\/+$/, '');
+    const url = `${base}/api`;
+
+    try {
+        const https = require('https');
+        const http = require('http');
+
+        const rpc = (method, params, id) => new Promise((resolve, reject) => {
+            const payload = JSON.stringify({ jsonrpc: 2, method, params, id });
+            const parsed = new URL(url);
+            const isSecure = parsed.protocol === 'https:';
+            const opts = {
+                hostname: parsed.hostname,
+                port: parsed.port || (isSecure ? 443 : 80),
+                path: parsed.pathname,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+                rejectUnauthorized: false
+            };
+            const transport = isSecure ? https : http;
+            const r = transport.request(opts, (resp) => {
+                let body = '';
+                resp.on('data', chunk => body += chunk);
+                resp.on('end', () => {
+                    try { resolve(JSON.parse(body)); }
+                    catch { reject(new Error('Invalid JSON from NVR')); }
+                });
+            });
+            r.on('error', reject);
+            r.write(payload);
+            r.end();
+        });
+
+        // Login
+        const loginRes = await rpc('auth.loginUser', [username, password, true, true], 2);
+        if (loginRes.error) {
+            return res.status(401).json({ error: loginRes.error.message || 'Login failed' });
+        }
+        const session = loginRes.result?.[1]?.[0] || loginRes.result;
+        if (!session || typeof session !== 'string') {
+            return res.status(401).json({ error: 'No session returned' });
+        }
+
+        // Get cameras
+        const camsRes = await rpc('config.camera.getAllCameras', [session], 11);
+        const cameras = camsRes.result?.[1] || camsRes.result || [];
+
+        // Get serial
+        const serialRes = await rpc('info.getSerial', [], 3);
+        const serial = serialRes.result?.[1]?.[0] || serialRes.result || '';
+
+        res.json({ session, serial, cameras });
+    } catch (err) {
+        res.status(502).json({ error: 'Cannot reach NVR: ' + (err.message || err) });
+    }
+});
+
 module.exports = router;

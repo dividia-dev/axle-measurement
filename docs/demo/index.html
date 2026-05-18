@@ -94,8 +94,6 @@
                 <span id="user-info">demo (admin)</span>
                 <button id="btn-history" title="Measurement History">History</button>
                 <button id="btn-calibrate" title="Calibration">Calibrate</button>
-                <button id="btn-load-media" title="Load your own video or image">Load Video/Image</button>
-                <button id="btn-reset-image" title="Restore default test pattern" hidden>Reset Image</button>
                 <input type="file" id="file-input" accept="video/*,image/*" hidden>
                 <button id="btn-settings" title="Controller Settings">Settings</button>
                 <button id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
@@ -264,6 +262,7 @@
                     <button class="settings-tab active" data-tab="keymaps">Key Mappings</button>
                     <button class="settings-tab" data-tab="sensitivity">Sensitivity</button>
                     <button class="settings-tab" data-tab="test">Controller Test</button>
+                    <button class="settings-tab" data-tab="video-source">Video Source</button>
                 </div>
 
                 <!-- Key Mappings Tab -->
@@ -340,6 +339,64 @@
                         <div class="sensitivity-hint">Movement per keystroke in fine mode (~1px at 1080p default)</div>
                     </div>
                     <button id="btn-sensitivity-defaults" class="secondary" style="margin-top:8px;padding:6px 16px">Reset to Defaults</button>
+                </div>
+
+                <!-- Video Source Tab -->
+                <div id="settings-tab-video-source" class="settings-tab-content" hidden>
+                    <div class="video-source-group">
+                        <label>Source</label>
+                        <select id="video-source-type" class="video-source-select">
+                            <option value="test">Test Pattern (built-in)</option>
+                            <option value="file">Local Video/Image</option>
+                            <option value="nvr">Dividia NVR (WebSocket)</option>
+                        </select>
+                    </div>
+                    <!-- Local file loading -->
+                    <div id="file-settings" hidden>
+                        <div style="display:flex;gap:8px;margin-top:4px">
+                            <button id="btn-load-media" class="panel-btn" style="flex:1">Choose File...</button>
+                            <button id="btn-reset-image" class="panel-btn panel-btn-reset" hidden>Reset to Test Pattern</button>
+                        </div>
+                        <div id="file-status" style="margin-top:8px;font-size:12px;color:#888"></div>
+                    </div>
+                    <!-- NVR settings -->
+                    <div id="nvr-settings" hidden>
+                        <div class="video-source-group">
+                            <label>Connection Type</label>
+                            <select id="nvr-conn-type" class="video-source-select">
+                                <option value="cloud">Dividia Cloud</option>
+                                <option value="local">Local NVR</option>
+                            </select>
+                        </div>
+                        <div class="video-source-group">
+                            <label id="nvr-url-label">Cloud API</label>
+                            <input type="text" id="nvr-api-url" value="https://api.cloud.dividia.net" class="video-source-input">
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <div class="video-source-group" style="flex:1">
+                                <label>Username</label>
+                                <input type="text" id="nvr-username" placeholder="email@example.com" class="video-source-input" autocomplete="username">
+                            </div>
+                            <div class="video-source-group" style="flex:1">
+                                <label>Password</label>
+                                <input type="password" id="nvr-password" placeholder="password" class="video-source-input" autocomplete="current-password">
+                            </div>
+                        </div>
+                        <button id="btn-nvr-login" class="panel-btn" style="margin-top:4px">Login &amp; Connect</button>
+                        <button id="btn-nvr-disconnect" class="panel-btn panel-btn-reset" style="margin-top:4px" hidden>Disconnect</button>
+                        <div id="nvr-camera-select-group" class="video-source-group" style="margin-top:8px" hidden>
+                            <label>Camera</label>
+                            <select id="nvr-camera-select" class="video-source-select"></select>
+                            <div style="margin-top:4px">
+                                <label>Profile</label>
+                                <select id="nvr-profile" class="video-source-select" style="width:auto">
+                                    <option value="1">1 — Full resolution</option>
+                                    <option value="2" selected>2 — Sub-stream</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="nvr-status" style="margin-top:8px;font-size:12px;color:#888"></div>
+                    </div>
                 </div>
 
                 <!-- Controller Test Tab -->
@@ -435,6 +492,7 @@
     <input id="mobile-key-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
            style="position:fixed;top:-100px;left:-100px;opacity:0;width:1px;height:1px;">
 
+    <script src="WSPlayer.js"></script>
     <script src="app.js?v=2026.5.2"></script>
 </body>
 </html>

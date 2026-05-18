@@ -58,6 +58,9 @@
 #define LED_FINE2    7
 #define RECAL_BTN    8
 
+// 10mm RGB LED brightness (0-255). Full brightness is harsh; ~60 is visible but soft.
+#define RGB_BRIGHTNESS  60
+
 // ============================================================
 // EEPROM Layout
 // ============================================================
@@ -68,7 +71,7 @@
 #define EEPROM_DZ_ADDR        12    // 4 bytes: dead zones (J1c, J1f, J2c, J2f)
 #define EEPROM_CENTER_ADDR    16    // 8 bytes: centers (J1x, J1y, J2x, J2y) x 2 bytes each
 
-#define EEPROM_MAGIC_VALUE    0xB3  // Bump this to force factory reset on flash
+#define EEPROM_MAGIC_VALUE    0xB4  // Bump this to force factory reset on flash
 
 #define NUM_KEYS  10
 
@@ -90,8 +93,8 @@ enum KeySlot {
 };
 
 static const char DEFAULT_KEYS[NUM_KEYS] PROGMEM = {
-  'a', 'd',   // J1 coarse left/right
-  'q', 'e',   // J1 fine left/right
+  'd', 'a',   // J1 coarse left/right (swapped — joystick mounted reversed)
+  'e', 'q',   // J1 fine left/right (swapped to match)
   'f',        // J1 button
   'j', 'l',   // J2 coarse left/right
   'u', 'o',   // J2 fine left/right
@@ -224,11 +227,10 @@ void setup() {
   // NOW start keyboard — no garbage keystrokes during cal
   Keyboard.begin();
 
-  // Startup indicator: blink lock LED 3x
-  for (uint8_t i = 0; i < 3; i++) {
-    digitalWrite(LED_LOCK_GRN, HIGH); delay(100);
-    digitalWrite(LED_LOCK_GRN, LOW);  delay(100);
-  }
+  // Lock LED shows current switch state after cal
+  locked = (digitalRead(LOCK_SWITCH) == LOW);
+  setLockRed(locked);
+  setLockGrn(!locked);
 
   Serial.println(F("AXLE_CONTROLLER_READY v2.0"));
   printHelp();
@@ -242,18 +244,18 @@ void loop() {
   handleSerial();
 
   // Lock switch
-  locked = (digitalRead(LOCK_SWITCH) == HIGH);  // inverted: switch mounted upside down
-  digitalWrite(LED_LOCK_RED, locked ? HIGH : LOW);
-  digitalWrite(LED_LOCK_GRN, locked ? LOW : HIGH);
+  locked = (digitalRead(LOCK_SWITCH) == LOW);
+  setLockRed(locked);
+  setLockGrn(!locked);
+
+  // Check recal button (works even when locked)
+  checkRecalButton();
 
   if (locked) {
     digitalWrite(LED_FINE1, LOW);
     digitalWrite(LED_FINE2, LOW);
     return;
   }
-
-  // Check recal button (dedicated, calibrates both joysticks)
-  checkRecalButton();
 
   // Handle joystick buttons: short press = toggle fine/coarse
   handleButton(0);
@@ -366,21 +368,33 @@ void sendKey(char key) {
 // Calibration: Startup Auto-Cal
 // ============================================================
 
+// Helper: set 10mm RGB LED using PWM for dimming
+void setLockRed(bool on)   { analogWrite(LED_LOCK_RED, on ? RGB_BRIGHTNESS : 0); }
+void setLockGrn(bool on)   { analogWrite(LED_LOCK_GRN, on ? RGB_BRIGHTNESS : 0); }
+
+void allLedsOff() {
+  digitalWrite(LED_FINE1, LOW);
+  digitalWrite(LED_FINE2, LOW);
+  setLockRed(false);
+  setLockGrn(false);
+}
+
 void runStartupCal() {
   Serial.println(F("Auto-cal: hands off joysticks..."));
 
-  // Blink LEDs during settle time
+  // Alternating blue LEDs during settle (3s, 600ms per side)
+  // 10mm LED stays off — calm, professional heartbeat.
+  bool leftOn = true;
   unsigned long settleStart = millis();
   while (millis() - settleStart < CAL_SETTLE_MS) {
-    bool on = ((millis() / 500) % 2) == 0;
-    digitalWrite(LED_FINE1, on ? HIGH : LOW);
-    digitalWrite(LED_FINE2, on ? HIGH : LOW);
-    delay(50);
+    digitalWrite(LED_FINE1, leftOn ? HIGH : LOW);
+    digitalWrite(LED_FINE2, leftOn ? LOW : HIGH);
+    leftOn = !leftOn;
+    delay(600);
   }
-  digitalWrite(LED_FINE1, LOW);
-  digitalWrite(LED_FINE2, LOW);
 
   // Sample both joysticks (X axis only, twist/Y axis disabled)
+  // Blues keep alternating during sampling (same rhythm)
   for (uint8_t idx = 0; idx < 2; idx++) {
     Joystick &j = joy[idx];
     long sumX = 0;
@@ -392,6 +406,13 @@ void runStartupCal() {
       sumX += rx;
       if (rx < minX) minX = rx;
       if (rx > maxX) maxX = rx;
+
+      // Alternate blues every 60 samples (~600ms)
+      if (i % 60 == 0) {
+        leftOn = !leftOn;
+        digitalWrite(LED_FINE1, leftOn ? HIGH : LOW);
+        digitalWrite(LED_FINE2, leftOn ? LOW : HIGH);
+      }
       delay(10);
     }
 
@@ -415,6 +436,11 @@ void runStartupCal() {
   }
 
   saveDeadzones();
+
+  // Cal complete: blues off, brief pause, then lock LED lights up
+  allLedsOff();
+  delay(200);
+
   Serial.println(F("Cal done."));
 }
 

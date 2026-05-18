@@ -1242,6 +1242,8 @@ function switchSettingsTab(tabName) {
         el.hidden = true;
     });
     $('settings-tab-' + tabName).hidden = false;
+    const noSave = (tabName === 'test');
+    $('settings-modal-buttons').hidden = noSave;
 }
 
 function formatKeyDisplay(key) {

@@ -1440,6 +1440,9 @@ function switchSettingsTab(tabName) {
     });
     document.querySelectorAll('.settings-tab-content').forEach(el => { el.hidden = true; });
     $('settings-tab-' + tabName).hidden = false;
+    // Hide save/cancel for tabs that don't need them
+    const noSave = (tabName === 'test');
+    $('settings-modal-buttons').hidden = noSave;
 }
 
 function formatKeyDisplay(key) {
@@ -1559,6 +1562,8 @@ function resetTestStats() {
 
 // Timers for holding test indicators lit during rapid-fire HID keystrokes
 const testHoldTimers = {};
+// Track per-joystick hardware fine state (independent of browser's global state.fineMode)
+const hwFineState = { 1: false, 2: false };
 
 function handleControllerTest(key, isDown) {
     const testTab = $('settings-tab-test');
@@ -1589,8 +1594,10 @@ function handleControllerTest(key, isDown) {
                 lockEl.classList.toggle('unlocked', !isLocked);
                 const label = lockEl.querySelector('.test-lock-label');
                 if (label) label.textContent = isLocked ? 'LOCKED' : 'UNLOCKED';
-                // Clear fine LEDs when locking
+                // Clear fine LEDs when locking (firmware resets fine mode on lock)
                 if (isLocked) {
+                    hwFineState[1] = false;
+                    hwFineState[2] = false;
                     const l1 = $('test-fine-led-1'), l2 = $('test-fine-led-2');
                     if (l1) l1.classList.remove('active');
                     if (l2) l2.classList.remove('active');
@@ -1600,22 +1607,26 @@ function handleControllerTest(key, isDown) {
         }
         // Fine LED keys = fine mode ON for that joystick
         if (normalizedKey === settings.keymap.j1_fine_led) {
+            hwFineState[1] = true;
             const led = $('test-fine-led-1');
             if (led) led.classList.add('active');
             return;
         }
         if (normalizedKey === settings.keymap.j2_fine_led) {
+            hwFineState[2] = true;
             const led = $('test-fine-led-2');
             if (led) led.classList.add('active');
             return;
         }
         // Button keys = fine mode OFF for that joystick
         if (normalizedKey === settings.keymap.j1_btn) {
+            hwFineState[1] = false;
             const led = $('test-fine-led-1');
             if (led) led.classList.remove('active');
             return;
         }
         if (normalizedKey === settings.keymap.j2_btn) {
+            hwFineState[2] = false;
             const led = $('test-fine-led-2');
             if (led) led.classList.remove('active');
             return;
@@ -1634,11 +1645,7 @@ function handleControllerTest(key, isDown) {
             const centerEl = $('test-' + entry.joy + '-center');
             if (centerEl) centerEl.classList.add('active');
         }
-        // Light fine LED when fine keys are active
-        if (entry.fine) {
-            const led = $('test-fine-led-' + entry.fine);
-            if (led) { clearTimeout(testHoldTimers['fine-' + entry.fine]); led.classList.add('active'); }
-        }
+        // Fine LED is controlled by hardware button state (hwFineState), not joystick movement
         // Global toggle: switch fine mode and update both fine LEDs + keep indicator lit
         if (entry.el === 'test-action-toggle') {
             toggleMode();  // Actually toggle the state
@@ -1673,15 +1680,8 @@ function handleControllerTest(key, isDown) {
                 }
             }
         }, 150);
-        // Turn off fine LED after delay
-        if (entry.fine) {
-            const fineKey = 'fine-' + entry.fine;
-            clearTimeout(testHoldTimers[fineKey]);
-            testHoldTimers[fineKey] = setTimeout(() => {
-                const led = $('test-fine-led-' + entry.fine);
-                if (led && !state.fineMode) led.classList.remove('active');
-            }, 150);
-        }
+        // Don't touch fine LED on joystick keyup — it's controlled by hardware button state
+        // (hwFineState tracks per-joystick, state.fineMode tracks global browser toggle)
     }
 }
 

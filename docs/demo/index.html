@@ -285,6 +285,14 @@
                             <span class="keymap-label">Fine Right</span>
                             <button class="key-capture-btn" data-action="line1_right_fine">E</button>
                         </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Fine ON (LED)</span>
+                            <button class="key-capture-btn" data-action="j1_fine_led">1</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Fine OFF (Button)</span>
+                            <button class="key-capture-btn" data-action="j1_btn">F</button>
+                        </div>
                         <div class="keymap-section-label">Joystick 2 — Line 2</div>
                         <div class="keymap-row">
                             <span class="keymap-label">Coarse Left</span>
@@ -302,10 +310,23 @@
                             <span class="keymap-label">Fine Right</span>
                             <button class="key-capture-btn" data-action="line2_right_fine">O</button>
                         </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Fine ON (LED)</span>
+                            <button class="key-capture-btn" data-action="j2_fine_led">2</button>
+                        </div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Fine OFF (Button)</span>
+                            <button class="key-capture-btn" data-action="j2_btn">;</button>
+                        </div>
+                        <div class="keymap-section-label">Hardware State</div>
+                        <div class="keymap-row">
+                            <span class="keymap-label">Lock Toggle</span>
+                            <button class="key-capture-btn" data-action="lock">[</button>
+                        </div>
                         <div class="keymap-section-label">Actions</div>
                         <div class="keymap-row">
                             <span class="keymap-label">Fine/Coarse Toggle</span>
-                            <button class="key-capture-btn" data-action="toggle_mode">F</button>
+                            <button class="key-capture-btn" data-action="toggle_mode">G</button>
                         </div>
                         <div class="keymap-row">
                             <span class="keymap-label">Save Measurement</span>
@@ -409,14 +430,22 @@
                         <button id="btn-test-reset" class="test-reset-btn">Clear</button>
                     </div>
                     <div class="controller-test-diagram">
+                        <!-- Lock status -->
+                        <div class="test-lock-row">
+                            <div id="test-lock-indicator" class="test-lock unlocked">
+                                <span class="test-lock-led" id="test-lock-led-red"></span>
+                                <span class="test-lock-led" id="test-lock-led-grn"></span>
+                                <span class="test-lock-label">UNLOCKED</span>
+                            </div>
+                        </div>
                         <div class="test-joysticks-row">
                             <div class="test-joystick-group">
                                 <div class="test-joystick-label">Joystick 1 — Line 1</div>
-                                <svg class="test-joystick-svg" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
-                                    <!-- Coarse arrows (outer, large) -->
+                                <svg class="test-joystick-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Coarse arrows -->
                                     <polygon id="test-joy1-left" class="controller-arrow" points="10,35 40,15 40,55"/>
                                     <polygon id="test-joy1-right" class="controller-arrow" points="190,35 160,15 160,55"/>
-                                    <!-- Fine arrows (inner, small) -->
+                                    <!-- Fine arrows (inner) -->
                                     <polygon id="test-joy1-fine-left" class="controller-arrow fine-arrow" points="55,35 72,25 72,45"/>
                                     <polygon id="test-joy1-fine-right" class="controller-arrow fine-arrow" points="145,35 128,25 128,45"/>
                                     <!-- Center dot -->
@@ -426,17 +455,18 @@
                                     <text id="test-joy1-fine-left-label" x="63" y="72" text-anchor="middle" class="test-key-label fine-label">Q</text>
                                     <text id="test-joy1-fine-right-label" x="137" y="72" text-anchor="middle" class="test-key-label fine-label">E</text>
                                     <text id="test-joy1-right-label" x="175" y="72" text-anchor="middle" class="test-key-label">D</text>
-                                    <!-- Fine indicator text -->
-                                    <text x="100" y="95" text-anchor="middle" class="test-fine-hint">twist = fine</text>
                                 </svg>
+                                <div class="test-fine-led" id="test-fine-led-1">
+                                    FINE <span class="test-fine-keys"><kbd id="test-j1-fine-label">1</kbd> on · <kbd id="test-j1-btn-label">F</kbd> off</span>
+                                </div>
                             </div>
                             <div class="test-joystick-group">
                                 <div class="test-joystick-label">Joystick 2 — Line 2</div>
-                                <svg class="test-joystick-svg" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
-                                    <!-- Coarse arrows (outer, large) -->
+                                <svg class="test-joystick-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Coarse arrows -->
                                     <polygon id="test-joy2-left" class="controller-arrow" points="10,35 40,15 40,55"/>
                                     <polygon id="test-joy2-right" class="controller-arrow" points="190,35 160,15 160,55"/>
-                                    <!-- Fine arrows (inner, small) -->
+                                    <!-- Fine arrows (inner) -->
                                     <polygon id="test-joy2-fine-left" class="controller-arrow fine-arrow" points="55,35 72,25 72,45"/>
                                     <polygon id="test-joy2-fine-right" class="controller-arrow fine-arrow" points="145,35 128,25 128,45"/>
                                     <!-- Center dot -->
@@ -446,15 +476,16 @@
                                     <text id="test-joy2-fine-left-label" x="63" y="72" text-anchor="middle" class="test-key-label fine-label">U</text>
                                     <text id="test-joy2-fine-right-label" x="137" y="72" text-anchor="middle" class="test-key-label fine-label">O</text>
                                     <text id="test-joy2-right-label" x="175" y="72" text-anchor="middle" class="test-key-label">L</text>
-                                    <!-- Fine indicator text -->
-                                    <text x="100" y="95" text-anchor="middle" class="test-fine-hint">twist = fine</text>
                                 </svg>
+                                <div class="test-fine-led" id="test-fine-led-2">
+                                    FINE <span class="test-fine-keys"><kbd id="test-j2-fine-label">2</kbd> on · <kbd id="test-j2-btn-label">;</kbd> off</span>
+                                </div>
                             </div>
                         </div>
                         <div class="test-actions-row">
                             <div id="test-action-toggle" class="test-action-indicator">
-                                <span class="test-action-key">F</span>
-                                <span class="test-action-name">Toggle</span>
+                                <span class="test-action-key">G</span>
+                                <span class="test-action-name">Both Fine/Coarse <span style="color:#555;font-size:9px">(browser only)</span></span>
                             </div>
                             <div id="test-action-save" class="test-action-indicator">
                                 <span class="test-action-key">Space</span>

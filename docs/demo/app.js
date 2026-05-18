@@ -122,7 +122,9 @@ let controllerSettings = {
         line1_left_fine: 'q', line1_right_fine: 'e',
         line2_left: 'j', line2_right: 'l',
         line2_left_fine: 'u', line2_right_fine: 'o',
-        toggle_mode: 'f', save: ' ', reset: 'r'
+        toggle_mode: 'g', save: ' ', reset: 'r',
+        lock: '[', j1_fine_led: '1', j2_fine_led: '2',
+        j1_btn: 'f', j2_btn: ';'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
 };
@@ -1022,7 +1024,8 @@ function drawOverlay() {
 
 // === Keyboard Input ===
 function handleKeyDown(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (document.visibilityState === 'hidden') return;
 
     const settingsModal = $('settings-modal');
 
@@ -1363,7 +1366,9 @@ const SETTINGS_DEFAULTS = {
         line1_left_fine: 'q', line1_right_fine: 'e',
         line2_left: 'j', line2_right: 'l',
         line2_left_fine: 'u', line2_right_fine: 'o',
-        toggle_mode: 'f', save: ' ', reset: 'r'
+        toggle_mode: 'g', save: ' ', reset: 'r',
+        lock: '[', j1_fine_led: '1', j2_fine_led: '2',
+        j1_btn: 'f', j2_btn: ';'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
 };
@@ -1512,7 +1517,9 @@ function getActionLabel(action) {
         line1_left_fine: 'Line 1 Left (Fine)', line1_right_fine: 'Line 1 Right (Fine)',
         line2_left: 'Line 2 Left', line2_right: 'Line 2 Right',
         line2_left_fine: 'Line 2 Left (Fine)', line2_right_fine: 'Line 2 Right (Fine)',
-        toggle_mode: 'Fine/Coarse Toggle', save: 'Save Measurement', reset: 'Reset Lines'
+        toggle_mode: 'Both Fine/Coarse', save: 'Save Measurement', reset: 'Reset Lines',
+        lock: 'Lock Toggle', j1_fine_led: 'J1 Fine ON', j2_fine_led: 'J2 Fine ON',
+        j1_btn: 'J1 Fine OFF', j2_btn: 'J2 Fine OFF'
     };
     return labels[action] || action;
 }
@@ -1550,6 +1557,9 @@ function resetTestStats() {
     updateTestStats();
 }
 
+// Timers for holding test indicators lit during rapid-fire HID keystrokes
+const testHoldTimers = {};
+
 function handleControllerTest(key, isDown) {
     const testTab = $('settings-tab-test');
     if (!testTab || testTab.hidden) return;
@@ -1558,34 +1568,102 @@ function handleControllerTest(key, isDown) {
     const testMap = {
         [settings.keymap.line1_left]:       { el: 'test-joy1-left', joy: 'joy1', name: 'Joy1 Left' },
         [settings.keymap.line1_right]:      { el: 'test-joy1-right', joy: 'joy1', name: 'Joy1 Right' },
-        [settings.keymap.line1_left_fine]:  { el: 'test-joy1-fine-left', joy: 'joy1', name: 'Joy1 Fine Left' },
-        [settings.keymap.line1_right_fine]: { el: 'test-joy1-fine-right', joy: 'joy1', name: 'Joy1 Fine Right' },
+        [settings.keymap.line1_left_fine]:  { el: 'test-joy1-fine-left', joy: 'joy1', name: 'Joy1 Fine Left', fine: 1 },
+        [settings.keymap.line1_right_fine]: { el: 'test-joy1-fine-right', joy: 'joy1', name: 'Joy1 Fine Right', fine: 1 },
         [settings.keymap.line2_left]:       { el: 'test-joy2-left', joy: 'joy2', name: 'Joy2 Left' },
         [settings.keymap.line2_right]:      { el: 'test-joy2-right', joy: 'joy2', name: 'Joy2 Right' },
-        [settings.keymap.line2_left_fine]:  { el: 'test-joy2-fine-left', joy: 'joy2', name: 'Joy2 Fine Left' },
-        [settings.keymap.line2_right_fine]: { el: 'test-joy2-fine-right', joy: 'joy2', name: 'Joy2 Fine Right' },
+        [settings.keymap.line2_left_fine]:  { el: 'test-joy2-fine-left', joy: 'joy2', name: 'Joy2 Fine Left', fine: 2 },
+        [settings.keymap.line2_right_fine]: { el: 'test-joy2-fine-right', joy: 'joy2', name: 'Joy2 Fine Right', fine: 2 },
         [settings.keymap.toggle_mode]: { el: 'test-action-toggle', joy: null, name: 'Toggle' },
         [settings.keymap.save]:        { el: 'test-action-save', joy: null, name: 'Save' },
         [settings.keymap.reset]:       { el: 'test-action-reset', joy: null, name: 'Reset' },
     };
+
+    // Handle hardware state keys (lock, fine LEDs) — toggle on keydown only
+    if (isDown) {
+        // Lock key = toggle lock state
+        if (normalizedKey === settings.keymap.lock) {
+            const lockEl = $('test-lock-indicator');
+            if (lockEl) {
+                const isLocked = lockEl.classList.toggle('locked');
+                lockEl.classList.toggle('unlocked', !isLocked);
+                const label = lockEl.querySelector('.test-lock-label');
+                if (label) label.textContent = isLocked ? 'LOCKED' : 'UNLOCKED';
+                // Clear fine LEDs when locking
+                if (isLocked) {
+                    const l1 = $('test-fine-led-1'), l2 = $('test-fine-led-2');
+                    if (l1) l1.classList.remove('active');
+                    if (l2) l2.classList.remove('active');
+                }
+            }
+            return;
+        }
+        // Fine LED keys = fine mode ON for that joystick
+        if (normalizedKey === settings.keymap.j1_fine_led) {
+            const led = $('test-fine-led-1');
+            if (led) led.classList.add('active');
+            return;
+        }
+        if (normalizedKey === settings.keymap.j2_fine_led) {
+            const led = $('test-fine-led-2');
+            if (led) led.classList.add('active');
+            return;
+        }
+        // Button keys = fine mode OFF for that joystick
+        if (normalizedKey === settings.keymap.j1_btn) {
+            const led = $('test-fine-led-1');
+            if (led) led.classList.remove('active');
+            return;
+        }
+        if (normalizedKey === settings.keymap.j2_btn) {
+            const led = $('test-fine-led-2');
+            if (led) led.classList.remove('active');
+            return;
+        }
+    }
     const entry = testMap[normalizedKey];
     if (!entry) return;
     const el = $(entry.el);
-    if (el) {
-        if (isDown) {
-            el.classList.add('active');
-            if (entry.joy) {
-                activeJoyKeys[entry.joy].add(normalizedKey);
-                const centerEl = $('test-' + entry.joy + '-center');
-                if (centerEl) centerEl.classList.add('active');
+    if (!el) return;
+
+    if (isDown) {
+        clearTimeout(testHoldTimers[entry.el]);
+        el.classList.add('active');
+        if (entry.joy) {
+            activeJoyKeys[entry.joy].add(normalizedKey);
+            const centerEl = $('test-' + entry.joy + '-center');
+            if (centerEl) centerEl.classList.add('active');
+        }
+        // Light fine LED when fine keys are active
+        if (entry.fine) {
+            const led = $('test-fine-led-' + entry.fine);
+            if (led) { clearTimeout(testHoldTimers['fine-' + entry.fine]); led.classList.add('active'); }
+        }
+        // Global toggle: switch fine mode and update both fine LEDs + keep indicator lit
+        if (entry.el === 'test-action-toggle') {
+            toggleMode();  // Actually toggle the state
+            const led1 = $('test-fine-led-1');
+            const led2 = $('test-fine-led-2');
+            if (led1) led1.classList.toggle('active', state.fineMode);
+            if (led2) led2.classList.toggle('active', state.fineMode);
+            // Keep toggle indicator lit while fine mode is active
+            if (state.fineMode) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
             }
-            const now = Date.now();
-            testStats.count++;
-            testStats.times.push(now);
-            testStats.lastAction = entry.name;
-            testStats.times = testStats.times.filter(t => t > now - 2000);
-            updateTestStats();
-        } else {
+        }
+        const now = Date.now();
+        testStats.count++;
+        testStats.times.push(now);
+        testStats.lastAction = entry.name;
+        testStats.times = testStats.times.filter(t => t > now - 2000);
+        updateTestStats();
+    } else {
+        clearTimeout(testHoldTimers[entry.el]);
+        testHoldTimers[entry.el] = setTimeout(() => {
+            // Don't clear toggle indicator if fine mode is still active
+            if (entry.el === 'test-action-toggle' && state.fineMode) return;
             el.classList.remove('active');
             if (entry.joy) {
                 activeJoyKeys[entry.joy].delete(normalizedKey);
@@ -1594,6 +1672,15 @@ function handleControllerTest(key, isDown) {
                     if (centerEl) centerEl.classList.remove('active');
                 }
             }
+        }, 150);
+        // Turn off fine LED after delay
+        if (entry.fine) {
+            const fineKey = 'fine-' + entry.fine;
+            clearTimeout(testHoldTimers[fineKey]);
+            testHoldTimers[fineKey] = setTimeout(() => {
+                const led = $('test-fine-led-' + entry.fine);
+                if (led && !state.fineMode) led.classList.remove('active');
+            }, 150);
         }
     }
 }

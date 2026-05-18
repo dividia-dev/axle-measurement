@@ -31,7 +31,7 @@ let controllerSettings = {
     keymap: {
         line1_left: 'a', line1_right: 'd',
         line2_left: 'j', line2_right: 'l',
-        toggle_mode: 'f', save: ' ', reset: 'r'
+        toggle_mode: 'g', save: ' ', reset: 'r'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
 };
@@ -921,8 +921,9 @@ function drawOverlay() {
 
 // === Keyboard Input ===
 function handleKeyDown(e) {
-    // Don't capture keys when typing in inputs
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // Don't capture keys when typing in inputs or tab not visible
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (document.visibilityState === 'hidden') return;
 
     const settingsModal = $('settings-modal');
 
@@ -1156,7 +1157,7 @@ const SETTINGS_DEFAULTS = {
     keymap: {
         line1_left: 'a', line1_right: 'd',
         line2_left: 'j', line2_right: 'l',
-        toggle_mode: 'f', save: ' ', reset: 'r'
+        toggle_mode: 'g', save: ' ', reset: 'r'
     },
     sensitivity: { coarse_step: 0.005, fine_step: 0.001 }
 };
@@ -1360,6 +1361,9 @@ function resetTestStats() {
     updateTestStats();
 }
 
+// Timers for holding test indicators lit during rapid-fire HID keystrokes
+const testHoldTimers = {};
+
 function handleControllerTest(key, isDown) {
     const testTab = $('settings-tab-test');
     if (!testTab || testTab.hidden) return;
@@ -1367,7 +1371,6 @@ function handleControllerTest(key, isDown) {
     const settings = pendingSettings || controllerSettings;
     const normalizedKey = key.toLowerCase();
 
-    // Map key to test element, joystick group, and action name
     const testMap = {
         [settings.keymap.line1_left]:  { el: 'test-joy1-left', joy: 'joy1', name: 'Joy1 Left' },
         [settings.keymap.line1_right]: { el: 'test-joy1-right', joy: 'joy1', name: 'Joy1 Right' },
@@ -1382,27 +1385,26 @@ function handleControllerTest(key, isDown) {
     if (!entry) return;
 
     const el = $(entry.el);
-    if (el) {
-        if (isDown) {
-            el.classList.add('active');
-            // Track active keys per joystick so center stays lit
-            if (entry.joy) {
-                activeJoyKeys[entry.joy].add(normalizedKey);
-                const centerEl = $('test-' + entry.joy + '-center');
-                if (centerEl) centerEl.classList.add('active');
-            }
-            // Track stats on keydown
-            const now = Date.now();
-            testStats.count++;
-            testStats.times.push(now);
-            testStats.lastAction = entry.name;
-            // Keep only last 2 seconds of timestamps for rate calculation
-            const cutoff = now - 2000;
-            testStats.times = testStats.times.filter(t => t > cutoff);
-            updateTestStats();
-        } else {
+    if (!el) return;
+
+    if (isDown) {
+        clearTimeout(testHoldTimers[entry.el]);
+        el.classList.add('active');
+        if (entry.joy) {
+            activeJoyKeys[entry.joy].add(normalizedKey);
+            const centerEl = $('test-' + entry.joy + '-center');
+            if (centerEl) centerEl.classList.add('active');
+        }
+        const now = Date.now();
+        testStats.count++;
+        testStats.times.push(now);
+        testStats.lastAction = entry.name;
+        testStats.times = testStats.times.filter(t => t > now - 2000);
+        updateTestStats();
+    } else {
+        clearTimeout(testHoldTimers[entry.el]);
+        testHoldTimers[entry.el] = setTimeout(() => {
             el.classList.remove('active');
-            // Only remove center glow when no keys for this joystick are held
             if (entry.joy) {
                 activeJoyKeys[entry.joy].delete(normalizedKey);
                 if (activeJoyKeys[entry.joy].size === 0) {
@@ -1410,7 +1412,7 @@ function handleControllerTest(key, isDown) {
                     if (centerEl) centerEl.classList.remove('active');
                 }
             }
-        }
+        }, 150);
     }
 }
 

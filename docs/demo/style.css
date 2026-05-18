@@ -1044,11 +1044,86 @@ body {
     font-size: 10px;
 }
 
-.test-fine-hint {
-    fill: #444;
+/* Lock indicator */
+.test-lock-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.test-lock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1a1a1a;
+}
+
+.test-lock-led {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #333;
+}
+
+.test-lock.unlocked .test-lock-label { color: #4caf50; }
+.test-lock.unlocked #test-lock-led-grn { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+.test-lock.unlocked #test-lock-led-red { background: #333; }
+
+.test-lock.locked .test-lock-label { color: #c62828; }
+.test-lock.locked #test-lock-led-red { background: #f44336; box-shadow: 0 0 6px #f44336; }
+.test-lock.locked #test-lock-led-grn { background: #333; }
+
+.test-lock-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Per-joystick fine mode LED */
+.test-fine-led {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #333;
+    margin-top: 4px;
+    padding: 3px 0;
+    border-radius: 4px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+}
+
+.test-fine-led.active {
+    color: #4fc3f7;
+    background: rgba(33, 150, 243, 0.15);
+    border-color: #2196f3;
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
+.test-fine-keys {
     font-size: 9px;
-    font-family: inherit;
-    font-style: italic;
+    font-weight: 400;
+    color: #555;
+    margin-left: 6px;
+}
+
+.test-fine-led.active .test-fine-keys {
+    color: #6fc3e8;
+}
+
+.test-fine-keys kbd {
+    display: inline-block;
+    padding: 0 3px;
+    font-family: monospace;
+    font-size: 9px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 2px;
+    min-width: 12px;
+    text-align: center;
 }
 
 .keymap-section-label {

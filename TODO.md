@@ -17,6 +17,14 @@
   or removing the twist barrel rotation on the JH-D400X-R4 joysticks. Fine mode
   is now button-toggled, twist is unused.
 
+- [ ] **Migrate from HID Keyboard to HID Consumer Device** — Currently the
+  controller sends regular keyboard characters (a, d, j, l, etc.) which can
+  interfere with other apps if a joystick is bumped while typing. Switching to
+  USB HID Consumer/Vendor-defined usage pages sends custom control codes that
+  no other software recognizes. Requires firmware rewrite of the HID descriptor
+  and web app migration to the WebHID API (or custom HID event parsing).
+  Lock switch is the current mitigation.
+
 - [ ] **Recessed recal button** — Source a recessed/pen-press momentary switch for
   the D8 recalibration input. Must not be easily bumped.
 

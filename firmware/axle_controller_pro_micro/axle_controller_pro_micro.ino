@@ -67,13 +67,13 @@
 
 #define EEPROM_MAGIC_ADDR     0     // 1 byte: magic sentinel
 #define EEPROM_MODE_ADDR      1     // 1 byte: control mode
-#define EEPROM_KEYS_ADDR      2     // 10 bytes: key mappings
-#define EEPROM_DZ_ADDR        12    // 4 bytes: dead zones (J1c, J1f, J2c, J2f)
-#define EEPROM_CENTER_ADDR    16    // 8 bytes: centers (J1x, J1y, J2x, J2y) x 2 bytes each
+#define EEPROM_KEYS_ADDR      2     // 13 bytes: key mappings
+#define EEPROM_DZ_ADDR        15    // 4 bytes: dead zones (J1c, J1f, J2c, J2f)
+#define EEPROM_CENTER_ADDR    19    // 8 bytes: centers (J1x, J1y, J2x, J2y) x 2 bytes each
 
-#define EEPROM_MAGIC_VALUE    0xB4  // Bump this to force factory reset on flash
+#define EEPROM_MAGIC_VALUE    0xB5  // Bump this to force factory reset on flash
 
-#define NUM_KEYS  10
+#define NUM_KEYS  13
 
 // ============================================================
 // Key Mapping
@@ -89,16 +89,22 @@ enum KeySlot {
   K_J2_RIGHT_COARSE,
   K_J2_LEFT_FINE,
   K_J2_RIGHT_FINE,
-  K_J2_BTN
+  K_J2_BTN,
+  K_LOCK,       // Sent on lock state change (key = locked, release = unlocked)
+  K_J1_FINE_LED, // Sent when J1 fine mode toggles on (released when off)
+  K_J2_FINE_LED  // Sent when J2 fine mode toggles on (released when off)
 };
 
 static const char DEFAULT_KEYS[NUM_KEYS] PROGMEM = {
   'd', 'a',   // J1 coarse left/right (swapped — joystick mounted reversed)
   'e', 'q',   // J1 fine left/right (swapped to match)
-  'f',        // J1 button
+  'f',        // J1 button (fine toggle)
   'j', 'l',   // J2 coarse left/right
   'u', 'o',   // J2 fine left/right
-  ';'         // J2 button
+  ';',        // J2 button (fine toggle)
+  '[',        // Lock state: press=locked, release=unlocked
+  '1',        // J1 fine LED: press=fine on, release=fine off
+  '2'         // J2 fine LED: press=fine on, release=fine off
 };
 
 char keys[NUM_KEYS];
@@ -171,6 +177,7 @@ Joystick joy[2];
 
 uint8_t controlMode = 0;   // 0 = proportional, 1 = discrete toggle
 bool locked = false;
+bool prevLocked = false;   // Track lock transitions for keystroke reporting
 
 // Serial command buffer
 char serialBuf[32];
@@ -229,10 +236,17 @@ void setup() {
 
   // Lock LED shows current switch state after cal
   locked = (digitalRead(LOCK_SWITCH) == LOW);
+  prevLocked = locked;
   setLockRed(locked);
   setLockGrn(!locked);
 
-  Serial.println(F("AXLE_CONTROLLER_READY v2.0"));
+  // Announce initial state to host — only if locked (host assumes unlocked + coarse by default)
+  delay(200);  // Brief pause for USB enumeration to settle
+  if (locked) {
+    sendKey(keys[K_LOCK]);
+  }
+
+  Serial.println(F("AXLE_CONTROLLER_READY v2.2"));
   printHelp();
 }
 
@@ -243,10 +257,14 @@ void setup() {
 void loop() {
   handleSerial();
 
-  // Lock switch
+  // Lock switch — send keystroke on transitions only
   locked = (digitalRead(LOCK_SWITCH) == LOW);
   setLockRed(locked);
   setLockGrn(!locked);
+  if (locked != prevLocked) {
+    prevLocked = locked;
+    sendKey(keys[K_LOCK]);  // Tap lock key — host toggles lock state
+  }
 
   // Check recal button (works even when locked)
   checkRecalButton();
@@ -254,6 +272,8 @@ void loop() {
   if (locked) {
     digitalWrite(LED_FINE1, LOW);
     digitalWrite(LED_FINE2, LOW);
+    joy[0].fineMode = false;
+    joy[1].fineMode = false;
     return;
   }
 
@@ -458,6 +478,13 @@ void handleButton(uint8_t idx) {
     j.lastBtnPress = now;
     j.fineMode = !j.fineMode;
     digitalWrite(j.pinLed, j.fineMode ? HIGH : LOW);
+
+    // Tell host: send fine-LED key when fine on, button key when fine off
+    if (j.fineMode) {
+      sendKey(keys[(idx == 0) ? K_J1_FINE_LED : K_J2_FINE_LED]);
+    } else {
+      sendKey(keys[j.kBtn]);
+    }
   }
 
   j.btnWasHeld = pressed;
@@ -719,9 +746,12 @@ void handleSetKey(const char *args) {
   else if (strcmp(slot, "J2LF") == 0) idx = K_J2_LEFT_FINE;
   else if (strcmp(slot, "J2RF") == 0) idx = K_J2_RIGHT_FINE;
   else if (strcmp(slot, "J2B") == 0)  idx = K_J2_BTN;
+  else if (strcmp(slot, "LOCK") == 0) idx = K_LOCK;
+  else if (strcmp(slot, "F1LED") == 0) idx = K_J1_FINE_LED;
+  else if (strcmp(slot, "F2LED") == 0) idx = K_J2_FINE_LED;
 
   if (idx < 0) {
-    Serial.println(F("Slots: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B"));
+    Serial.println(F("Slots: J1LC J1RC J1LF J1RF J1B J2LC J2RC J2LF J2RF J2B LOCK F1LED F2LED"));
     return;
   }
 
